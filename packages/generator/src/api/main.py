@@ -1,5 +1,7 @@
 """FastAPI server for the Homebook generator."""
 
+import base64
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -8,6 +10,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 from ..config import ALLOWED_ORIGINS
 from ..models import (
@@ -186,10 +190,25 @@ def generate(req: GeneratorConfigRequest):
 
     # Lazy import to avoid requiring WeasyPrint/boto3 for preview-only usage
     from ..pdf_generator import generate_pdf
-    from ..s3_client import upload_pdf
 
-    pdf_bytes = generate_pdf(worksheet.html_content)
-    pdf_url = upload_pdf(pdf_bytes, worksheet.id)
+    try:
+        pdf_bytes = generate_pdf(worksheet.html_content)
+    except RuntimeError as e:
+        logger.error("PDF generation failed for worksheet %s: %s", worksheet.id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Try S3 upload, fall back to base64 data URL
+    try:
+        from ..s3_client import upload_pdf
+        pdf_url = upload_pdf(pdf_bytes, worksheet.id)
+    except Exception as e:
+        logger.warning(
+            "S3 upload failed for worksheet %s, returning base64 fallback: %s",
+            worksheet.id,
+            e,
+        )
+        b64 = base64.b64encode(pdf_bytes).decode("ascii")
+        pdf_url = f"data:application/pdf;base64,{b64}"
 
     return GenerateResponse(
         worksheet_id=worksheet.id,
