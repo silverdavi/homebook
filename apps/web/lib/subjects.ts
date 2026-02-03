@@ -28,6 +28,22 @@ export const FRACTION_SUBTOPICS = [
   { id: "divide-fractions", label: "Divide fractions", grade: "5-6" },
 ] as const;
 
+export const CHEMISTRY_SUBTOPICS = [
+  { id: "balance-synthesis", label: "Synthesis reactions", grade: "8-9" },
+  { id: "balance-decomposition", label: "Decomposition reactions", grade: "8-9" },
+  { id: "balance-combustion", label: "Combustion reactions", grade: "9-10" },
+  { id: "balance-single-replacement", label: "Single replacement", grade: "9-10" },
+  { id: "balance-double-replacement", label: "Double replacement", grade: "9-10" },
+] as const;
+
+export const BIOLOGY_SUBTOPICS = [
+  { id: "monohybrid-cross", label: "Monohybrid cross", grade: "7-8" },
+  { id: "dihybrid-cross", label: "Dihybrid cross", grade: "9-10" },
+  { id: "test-cross", label: "Test cross", grade: "8-9" },
+  { id: "incomplete-dominance", label: "Incomplete dominance", grade: "9-10" },
+  { id: "pedigree-analysis", label: "Pedigree analysis", grade: "9-10" },
+] as const;
+
 export const SUBJECTS: Record<string, SubjectConfig> = {
   math: {
     id: "math",
@@ -44,19 +60,41 @@ export const SUBJECTS: Record<string, SubjectConfig> = {
       },
     },
   },
+  chemistry: {
+    id: "chemistry",
+    name: "Chemistry",
+    icon: "FlaskConical",
+    color: "subject-chemistry",
+    enabled: true,
+    topics: {
+      "balancing-equations": {
+        id: "balancing-equations",
+        name: "Balancing Equations",
+        grades: ["8", "9", "10"],
+        subtopics: [...CHEMISTRY_SUBTOPICS],
+      },
+    },
+  },
+  biology: {
+    id: "biology",
+    name: "Biology",
+    icon: "Dna",
+    color: "subject-biology",
+    enabled: true,
+    topics: {
+      "mendelian-genetics": {
+        id: "mendelian-genetics",
+        name: "Mendelian Genetics",
+        grades: ["7", "8", "9", "10"],
+        subtopics: [...BIOLOGY_SUBTOPICS],
+      },
+    },
+  },
   reading: {
     id: "reading",
     name: "Reading",
     icon: "BookOpen",
     color: "subject-reading",
-    enabled: false,
-    topics: {},
-  },
-  science: {
-    id: "science",
-    name: "Science",
-    icon: "Flask",
-    color: "subject-science",
     enabled: false,
     topics: {},
   },

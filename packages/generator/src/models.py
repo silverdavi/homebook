@@ -60,6 +60,7 @@ class GeneratorConfig:
     include_visuals: bool = True
     include_answer_key: bool = True
     show_lcd_reference: bool = False
+    include_intro_page: bool = False  # AI-generated intro page
 
     # Constraints
     max_denominator: int = 12
@@ -71,6 +72,7 @@ class GeneratorConfig:
     worksheet_title: Optional[str] = None
     teacher_name: Optional[str] = None
     date: Optional[str] = None
+    grade_level: int = 5
 
 
 @dataclass

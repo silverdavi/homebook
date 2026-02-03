@@ -1,4 +1,4 @@
-export type Subject = "math" | "reading" | "science";
+export type Subject = "math" | "chemistry" | "biology" | "reading";
 
 export type Difficulty = "easy" | "medium" | "hard" | "mixed";
 
@@ -42,6 +42,7 @@ export interface WorksheetOptions {
   showWorkedExamples: boolean;
   numberProblems: boolean;
   showLcdGcfReference: boolean;
+  includeIntroPage: boolean;
 }
 
 export interface PersonalizationConfig {

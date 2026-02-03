@@ -59,6 +59,7 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
     showWorkedExamples: false,
     numberProblems: true,
     showLcdGcfReference: false,
+    includeIntroPage: false,
   },
   personalization: {
     studentName: "",

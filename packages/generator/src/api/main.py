@@ -50,6 +50,7 @@ class GeneratorConfigRequest(BaseModel):
     include_visuals: bool = True
     include_answer_key: bool = True
     show_lcd_reference: bool = False
+    include_intro_page: bool = False  # AI-generated intro page
 
     max_denominator: int = Field(default=12, ge=2, le=20)
     allow_improper: bool = False
@@ -59,6 +60,7 @@ class GeneratorConfigRequest(BaseModel):
     worksheet_title: Optional[str] = None
     teacher_name: Optional[str] = None
     date: Optional[str] = None
+    grade_level: int = 5
 
 
 class ProblemResponse(BaseModel):
@@ -100,6 +102,7 @@ def _to_config(req: GeneratorConfigRequest) -> GeneratorConfig:
         include_visuals=req.include_visuals,
         include_answer_key=req.include_answer_key,
         show_lcd_reference=req.show_lcd_reference,
+        include_intro_page=req.include_intro_page,
         max_denominator=req.max_denominator,
         allow_improper=req.allow_improper,
         require_simplification=req.require_simplification,
@@ -107,6 +110,7 @@ def _to_config(req: GeneratorConfigRequest) -> GeneratorConfig:
         worksheet_title=req.worksheet_title,
         teacher_name=req.teacher_name,
         date=req.date,
+        grade_level=req.grade_level,
     )
 
 

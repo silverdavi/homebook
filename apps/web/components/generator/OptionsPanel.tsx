@@ -11,10 +11,11 @@ interface OptionsPanelProps {
 const OPTION_LABELS: { key: keyof WorksheetOptions; label: string }[] = [
   { key: "includeAnswerKey", label: "Include answer key" },
   { key: "showHints", label: "Show hints" },
-  { key: "includeVisualModels", label: "Include visual models (fraction bars)" },
+  { key: "includeVisualModels", label: "Include visual models" },
   { key: "showWorkedExamples", label: "Show worked examples" },
   { key: "numberProblems", label: "Number problems" },
   { key: "showLcdGcfReference", label: "Show LCD/GCF reference" },
+  { key: "includeIntroPage", label: "Include intro page (AI-generated)" },
 ];
 
 export function OptionsPanel({ options, onOptionChange }: OptionsPanelProps) {

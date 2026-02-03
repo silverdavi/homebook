@@ -26,7 +26,12 @@ def get_all_generators() -> Dict[str, BaseGenerator]:
 # Auto-register generators on import
 def _auto_register() -> None:
     from .fractions import FractionGenerator
+    from .chemistry import BalancingEquationsGenerator
+    from .biology import MendelianGeneticsGenerator
+    
     register(FractionGenerator())
+    register(BalancingEquationsGenerator())
+    register(MendelianGeneticsGenerator())
 
 
 _auto_register()

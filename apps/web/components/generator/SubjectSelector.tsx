@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, BookOpen, FlaskConical } from "lucide-react";
+import { Calculator, BookOpen, FlaskConical, Dna } from "lucide-react";
 import clsx from "clsx";
 import { SUBJECTS } from "@/lib/subjects";
 import type { Subject } from "@/lib/types";
@@ -9,6 +9,15 @@ const ICONS: Record<string, React.ElementType> = {
   Calculator,
   BookOpen,
   Flask: FlaskConical,
+  FlaskConical,
+  Dna,
+};
+
+const SUBJECT_COLORS: Record<string, { border: string; bg: string; text: string }> = {
+  math: { border: "border-subject-math", bg: "bg-subject-math-light", text: "text-subject-math" },
+  chemistry: { border: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-600" },
+  biology: { border: "border-purple-500", bg: "bg-purple-50", text: "text-purple-600" },
+  reading: { border: "border-amber-500", bg: "bg-amber-50", text: "text-amber-600" },
 };
 
 interface SubjectSelectorProps {
@@ -22,11 +31,12 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
       <label className="block text-sm font-medium text-slate-700">
         Subject
       </label>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {Object.values(SUBJECTS).map((subject) => {
           const Icon = ICONS[subject.icon];
           const isSelected = value === subject.id;
           const isEnabled = subject.enabled;
+          const colors = SUBJECT_COLORS[subject.id] || SUBJECT_COLORS.math;
 
           return (
             <button
@@ -39,7 +49,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
                   ? "cursor-pointer"
                   : "cursor-not-allowed opacity-50",
                 isSelected && isEnabled
-                  ? "border-subject-math bg-subject-math-light shadow-paper-md"
+                  ? `${colors.border} ${colors.bg} shadow-paper-md`
                   : isEnabled
                     ? "border-slate-200 bg-white hover:border-slate-300 hover:shadow-paper"
                     : "border-slate-100 bg-slate-50"
@@ -54,14 +64,14 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
                 <Icon
                   className={clsx(
                     "w-6 h-6",
-                    isSelected ? "text-subject-math" : "text-slate-400"
+                    isSelected ? colors.text : "text-slate-400"
                   )}
                 />
               )}
               <span
                 className={clsx(
                   "text-xs font-medium",
-                  isSelected ? "text-subject-math" : "text-slate-600"
+                  isSelected ? colors.text : "text-slate-600"
                 )}
               >
                 {subject.name}
