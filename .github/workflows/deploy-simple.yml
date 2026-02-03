@@ -1,0 +1,48 @@
+name: Deploy (Simple SSH)
+
+on:
+  workflow_dispatch:  # Manual trigger only
+  # Uncomment to auto-deploy:
+  # push:
+  #   branches: [main]
+
+jobs:
+  deploy-generator:
+    name: Deploy Generator to EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Starting deployment..."
+            
+            cd /opt/homebook
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Rebuild and restart
+            cd infra/docker
+            docker-compose build --no-cache generator
+            docker-compose down
+            docker-compose up -d
+            
+            # Wait and check health
+            sleep 15
+            if curl -sf http://localhost:8000/health > /dev/null; then
+              echo "✅ Generator is healthy!"
+            else
+              echo "❌ Health check failed!"
+              docker-compose logs generator
+              exit 1
+            fi
+            
+            echo "✅ Deployment complete!"
+
+# Required secrets:
+#   EC2_HOST - EC2 public IP or api.teacher.ninja
+#   EC2_SSH_KEY - Private SSH key for ubuntu user

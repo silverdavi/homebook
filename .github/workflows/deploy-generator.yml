@@ -1,0 +1,84 @@
+name: Deploy Generator
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'packages/generator/**'
+      - 'infra/docker/**'
+      - '.github/workflows/deploy-generator.yml'
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: homebook-generator
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest packages/generator
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/homebook
+            git pull origin main
+            
+            # Pull latest image
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+            docker pull ${{ secrets.ECR_REGISTRY }}/homebook-generator:latest
+            
+            # Restart service
+            cd infra/docker
+            docker-compose down
+            docker-compose up -d
+            
+            # Health check
+            sleep 10
+            curl -f http://localhost:8000/health || exit 1
+            
+            echo "✅ Deployment complete!"
+
+# Alternative: Simple SSH deploy without ECR
+# Uncomment if not using ECR:
+#
+#      - name: Deploy via SSH
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ubuntu
+#          key: ${{ secrets.EC2_SSH_KEY }}
+#          script: |
+#            cd /opt/homebook
+#            git pull origin main
+#            ./infra/scripts/deploy-generator.sh
+
+# Required secrets:
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   EC2_HOST - EC2 public IP or hostname (api.teacher.ninja)
+#   EC2_SSH_KEY - Private SSH key for EC2
+#   ECR_REGISTRY - ECR registry URL (optional, for ECR approach)
