@@ -7,6 +7,7 @@ import type {
   PersonalizationConfig,
   WorksheetConfig,
 } from "./types";
+import { SUBJECTS } from "./subjects";
 
 interface GeneratorState {
   subject: Subject;
@@ -71,7 +72,12 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
   isGenerating: false,
   isPreviewLoading: false,
 
-  setSubject: (subject) => set({ subject }),
+  setSubject: (subject) => {
+    const subjectConfig = SUBJECTS[subject];
+    const topics = Object.keys(subjectConfig?.topics || {});
+    const firstTopic = topics[0] || "";
+    set({ subject, topicId: firstTopic, subtopicIds: [] });
+  },
   setGrade: (grade) => set({ grade }),
   setTopicId: (topicId) => set({ topicId, subtopicIds: [] }),
   toggleSubtopic: (subtopicId) =>
