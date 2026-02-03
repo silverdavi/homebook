@@ -39,3 +39,6 @@ env/
 
 # Generated files
 *.pdf
+
+# Template test output
+packages/generator/templates/tests/output/
