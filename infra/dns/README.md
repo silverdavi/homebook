@@ -7,12 +7,16 @@
 
 ## DNS Records
 
-| Record | Type | Value | Purpose |
-|--------|------|-------|---------|
-| `teacher.ninja` | A (Alias) | alias.vercel-dns.com | Main site → Vercel |
-| `www.teacher.ninja` | CNAME | cname.vercel-dns.com | WWW redirect → Vercel |
-| `api.teacher.ninja` | A | (EC2 IP) | Python generator API |
-| `_acme-challenge.teacher.ninja` | TXT | (cert validation) | SSL certificate |
+| Record | Type | Value | Status |
+|--------|------|-------|--------|
+| `teacher.ninja` | A | 76.76.21.21 (Vercel) | Propagated |
+| `www.teacher.ninja` | CNAME | cname.vercel-dns.com | Propagated |
+| `api.teacher.ninja` | A | (EC2 IP - pending instance creation) | Pending |
+
+## Propagation Verified: 2026-02-03
+- `teacher.ninja` resolves to `76.76.21.21`
+- `www.teacher.ninja` resolves via `cname.vercel-dns.com`
+- `api.teacher.ninja` not yet configured (awaiting EC2 instance)
 
 ## Architecture
 
