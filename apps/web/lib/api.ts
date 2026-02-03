@@ -14,7 +14,7 @@ export async function generatePreview(config: WorksheetConfig): Promise<string> 
   }
 
   const data = await res.json();
-  return data.html;
+  return data.html_preview;
 }
 
 export async function generateWorksheet(
