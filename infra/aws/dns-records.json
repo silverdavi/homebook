@@ -1,0 +1,50 @@
+{
+  "Comment": "Homebook (teacher.ninja) DNS records",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "teacher.ninja",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "Z2FDTNDATAQYW2",
+          "DNSName": "alias.vercel-dns.com",
+          "EvaluateTargetHealth": false
+        }
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "www.teacher.ninja",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          { "Value": "cname.vercel-dns.com" }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.teacher.ninja",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          { "Value": "PLACEHOLDER_EC2_IP" }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "_acme-challenge.teacher.ninja",
+        "Type": "TXT",
+        "TTL": 300,
+        "ResourceRecords": [
+          { "Value": "\"PLACEHOLDER_FOR_SSL_VERIFICATION\"" }
+        ]
+      }
+    }
+  ]
+}
