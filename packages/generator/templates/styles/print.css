@@ -1,0 +1,215 @@
+/* Print-optimized styles for WeasyPrint */
+
+@page {
+  size: letter;
+  margin: 0.75in;
+
+  @bottom-center {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9pt;
+    color: #64748b;
+  }
+}
+
+@page :first {
+  @bottom-center {
+    content: "";
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 12pt;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+/* Prevent page breaks in middle of problems */
+.problem {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Force answer key to new page */
+.answer-key {
+  page-break-before: always;
+  break-before: always;
+}
+
+/* Headers */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 20pt;
+  color: #0f172a;
+  margin-bottom: var(--spacing-sm);
+}
+
+h2 {
+  font-size: 14pt;
+  color: var(--color-primary);
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Fraction display */
+.fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  font-size: 1em;
+  margin: 0 0.2em;
+  line-height: 1.2;
+}
+
+.fraction-numerator {
+  border-bottom: 1.5px solid currentColor;
+  padding: 0 0.3em 0.1em;
+  min-width: 1.2em;
+  text-align: center;
+}
+
+.fraction-denominator {
+  padding: 0.1em 0.3em 0;
+  min-width: 1.2em;
+  text-align: center;
+}
+
+/* Mixed numbers */
+.mixed-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.mixed-whole {
+  font-size: 1.1em;
+}
+
+/* Answer lines */
+.answer-line {
+  display: inline-block;
+  border-bottom: 1px solid var(--color-text-muted);
+  min-width: 60px;
+  height: 1.2em;
+  margin-left: 0.5em;
+}
+
+/* Hint boxes */
+.hint-box {
+  background: var(--color-hint);
+  border-left: 3px solid var(--color-hint-border);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  font-size: 10pt;
+  color: #92400e;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.hint-icon {
+  margin-right: 0.3em;
+}
+
+/* Worked examples */
+.worked-example {
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  font-size: 10pt;
+}
+
+.worked-example-title {
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.worked-step {
+  margin: var(--spacing-xs) 0;
+  padding-left: var(--spacing-md);
+}
+
+/* Visual elements */
+.visual-container {
+  margin: var(--spacing-md) 0;
+  text-align: center;
+}
+
+.visual-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Reference boxes (LCD/GCF) */
+.reference-box {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  font-size: 10pt;
+}
+
+.reference-title {
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Fraction bar visuals */
+.fraction-bar-svg {
+  max-width: 350px;
+}
+
+.fraction-bar-svg rect {
+  stroke-width: 0.5;
+}
+
+.fraction-bar-svg .filled {
+  /* Filled segments - color set by Generator */
+}
+
+.fraction-bar-svg .empty {
+  fill: #f1f5f9;
+}
+
+.fraction-bar-svg text {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  fill: var(--color-text);
+}
+
+/* Number line visuals */
+.number-line-svg {
+  max-width: 450px;
+}
+
+.number-line-svg line {
+  stroke: var(--color-text);
+}
+
+.number-line-svg .tick {
+  stroke-width: 1;
+}
+
+.number-line-svg .marker {
+  fill: var(--color-primary);
+}
+
+.number-line-svg text {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  fill: var(--color-text);
+}
