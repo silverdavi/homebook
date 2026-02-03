@@ -18,6 +18,7 @@ MAX_PROBLEMS_PER_SHEET = 30
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://44.209.209.79",
+    "https://44.209.209.79",
     "https://teacher.ninja",
     "https://www.teacher.ninja",
 ]
