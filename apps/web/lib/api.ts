@@ -30,5 +30,11 @@ export async function generateWorksheet(
     throw new Error(`Worksheet generation failed: ${res.statusText}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  // Map API response (snake_case) to frontend types (camelCase)
+  return {
+    worksheetId: data.worksheet_id,
+    downloadUrl: data.pdf_url,
+    filename: `worksheet-${data.worksheet_id}.pdf`,
+  };
 }
