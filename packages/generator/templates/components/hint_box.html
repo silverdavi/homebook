@@ -1,0 +1,7 @@
+{# Hint box component #}
+{# Variables: hint (text string) or hint_text (text string) #}
+
+<div class="hint-box">
+  <span class="hint-icon">Hint:</span>
+  <span class="hint-text">{{ hint | default(hint_text, true) }}</span>
+</div>

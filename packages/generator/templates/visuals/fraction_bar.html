@@ -1,0 +1,80 @@
+{# SVG Fraction Bar Visual #}
+{# Variables: #}
+{#   numerator - number of filled segments #}
+{#   denominator - total number of segments #}
+{#   label (optional) - text label below the bar #}
+{#   fill_color (optional) - color for filled segments, defaults to primary #}
+{#   width (optional) - bar width in px, defaults to 300 #}
+{#   height (optional) - bar height in px, defaults to 40 #}
+
+{% set bar_width = width | default(300) %}
+{% set bar_height = height | default(40) %}
+{% set fill = fill_color | default('#6366f1') %}
+{% set seg_width = bar_width / denominator %}
+
+<svg class="fraction-bar-svg"
+     width="{{ bar_width + 20 }}"
+     height="{{ bar_height + 30 }}"
+     viewBox="0 0 {{ bar_width + 20 }} {{ bar_height + 30 }}"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Bar segments -->
+  <g transform="translate(10, 5)">
+    {% for i in range(denominator) %}
+    <rect
+      x="{{ i * seg_width }}"
+      y="0"
+      width="{{ seg_width }}"
+      height="{{ bar_height }}"
+      {% if i < numerator %}
+      fill="{{ fill }}"
+      fill-opacity="0.3"
+      stroke="{{ fill }}"
+      {% else %}
+      class="empty"
+      stroke="#cbd5e1"
+      {% endif %}
+      rx="1"
+    />
+    {% endfor %}
+
+    <!-- Filled overlay with stronger color -->
+    {% for i in range(numerator) %}
+    <rect
+      x="{{ i * seg_width }}"
+      y="0"
+      width="{{ seg_width }}"
+      height="{{ bar_height }}"
+      fill="{{ fill }}"
+      fill-opacity="0.25"
+      stroke="{{ fill }}"
+      stroke-width="1"
+      rx="1"
+      class="filled"
+    />
+    {% endfor %}
+  </g>
+
+  <!-- Label -->
+  {% if label %}
+  <text
+    x="{{ (bar_width + 20) / 2 }}"
+    y="{{ bar_height + 22 }}"
+    text-anchor="middle"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="11"
+    fill="#64748b">
+    {{ label }}
+  </text>
+  {% else %}
+  <text
+    x="{{ (bar_width + 20) / 2 }}"
+    y="{{ bar_height + 22 }}"
+    text-anchor="middle"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="11"
+    fill="#64748b">
+    {{ numerator }}/{{ denominator }}
+  </text>
+  {% endif %}
+</svg>

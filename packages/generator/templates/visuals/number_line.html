@@ -1,0 +1,86 @@
+{# SVG Number Line Visual #}
+{# Variables: #}
+{#   start - start value (integer) #}
+{#   end - end value (integer) #}
+{#   markers - list of dicts with 'value' and optional 'label' #}
+{#   tick_step (optional) - step between tick marks, defaults to 1 #}
+{#   width (optional) - line width in px, defaults to 400 #}
+
+{% set line_width = width | default(400) %}
+{% set line_y = 30 %}
+{% set total_range = end - start %}
+{% set step = tick_step | default(1) %}
+
+<svg class="number-line-svg"
+     width="{{ line_width + 40 }}"
+     height="65"
+     viewBox="0 0 {{ line_width + 40 }} 65"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Main line -->
+  <line
+    x1="20" y1="{{ line_y }}"
+    x2="{{ line_width + 20 }}" y2="{{ line_y }}"
+    stroke="#1e293b"
+    stroke-width="1.5"
+  />
+
+  <!-- Arrow ends -->
+  <polygon
+    points="{{ line_width + 20 }},{{ line_y }} {{ line_width + 14 }},{{ line_y - 4 }} {{ line_width + 14 }},{{ line_y + 4 }}"
+    fill="#1e293b"
+  />
+  <polygon
+    points="20,{{ line_y }} 26,{{ line_y - 4 }} 26,{{ line_y + 4 }}"
+    fill="#1e293b"
+  />
+
+  <!-- Tick marks and labels -->
+  {% set tick_val = start %}
+  {% for i in range(((end - start) / step) | int + 1) %}
+    {% set tick_val = start + i * step %}
+    {% set tick_x = 20 + ((tick_val - start) / total_range) * line_width %}
+    <line
+      x1="{{ tick_x }}" y1="{{ line_y - 6 }}"
+      x2="{{ tick_x }}" y2="{{ line_y + 6 }}"
+      stroke="#1e293b"
+      stroke-width="1"
+      class="tick"
+    />
+    <text
+      x="{{ tick_x }}"
+      y="{{ line_y + 20 }}"
+      text-anchor="middle"
+      font-family="Inter, system-ui, sans-serif"
+      font-size="10"
+      fill="#64748b">
+      {{ tick_val }}
+    </text>
+  {% endfor %}
+
+  <!-- Markers -->
+  {% if markers %}
+  {% for marker in markers %}
+    {% set marker_x = 20 + ((marker.value - start) / total_range) * line_width %}
+    <circle
+      cx="{{ marker_x }}"
+      cy="{{ line_y }}"
+      r="5"
+      fill="#6366f1"
+      class="marker"
+    />
+    {% if marker.label %}
+    <text
+      x="{{ marker_x }}"
+      y="{{ line_y - 12 }}"
+      text-anchor="middle"
+      font-family="Inter, system-ui, sans-serif"
+      font-size="10"
+      font-weight="600"
+      fill="#6366f1">
+      {{ marker.label }}
+    </text>
+    {% endif %}
+  {% endfor %}
+  {% endif %}
+</svg>

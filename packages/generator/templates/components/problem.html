@@ -1,0 +1,29 @@
+{# Single problem component #}
+{# Variables: number, question_html, hint (optional), visual_svg (optional), worked_solution (optional) #}
+
+<div class="problem">
+  <div class="problem-row">
+    <span class="problem-number">{{ number }}.</span>
+    <div class="problem-content">
+
+      <div class="problem-question">
+        {{ question_html | safe }}
+      </div>
+
+      {% if hint %}
+      {% include 'components/hint_box.html' with context %}
+      {% endif %}
+
+      {% if visual_svg %}
+      <div class="visual-container">
+        {{ visual_svg | safe }}
+      </div>
+      {% endif %}
+
+      {% if worked_solution %}
+      {% include 'components/worked_example.html' with context %}
+      {% endif %}
+
+    </div>
+  </div>
+</div>

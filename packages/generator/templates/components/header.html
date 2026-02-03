@@ -1,0 +1,21 @@
+{# Worksheet header component #}
+{# Variables: title, subtitle (optional), student_name (optional), date (optional) #}
+
+<header class="worksheet-header">
+  <div class="header-left">
+    <h1 class="worksheet-title">{{ title }}</h1>
+    {% if subtitle %}
+    <p class="worksheet-subtitle">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  <div class="header-right">
+    <div class="meta-field">
+      <span class="meta-label">Name:</span>
+      <span class="meta-input">{{ student_name | default('') }}</span>
+    </div>
+    <div class="meta-field">
+      <span class="meta-label">Date:</span>
+      <span class="meta-input">{{ date | default('') }}</span>
+    </div>
+  </div>
+</header>

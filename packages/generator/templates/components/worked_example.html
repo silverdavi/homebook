@@ -1,0 +1,15 @@
+{# Worked solution / step-by-step example #}
+{# Variables: worked_solution (string with newlines) or steps (list of strings) #}
+
+<div class="worked-example">
+  <div class="worked-example-title">Step-by-step:</div>
+  <div class="worked-steps">
+    {% if steps %}
+      {% for step in steps %}
+      <div class="worked-step">{{ loop.index }}. {{ step | safe }}</div>
+      {% endfor %}
+    {% elif worked_solution %}
+      {{ worked_solution | replace('\n', '<br>') | safe }}
+    {% endif %}
+  </div>
+</div>
