@@ -316,8 +316,10 @@ class FractionGenerator(BaseGenerator):
         numer = self._rand_numerator(denom)
         base = Fraction(numer, denom)
 
+        # Use simplified denominator so the multiplier applies cleanly
         multiplier = random.randint(2, 4)
-        target_denom = denom * multiplier
+        target_denom = base.denominator * multiplier
+        answer_num = base.numerator * multiplier
 
         q_text = f"{base.numerator}/{base.denominator} = ?/{target_denom}"
         q_html = (
@@ -326,7 +328,6 @@ class FractionGenerator(BaseGenerator):
             f"<sub>{target_denom}</sub></span>"
         )
 
-        answer_num = base.numerator * multiplier
         answer = Fraction(answer_num, target_denom)
         a_text = f"{answer_num}/{target_denom}"
 
