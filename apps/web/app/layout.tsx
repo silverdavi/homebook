@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
+import { VersionFooter } from "@/components/VersionFooter";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -28,9 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${inter.variable} font-sans antialiased`}
+        className={`${outfit.variable} ${inter.variable} font-sans antialiased pb-8`}
       >
         {children}
+        <VersionFooter />
       </body>
     </html>
   );
