@@ -18,6 +18,7 @@ import { DownloadButton } from "@/components/generator/DownloadButton";
 export default function GeneratePage() {
   const store = useGeneratorStore();
   const [downloadUrl, setDownloadUrl] = useState<string | undefined>();
+  const [filename, setFilename] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
   const hasSubtopics = store.subtopicIds.length > 0;
@@ -45,6 +46,7 @@ export default function GeneratePage() {
     try {
       const result = await generateWorksheet(store.getConfig());
       setDownloadUrl(result.downloadUrl);
+      setFilename(result.filename);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to generate worksheet"
@@ -124,6 +126,7 @@ export default function GeneratePage() {
               <OptionsPanel
                 options={store.options}
                 onOptionChange={store.setOption}
+                subject={store.subject}
               />
             </div>
 
@@ -145,6 +148,7 @@ export default function GeneratePage() {
               onGenerate={handleGenerate}
               isGenerating={store.isGenerating}
               downloadUrl={downloadUrl}
+              filename={filename}
               disabled={!hasSubtopics}
             />
           </div>

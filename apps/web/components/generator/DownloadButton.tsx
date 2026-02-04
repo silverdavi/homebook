@@ -8,6 +8,7 @@ interface DownloadButtonProps {
   onPreview: () => void;
   isGenerating: boolean;
   downloadUrl?: string;
+  filename?: string;
   disabled?: boolean;
 }
 
@@ -16,6 +17,7 @@ export function DownloadButton({
   onPreview,
   isGenerating,
   downloadUrl,
+  filename,
   disabled,
 }: DownloadButtonProps) {
   return (
@@ -53,7 +55,7 @@ export function DownloadButton({
       {downloadUrl && (
         <a
           href={downloadUrl}
-          download
+          download={filename}
           className="block text-center text-sm text-subject-math hover:underline"
         >
           Click to download worksheet
