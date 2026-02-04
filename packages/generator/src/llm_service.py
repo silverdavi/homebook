@@ -379,14 +379,16 @@ Example for addition of 1/2 + 1/4:
             "question": result.get("question", ""),
             "context_type": context_type,
         }
-    except json.JSONDecodeError:
-        logger.warning("Failed to parse LLM response as JSON: %s", response_text[:100])
-        # Fallback if JSON parsing fails
-        return {
-            "problem_text": f"Work with {frac_list}.",
-            "question": f"What is {' '.join(fractions)} when you {operation} them?",
-            "context_type": context_type,
-        }
+    except json.JSONDecodeError as e:
+        # Never silently fall back - raise the error so we can fix it
+        logger.error(
+            "Failed to parse LLM response as JSON. Response: %s", 
+            response_text[:500]
+        )
+        raise ValueError(
+            f"LLM returned invalid JSON for word problem. "
+            f"Response was: {response_text[:200]}..."
+        ) from e
 
 
 def get_llm_cache_stats() -> dict:

@@ -237,18 +237,20 @@ def generate(req: GeneratorConfigRequest):
         logger.error("PDF generation failed for worksheet %s: %s", worksheet.id, e)
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Try S3 upload, fall back to base64 data URL
+    # Upload to S3 - fail if upload fails (never fall back silently)
     try:
         from ..s3_client import upload_pdf
         pdf_url = upload_pdf(pdf_bytes, worksheet.id)
     except Exception as e:
-        logger.warning(
-            "S3 upload failed for worksheet %s, returning base64 fallback: %s",
+        logger.error(
+            "S3 upload failed for worksheet %s: %s",
             worksheet.id,
             e,
         )
-        b64 = base64.b64encode(pdf_bytes).decode("ascii")
-        pdf_url = f"data:application/pdf;base64,{b64}"
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to upload PDF to storage: {e}"
+        )
 
     return GenerateResponse(
         worksheet_id=worksheet.id,

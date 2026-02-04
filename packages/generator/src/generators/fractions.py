@@ -183,11 +183,12 @@ class FractionGenerator(BaseGenerator):
             q_text = f"{word_context.story} {word_context.question}"
             is_word_problem = True
 
-        except Exception:
-            # Fallback to plain math if LLM fails
-            q_html = problem_data["question_html"]
-            q_text = problem_data["question_text"]
-            is_word_problem = False
+        except Exception as e:
+            # Never silently fall back - raise the error so we can fix it
+            raise RuntimeError(
+                f"Word problem generation failed for {operation} problem: {e}. "
+                f"Check LLM service configuration and API key."
+            ) from e
 
         # Create word problem-specific hint
         math_hint = problem_data.get("hint", "")
@@ -777,10 +778,12 @@ class FractionGenerator(BaseGenerator):
             q_text = f"{word_problem_ctx.story} {word_problem_ctx.question}"
             is_word_problem = True
 
-        except Exception:
-            # Fallback to plain math if LLM fails
-            q_html = problem_data["question_html"]
-            q_text = problem_data["question_text"]
+        except Exception as e:
+            # Never silently fall back - raise the error so we can fix it
+            raise RuntimeError(
+                f"Word problem generation failed for {operation} problem: {e}. "
+                f"Check LLM service configuration and API key."
+            ) from e
 
         # Create hint for word problems
         math_hint = problem_data.get("hint", "")
