@@ -54,6 +54,7 @@ class Problem:
     metadata: Dict[str, Any] = field(default_factory=dict)
     is_word_problem: bool = False
     word_problem_context: Optional[WordProblemContext] = None
+    standards: List[str] = field(default_factory=list)  # List of standard codes (e.g., ["5.NF.A.1"])
 
 
 @dataclass
@@ -105,3 +106,5 @@ class Worksheet:
     html_content: str
     pdf_url: Optional[str] = None
     created_at: Optional[str] = None
+    standards: List[str] = field(default_factory=list)  # List of standard codes covered
+    standards_display: str = ""  # Formatted for printing (e.g., "5.NF.A.1, 5.NF.A.2")
