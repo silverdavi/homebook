@@ -28,10 +28,12 @@ def _auto_register() -> None:
     from .fractions import FractionGenerator
     from .chemistry import BalancingEquationsGenerator
     from .biology import MendelianGeneticsGenerator
-    
+    from .arithmetic import ArithmeticGenerator
+
     register(FractionGenerator())
     register(BalancingEquationsGenerator())
     register(MendelianGeneticsGenerator())
+    register(ArithmeticGenerator())
 
 
 _auto_register()
