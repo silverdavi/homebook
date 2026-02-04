@@ -1,4 +1,38 @@
-import type { SubjectConfig } from "./types";
+import type { SubjectConfig, WorksheetOptions } from "./types";
+
+/**
+ * Mapping of which options are applicable to each subject.
+ * Options not listed for a subject will be hidden in the UI.
+ */
+export const SUBJECT_OPTIONS: Record<string, (keyof WorksheetOptions)[]> = {
+  math: [
+    "includeAnswerKey",
+    "showHints",
+    "includeVisualModels",
+    "showWorkedExamples",
+    "numberProblems",
+    "showLcdGcfReference",
+    "includeIntroPage",
+    "includeWordProblems",
+    "wordProblemRatio",
+    "wordProblemContext",
+  ],
+  chemistry: [
+    "includeAnswerKey",
+    "showHints",
+    "showWorkedExamples",
+    "numberProblems",
+    "includeIntroPage",
+  ],
+  biology: [
+    "includeAnswerKey",
+    "showHints",
+    "showWorkedExamples",
+    "numberProblems",
+    "includeIntroPage",
+  ],
+  reading: ["includeAnswerKey", "showHints", "includeIntroPage"],
+};
 
 export const FRACTION_SUBTOPICS = [
   { id: "add-same-denom", label: "Add (same denominator)", grade: "3-4" },
@@ -26,6 +60,11 @@ export const FRACTION_SUBTOPICS = [
   { id: "compare-fractions", label: "Compare fractions", grade: "3-4" },
   { id: "multiply-fractions", label: "Multiply fractions", grade: "5-6" },
   { id: "divide-fractions", label: "Divide fractions", grade: "5-6" },
+  {
+    id: "word-problems",
+    label: "Word Problems",
+    grade: "3-6",
+  },
 ] as const;
 
 export const CHEMISTRY_SUBTOPICS = [

@@ -35,6 +35,8 @@ export interface SubjectConfig {
   topics: Record<string, Topic>;
 }
 
+export type WordProblemContext = 'cooking' | 'sports' | 'shopping' | 'school' | 'mixed';
+
 export interface WorksheetOptions {
   includeAnswerKey: boolean;
   showHints: boolean;
@@ -43,6 +45,9 @@ export interface WorksheetOptions {
   numberProblems: boolean;
   showLcdGcfReference: boolean;
   includeIntroPage: boolean;
+  includeWordProblems: boolean;
+  wordProblemRatio: number;  // 0.0 to 1.0
+  wordProblemContext: WordProblemContext;
 }
 
 export interface PersonalizationConfig {

@@ -9,6 +9,9 @@ export interface PreviewRequest {
     includeVisuals?: boolean;
     includeWorkedExamples?: boolean;
     showLcdReference?: boolean;
+    includeWordProblems?: boolean;
+    wordProblemRatio?: number;
+    wordProblemContext?: 'cooking' | 'sports' | 'shopping' | 'school' | 'mixed';
   };
 }
 

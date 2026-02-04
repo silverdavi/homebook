@@ -17,6 +17,9 @@ function toApiConfig(config: WorksheetConfig) {
     include_answer_key: config.options.includeAnswerKey,
     show_lcd_reference: config.options.showLcdGcfReference,
     include_intro_page: config.options.includeIntroPage,
+    include_word_problems: config.options.includeWordProblems,
+    word_problem_ratio: config.options.wordProblemRatio,
+    word_problem_context: config.options.wordProblemContext,
     student_name: config.personalization.studentName || null,
     worksheet_title: config.personalization.worksheetTitle || null,
     teacher_name: config.personalization.teacherName || null,
@@ -40,6 +43,20 @@ export async function generatePreview(config: WorksheetConfig): Promise<string> 
   return data.html_preview;
 }
 
+/**
+ * Generate a descriptive filename from the worksheet config
+ * Example: "math-fractions-worksheet.pdf" or "chemistry-balancing-equations-worksheet.pdf"
+ */
+function generateFilename(config: WorksheetConfig): string {
+  const subject = config.subject.toLowerCase();
+  const topic = config.topicId
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return `${subject}-${topic}-worksheet.pdf`;
+}
+
 export async function generateWorksheet(
   config: WorksheetConfig
 ): Promise<WorksheetResult> {
@@ -58,6 +75,6 @@ export async function generateWorksheet(
   return {
     worksheetId: data.worksheet_id,
     downloadUrl: data.pdf_url,
-    filename: `worksheet-${data.worksheet_id}.pdf`,
+    filename: generateFilename(config),
   };
 }

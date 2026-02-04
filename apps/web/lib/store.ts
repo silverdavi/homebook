@@ -29,7 +29,7 @@ interface GeneratorState {
   setSubtopicIds: (ids: string[]) => void;
   setProblemCount: (count: number) => void;
   setDifficulty: (difficulty: Difficulty) => void;
-  setOption: (key: keyof WorksheetOptions, value: boolean) => void;
+  setOption: (key: keyof WorksheetOptions, value: WorksheetOptions[keyof WorksheetOptions]) => void;
   setPersonalization: (
     key: keyof PersonalizationConfig,
     value: string
@@ -61,6 +61,9 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
     numberProblems: true,
     showLcdGcfReference: false,
     includeIntroPage: false,
+    includeWordProblems: false,
+    wordProblemRatio: 0.3,
+    wordProblemContext: 'mixed' as const,
   },
   personalization: {
     studentName: "",
