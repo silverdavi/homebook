@@ -390,3 +390,208 @@ class TestEdgeCases:
         config = _config("add-same-denom", num_problems=1)
         problems = gen.generate(config)
         assert len(problems) == 1
+
+    def test_large_number_of_problems(self, gen):
+        """Test generating a large number of problems within reasonable limits."""
+        # Use a subtopic with more variety (unlike denominators) and HARD difficulty
+        # to have a larger problem space
+        config = _config("add-unlike-denom", num_problems=50, difficulty=Difficulty.HARD)
+        problems = gen.generate(config)
+        assert len(problems) == 50
+
+    def test_no_hints_when_disabled(self, gen):
+        """Test that hints are not included when disabled."""
+        config = _config("add-same-denom", include_hints=False)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.hint is None
+
+    def test_no_visuals_when_disabled(self, gen):
+        """Test that visuals are not included when disabled."""
+        config = _config("add-same-denom", include_visuals=False)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.visual_svg is None
+
+    def test_max_denominator_constraint(self, gen):
+        """Test that max_denominator is respected."""
+        config = _config(
+            "add-unlike-denom",
+            max_denominator=6,
+            difficulty=Difficulty.HARD,
+            num_problems=20
+        )
+        problems = gen.generate(config)
+        for p in problems:
+            parts = p.question_text.split(" + ")
+            _, d1 = map(int, parts[0].split("/"))
+            _, d2 = map(int, parts[1].split("/"))
+            assert d1 <= 6
+            assert d2 <= 6
+
+
+# --- Problem ID tests ---
+
+class TestProblemIds:
+    """Tests for problem ID generation."""
+
+    def test_problems_have_unique_ids(self, gen):
+        """Test that each problem has a unique ID."""
+        config = _config("add-same-denom", num_problems=20)
+        problems = gen.generate(config)
+        ids = [p.id for p in problems]
+        assert len(ids) == len(set(ids))
+
+    def test_problem_id_format(self, gen):
+        """Test that problem IDs have expected format."""
+        config = _config("add-same-denom", num_problems=5)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.id is not None
+            assert len(p.id) == 12  # UUID hex[:12]
+            assert p.id.isalnum()
+
+
+# --- Worked examples tests ---
+
+class TestWorkedExamples:
+    """Tests for worked examples/solutions."""
+
+    def test_worked_examples_included(self, gen):
+        """Test that worked examples are included when enabled."""
+        config = _config("add-same-denom", include_worked_examples=True)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.worked_solution is not None
+            assert len(p.worked_solution) > 0
+
+    def test_no_worked_examples_when_disabled(self, gen):
+        """Test that worked examples are not included when disabled."""
+        config = _config("add-same-denom", include_worked_examples=False)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.worked_solution is None
+
+    def test_worked_example_contains_steps(self, gen):
+        """Test that worked examples contain step-by-step instructions."""
+        config = _config("add-same-denom", include_worked_examples=True)
+        problems = gen.generate(config)
+        for p in problems:
+            assert "Step" in p.worked_solution
+
+
+# --- Problem metadata tests ---
+
+class TestProblemMetadata:
+    """Tests for problem metadata."""
+
+    def test_problem_has_topic(self, gen):
+        """Test that problems have topic set."""
+        config = _config("add-same-denom")
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.topic == "fractions"
+
+    def test_problem_has_subtopic(self, gen):
+        """Test that problems have subtopic set."""
+        config = _config("add-same-denom")
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.subtopic == "add-same-denom"
+
+    def test_problem_has_difficulty(self, gen):
+        """Test that problems have difficulty set."""
+        config = _config("add-same-denom", difficulty=Difficulty.HARD)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.difficulty == Difficulty.HARD
+
+
+# --- HTML output tests ---
+
+class TestHTMLOutput:
+    """Tests for HTML question output."""
+
+    def test_question_html_generated(self, gen):
+        """Test that question_html is generated."""
+        config = _config("add-same-denom")
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.question_html is not None
+            assert len(p.question_html) > 0
+
+    def test_question_html_contains_fraction_markup(self, gen):
+        """Test that HTML contains fraction-specific markup."""
+        config = _config("add-same-denom")
+        problems = gen.generate(config)
+        for p in problems:
+            assert "frac" in p.question_html or "sup" in p.question_html
+
+
+# --- Mixed difficulty tests ---
+
+class TestMixedDifficulty:
+    """Tests for MIXED difficulty level."""
+
+    def test_mixed_difficulty_generates_variety(self, gen):
+        """Test that MIXED difficulty generates problems with varying number ranges."""
+        config = _config("add-unlike-denom", difficulty=Difficulty.MIXED, num_problems=50)
+        problems = gen.generate(config)
+
+        all_denoms = set()
+        for p in problems:
+            parts = p.question_text.split(" + ")
+            _, d1 = map(int, parts[0].split("/"))
+            _, d2 = map(int, parts[1].split("/"))
+            all_denoms.add(d1)
+            all_denoms.add(d2)
+
+        # Should have variety in denominators
+        assert len(all_denoms) >= 3
+
+
+# --- All subtopics generation test ---
+
+class TestAllSubtopics:
+    """Tests that all subtopics can generate problems."""
+
+    @pytest.mark.parametrize("subtopic", [
+        "add-same-denom",
+        "subtract-same-denom",
+        "add-unlike-denom",
+        "subtract-unlike-denom",
+        "equivalent-fractions",
+        "simplify-to-lowest",
+        "compare-fractions",
+        "multiply-fractions",
+        "divide-fractions",
+        "mixed-to-improper",
+        "improper-to-mixed",
+    ])
+    def test_subtopic_generates_problems(self, gen, subtopic):
+        """Test that each subtopic generates the correct number of problems."""
+        config = _config(subtopic, num_problems=5)
+        problems = gen.generate(config)
+        assert len(problems) == 5
+
+    @pytest.mark.parametrize("subtopic", [
+        "add-same-denom",
+        "subtract-same-denom",
+        "add-unlike-denom",
+        "subtract-unlike-denom",
+        "equivalent-fractions",
+        "simplify-to-lowest",
+        "compare-fractions",
+        "multiply-fractions",
+        "divide-fractions",
+        "mixed-to-improper",
+        "improper-to-mixed",
+    ])
+    def test_subtopic_has_valid_answer(self, gen, subtopic):
+        """Test that each subtopic generates problems with valid answers."""
+        config = _config(subtopic, num_problems=5)
+        problems = gen.generate(config)
+        for p in problems:
+            assert p.answer is not None
+            assert p.answer_text is not None
+            assert len(p.answer_text) > 0
