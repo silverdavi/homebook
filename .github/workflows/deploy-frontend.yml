@@ -19,21 +19,37 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 5m
           script: |
+            set -e
             echo "🚀 Deploying frontend..."
+            
             cd ~/homebook
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             
             cd apps/web
             npm ci --silent
             npm run build
             
+            # Stop existing process
             pkill -f "next-server" || true
             sleep 2
-            nohup npm start > /tmp/next.log 2>&1 &
-            sleep 5
             
-            curl -sf http://localhost:3000 > /dev/null && echo "✅ Frontend deployed!" || exit 1
+            # Start frontend in background
+            nohup npm start > /tmp/next.log 2>&1 &
+            
+            # Wait for startup
+            sleep 8
+            
+            # Health check
+            if curl -sf http://localhost:3000 > /dev/null; then
+              echo "✅ Frontend deployed successfully!"
+            else
+              echo "❌ Health check failed"
+              tail -50 /tmp/next.log
+              exit 1
+            fi
 
 # Required secrets:
 #   EC2_HOST - EC2 public IP (44.209.209.79)

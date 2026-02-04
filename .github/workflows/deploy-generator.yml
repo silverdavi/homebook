@@ -19,21 +19,38 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 5m
           script: |
+            set -e
             echo "🚀 Deploying generator API..."
+            
             cd ~/homebook
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             
             cd packages/generator
             source venv/bin/activate
             pip install -r requirements.txt -q
             
+            # Stop existing process
             pkill -f uvicorn || true
             sleep 2
-            nohup venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &
-            sleep 5
             
-            curl -sf http://localhost:8000/health && echo "✅ API deployed!" || exit 1
+            # Start API in background
+            nohup venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &
+            
+            # Wait for startup
+            sleep 8
+            
+            # Health check
+            if curl -sf http://localhost:8000/health; then
+              echo ""
+              echo "✅ API deployed successfully!"
+            else
+              echo "❌ Health check failed"
+              tail -50 /tmp/uvicorn.log
+              exit 1
+            fi
 
 # Required secrets:
 #   EC2_HOST - EC2 public IP (44.209.209.79)
