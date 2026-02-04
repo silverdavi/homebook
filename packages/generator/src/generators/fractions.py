@@ -16,9 +16,11 @@ from ..models import (
     FractionProblem,
     GeneratorConfig,
     Problem,
+    WordProblemContext,
 )
 from ..math_explanations import explain_simplify, explain_lcd
 from ..visualizations import create_addition_visual, create_fraction_bar
+from ..llm_service import generate_word_problem_context
 from .base import BaseGenerator
 
 
@@ -38,10 +40,16 @@ class FractionGenerator(BaseGenerator):
         "divide-fractions",
         "mixed-to-improper",
         "improper-to-mixed",
+        "word-problems",
     ]
 
     def generate(self, config: GeneratorConfig) -> List[Problem]:
-        """Generate fraction problems based on config."""
+        """Generate fraction problems based on config.
+
+        If word_problem_config is enabled and subtopic is NOT 'word-problems',
+        a portion of problems will be converted to word problems based on
+        word_problem_ratio.
+        """
         dispatch = {
             "add-same-denom": self._gen_add_same_denom,
             "subtract-same-denom": self._gen_subtract_same_denom,
@@ -54,11 +62,31 @@ class FractionGenerator(BaseGenerator):
             "divide-fractions": self._gen_divide,
             "mixed-to-improper": self._gen_mixed_to_improper,
             "improper-to-mixed": self._gen_improper_to_mixed,
+            "word-problems": self._gen_word_problem,
         }
 
         generator_fn = dispatch.get(config.subtopic)
         if generator_fn is None:
             raise ValueError(f"Unknown subtopic: {config.subtopic}")
+
+        # Determine how many word problems to include
+        word_problem_indices = set()
+        if (
+            config.word_problem_config
+            and config.word_problem_config.enabled
+            and config.subtopic != "word-problems"
+            and config.subtopic in self._word_problem_compatible_subtopics()
+        ):
+            ratio = config.word_problem_config.word_problem_ratio
+            num_word_problems = int(config.num_problems * ratio)
+            # Distribute word problems throughout (not all at the end)
+            if num_word_problems > 0:
+                # Pick random positions for word problems
+                all_positions = list(range(config.num_problems))
+                word_problem_indices = set(random.sample(
+                    all_positions,
+                    min(num_word_problems, len(all_positions))
+                ))
 
         problems: List[Problem] = []
         seen = set()
@@ -68,13 +96,140 @@ class FractionGenerator(BaseGenerator):
 
         while len(problems) < config.num_problems and attempts < max_attempts:
             attempts += 1
-            problem = generator_fn(config, len(problems) + 1)
+            current_idx = len(problems)
+
+            # Check if this position should be a word problem
+            if current_idx in word_problem_indices:
+                problem = self._generate_mixed_word_problem(config, current_idx + 1)
+            else:
+                problem = generator_fn(config, current_idx + 1)
+
             # Deduplicate by question text
             if problem.question_text not in seen:
                 seen.add(problem.question_text)
                 problems.append(problem)
 
         return problems
+
+    def _word_problem_compatible_subtopics(self) -> List[str]:
+        """Return subtopics that can be converted to word problems."""
+        return [
+            "add-same-denom",
+            "subtract-same-denom",
+            "add-unlike-denom",
+            "subtract-unlike-denom",
+            "multiply-fractions",
+            "divide-fractions",
+        ]
+
+    def _generate_mixed_word_problem(
+        self, config: GeneratorConfig, num: int
+    ) -> FractionProblem:
+        """Generate a word problem version of the current subtopic.
+
+        This creates a word problem that matches the mathematical operation
+        of the configured subtopic.
+        """
+        # Map subtopic to operation
+        subtopic_to_operation = {
+            "add-same-denom": "add",
+            "add-unlike-denom": "add",
+            "subtract-same-denom": "subtract",
+            "subtract-unlike-denom": "subtract",
+            "multiply-fractions": "multiply",
+            "divide-fractions": "divide",
+        }
+
+        operation = subtopic_to_operation.get(config.subtopic, "add")
+
+        # Generate the underlying math problem
+        if operation == "add":
+            problem_data = self._create_addition_problem(config)
+        elif operation == "subtract":
+            problem_data = self._create_subtraction_problem(config)
+        elif operation == "multiply":
+            problem_data = self._create_multiplication_problem(config)
+        else:
+            problem_data = self._create_division_problem(config)
+
+        # Get context type from config or use random
+        context_type = None
+        if config.word_problem_config and config.word_problem_config.context_type != "mixed":
+            context_type = config.word_problem_config.context_type
+
+        # Get LLM to wrap in word problem context
+        word_context = None
+        try:
+            llm_result = generate_word_problem_context(
+                operation=operation,
+                fractions=problem_data["fractions"],
+                answer=problem_data["answer_text"],
+                grade_level=config.grade_level,
+                context_type=context_type,
+            )
+
+            word_context = WordProblemContext(
+                story=llm_result.get("problem_text", ""),
+                question=llm_result.get("question", ""),
+                context_type=llm_result.get("context_type", ""),
+            )
+
+            q_html = (
+                f"<div class='word-problem'>"
+                f"<p class='word-problem-story'>{word_context.story}</p>"
+                f"<p class='word-problem-question'><strong>{word_context.question}</strong></p>"
+                f"</div>"
+            )
+            q_text = f"{word_context.story} {word_context.question}"
+            is_word_problem = True
+
+        except Exception:
+            # Fallback to plain math if LLM fails
+            q_html = problem_data["question_html"]
+            q_text = problem_data["question_text"]
+            is_word_problem = False
+
+        # Create word problem-specific hint
+        math_hint = problem_data.get("hint", "")
+        if is_word_problem:
+            hint = (
+                f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
+                f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
+                f"{math_hint}"
+            )
+        else:
+            hint = math_hint
+
+        # Create worked solution
+        worked = None
+        if config.include_worked_examples:
+            if is_word_problem:
+                worked = (
+                    f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
+                    f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
+                    f"Step 3: Set up the equation: {problem_data['question_text']}\n"
+                    f"{problem_data.get('worked_solution', '')}"
+                )
+            else:
+                worked = problem_data.get("worked_solution")
+
+        return FractionProblem(
+            id=self._make_id(),
+            question_text=q_text,
+            question_html=q_html,
+            answer=problem_data["answer"],
+            answer_text=problem_data["answer_text"],
+            hint=hint if config.include_hints else None,
+            worked_solution=worked,
+            visual_svg=problem_data.get("visual_svg"),
+            topic="fractions",
+            subtopic=config.subtopic,
+            difficulty=config.difficulty,
+            lcd=problem_data.get("lcd"),
+            is_word_problem=is_word_problem,
+            word_problem_context=word_context,
+            metadata={"operation": operation, "context_type": word_context.context_type if word_context else ""},
+        )
 
     # --- Denominator helpers ---
 
@@ -559,3 +714,227 @@ class FractionGenerator(BaseGenerator):
             difficulty=config.difficulty,
             metadata={"whole": whole, "remainder": remainder},
         )
+
+    def _gen_word_problem(self, config: GeneratorConfig, num: int) -> FractionProblem:
+        """
+        Generate a word problem by:
+        1. Creating a deterministic math problem (add, subtract, multiply, divide)
+        2. Using LLM to wrap it in an engaging story context
+        """
+        # Choose an operation randomly (weighted towards add/subtract for lower grades)
+        grade = config.grade_level
+        if grade <= 4:
+            # Grades 3-4: focus on addition and subtraction
+            operations = ["add", "add", "subtract", "subtract"]
+        elif grade <= 6:
+            # Grades 5-6: include multiply and divide
+            operations = ["add", "subtract", "multiply", "divide"]
+        else:
+            # Higher grades: equal distribution
+            operations = ["add", "subtract", "multiply", "divide"]
+
+        operation = random.choice(operations)
+
+        # Generate the underlying math problem deterministically
+        if operation == "add":
+            problem_data = self._create_addition_problem(config)
+        elif operation == "subtract":
+            problem_data = self._create_subtraction_problem(config)
+        elif operation == "multiply":
+            problem_data = self._create_multiplication_problem(config)
+        else:  # divide
+            problem_data = self._create_division_problem(config)
+
+        # Get context type from config if available
+        context_type_param = None
+        if config.word_problem_config and config.word_problem_config.context_type != "mixed":
+            context_type_param = config.word_problem_config.context_type
+
+        # Get LLM to wrap in word problem context
+        word_problem_ctx = None
+        is_word_problem = False
+        try:
+            llm_result = generate_word_problem_context(
+                operation=operation,
+                fractions=problem_data["fractions"],
+                answer=problem_data["answer_text"],
+                grade_level=grade,
+                context_type=context_type_param,
+            )
+
+            word_problem_ctx = WordProblemContext(
+                story=llm_result.get("problem_text", ""),
+                question=llm_result.get("question", ""),
+                context_type=llm_result.get("context_type", ""),
+            )
+
+            q_html = (
+                f"<div class='word-problem'>"
+                f"<p class='word-problem-story'>{word_problem_ctx.story}</p>"
+                f"<p class='word-problem-question'><strong>{word_problem_ctx.question}</strong></p>"
+                f"</div>"
+            )
+            q_text = f"{word_problem_ctx.story} {word_problem_ctx.question}"
+            is_word_problem = True
+
+        except Exception:
+            # Fallback to plain math if LLM fails
+            q_html = problem_data["question_html"]
+            q_text = problem_data["question_text"]
+
+        # Create hint for word problems
+        math_hint = problem_data.get("hint", "")
+        if is_word_problem:
+            hint = (
+                f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
+                f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
+                f"{math_hint}"
+            )
+        else:
+            hint = f"Math: {problem_data['question_text']} | {math_hint}" if math_hint else f"Math: {problem_data['question_text']}"
+
+        # Create worked solution showing both word problem and math
+        worked = None
+        if config.include_worked_examples:
+            if is_word_problem:
+                worked = (
+                    f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
+                    f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
+                    f"Step 3: Set up the equation: {problem_data['question_text']}\n"
+                    f"{problem_data.get('worked_solution', '')}"
+                )
+            else:
+                worked = (
+                    f"Step 1: Identify the math - This is a {operation} problem\n"
+                    f"Step 2: Set up the equation: {problem_data['question_text']}\n"
+                    f"{problem_data.get('worked_solution', '')}"
+                )
+
+        return FractionProblem(
+            id=self._make_id(),
+            question_text=q_text,
+            question_html=q_html,
+            answer=problem_data["answer"],
+            answer_text=problem_data["answer_text"],
+            hint=hint if config.include_hints else None,
+            worked_solution=worked,
+            visual_svg=problem_data.get("visual_svg"),
+            topic="fractions",
+            subtopic="word-problems",
+            difficulty=config.difficulty,
+            lcd=problem_data.get("lcd"),
+            is_word_problem=is_word_problem,
+            word_problem_context=word_problem_ctx,
+            metadata={
+                "operation": operation,
+                "context_type": word_problem_ctx.context_type if word_problem_ctx else "",
+            },
+        )
+
+    def _create_addition_problem(self, config: GeneratorConfig) -> dict:
+        """Create an addition problem (like/unlike denominators based on difficulty)."""
+        denoms = self._get_denoms(config)
+        
+        # For easier problems, use same denom; for harder, use different
+        if config.difficulty == Difficulty.EASY:
+            d1 = d2 = random.choice(denoms)
+        else:
+            d1, d2 = random.sample(denoms, 2) if len(denoms) >= 2 else (denoms[0], denoms[0])
+        
+        n1 = self._rand_numerator(d1)
+        n2 = self._rand_numerator(d2)
+        
+        frac1 = Fraction(n1, d1)
+        frac2 = Fraction(n2, d2)
+        answer = frac1 + frac2
+        
+        lcd = math.lcm(d1, d2)
+        
+        return {
+            "fractions": [f"{n1}/{d1}", f"{n2}/{d2}"],
+            "question_text": f"{n1}/{d1} + {n2}/{d2}",
+            "question_html": f"{self._format_fraction_html(frac1)} + {self._format_fraction_html(frac2)}",
+            "answer": answer,
+            "answer_text": self._format_fraction(answer),
+            "hint": f"Add the fractions: {n1}/{d1} + {n2}/{d2}",
+            "lcd": lcd,
+            "visual_svg": create_addition_visual(frac1, frac2) if config.include_visuals else None,
+            "worked_solution": f"Step 3: {n1}/{d1} + {n2}/{d2} = {self._format_fraction(answer)}",
+        }
+
+    def _create_subtraction_problem(self, config: GeneratorConfig) -> dict:
+        """Create a subtraction problem ensuring positive result."""
+        denoms = self._get_denoms(config)
+        
+        if config.difficulty == Difficulty.EASY:
+            d1 = d2 = random.choice(denoms)
+        else:
+            d1, d2 = random.sample(denoms, 2) if len(denoms) >= 2 else (denoms[0], denoms[0])
+        
+        n1 = self._rand_numerator(d1)
+        n2 = self._rand_numerator(d2)
+        
+        frac1 = Fraction(n1, d1)
+        frac2 = Fraction(n2, d2)
+        
+        # Ensure positive result
+        if frac1 < frac2:
+            frac1, frac2 = frac2, frac1
+            n1, d1 = frac1.numerator, frac1.denominator
+            n2, d2 = frac2.numerator, frac2.denominator
+        
+        answer = frac1 - frac2
+        lcd = math.lcm(d1, d2)
+        
+        return {
+            "fractions": [f"{n1}/{d1}", f"{n2}/{d2}"],
+            "question_text": f"{n1}/{d1} - {n2}/{d2}",
+            "question_html": f"{self._format_fraction_html(frac1)} − {self._format_fraction_html(frac2)}",
+            "answer": answer,
+            "answer_text": self._format_fraction(answer),
+            "hint": f"Subtract: {n1}/{d1} - {n2}/{d2}",
+            "lcd": lcd,
+            "worked_solution": f"Step 3: {n1}/{d1} - {n2}/{d2} = {self._format_fraction(answer)}",
+        }
+
+    def _create_multiplication_problem(self, config: GeneratorConfig) -> dict:
+        """Create a multiplication problem."""
+        d1 = self._rand_denom(config)
+        d2 = self._rand_denom(config)
+        n1 = self._rand_numerator(d1)
+        n2 = self._rand_numerator(d2)
+        
+        frac1 = Fraction(n1, d1)
+        frac2 = Fraction(n2, d2)
+        answer = frac1 * frac2
+        
+        return {
+            "fractions": [f"{n1}/{d1}", f"{n2}/{d2}"],
+            "question_text": f"{n1}/{d1} × {n2}/{d2}",
+            "question_html": f"{self._format_fraction_html(frac1)} × {self._format_fraction_html(frac2)}",
+            "answer": answer,
+            "answer_text": self._format_fraction(answer),
+            "hint": f"Multiply: {n1} × {n2} = {n1 * n2}, {d1} × {d2} = {d1 * d2}",
+            "worked_solution": f"Step 3: {n1}/{d1} × {n2}/{d2} = {n1 * n2}/{d1 * d2} = {self._format_fraction(answer)}",
+        }
+
+    def _create_division_problem(self, config: GeneratorConfig) -> dict:
+        """Create a division problem."""
+        d1 = self._rand_denom(config)
+        d2 = self._rand_denom(config)
+        n1 = self._rand_numerator(d1)
+        n2 = self._rand_numerator(d2)
+        
+        frac1 = Fraction(n1, d1)
+        frac2 = Fraction(n2, d2)
+        answer = frac1 / frac2
+        
+        return {
+            "fractions": [f"{n1}/{d1}", f"{n2}/{d2}"],
+            "question_text": f"{n1}/{d1} ÷ {n2}/{d2}",
+            "question_html": f"{self._format_fraction_html(frac1)} ÷ {self._format_fraction_html(frac2)}",
+            "answer": answer,
+            "answer_text": self._format_fraction(answer),
+            "hint": f"Keep, Change, Flip: {n1}/{d1} × {d2}/{n2}",
+            "worked_solution": f"Step 3: {n1}/{d1} ÷ {n2}/{d2} = {n1}/{d1} × {d2}/{n2} = {self._format_fraction(answer)}",
+        }
