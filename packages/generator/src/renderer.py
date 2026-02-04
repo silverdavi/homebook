@@ -108,12 +108,26 @@ def _render_fallback(worksheet: Worksheet, intro_html: str = "") -> str:
 
     problems_html = []
     for i, p in enumerate(worksheet.problems, 1):
-        problem_block = f'<div class="problem"><span class="num">{i}.</span> {p.question_html}'
+        if p.is_word_problem and p.word_problem_context:
+            # Word problem rendering
+            problem_block = f'''<div class="problem word-problem-container">
+                <span class="num">{i}.</span>
+                <span class="problem-type-badge">Word Problem</span>
+                <div class="word-problem">
+                    <div class="word-problem-story">{p.word_problem_context.story}</div>
+                    <div class="word-problem-question"><strong>Question:</strong> {p.word_problem_context.question}</div>
+                </div>
+                <div class="word-problem-answer">Answer: _________________</div>'''
+        else:
+            # Standard computational problem
+            problem_block = f'<div class="problem"><span class="num">{i}.</span> {p.question_html}'
         if config.include_hints and p.hint:
             problem_block += f'<div class="hint">Hint: {p.hint}</div>'
         if p.visual_svg:
             problem_block += f'<div class="visual">{p.visual_svg}</div>'
-        problem_block += '<div class="answer-line"></div></div>'
+        if not (p.is_word_problem and p.word_problem_context):
+            problem_block += '<div class="answer-line"></div>'
+        problem_block += '</div>'
         problems_html.append(problem_block)
 
     answer_key_html = ""
@@ -157,7 +171,14 @@ def _render_fallback(worksheet: Worksheet, intro_html: str = "") -> str:
         .punnett-square th, .punnett-square td {{ border: 1px solid #333; padding: 8px 12px; text-align: center; }}
         .punnett-square th {{ background: #e5e7eb; }}
         .chemical-equation {{ font-family: 'Times New Roman', serif; font-size: 1.2em; }}
-        @media print {{ body {{ margin: 20px; }} }}
+        .word-problem-container {{ margin-bottom: 24px; }}
+        .problem-type-badge {{ display: inline-block; font-size: 10px; font-weight: 600; color: #3b82f6; background: #eff6ff; padding: 2px 6px; border-radius: 3px; margin-left: 8px; text-transform: uppercase; }}
+        .word-problem {{ background: #f8fafc; border-left: 3px solid #3b82f6; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 8px 0; }}
+        .word-problem-story {{ font-size: 14px; line-height: 1.6; margin-bottom: 8px; }}
+        .word-problem-question {{ font-size: 14px; line-height: 1.6; }}
+        .word-problem-question strong {{ color: #3b82f6; }}
+        .word-problem-answer {{ font-size: 14px; margin-top: 12px; padding-left: 12px; }}
+        @media print {{ body {{ margin: 20px; }} .word-problem {{ background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }} }}
     </style>
 </head>
 <body>

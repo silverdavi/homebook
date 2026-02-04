@@ -213,3 +213,93 @@ h2 {
   font-size: 10px;
   fill: var(--color-text);
 }
+
+/* Word Problem Styles */
+.word-problem-container {
+  margin-bottom: 2rem;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.problem-type-badge {
+  display: inline-block;
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-bottom: var(--spacing-sm, 8px);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.word-problem {
+  background-color: #f8fafc;
+  border-left: 3px solid #3b82f6;
+  padding: 12pt 16pt;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 8pt;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.word-problem-story {
+  font-size: 11pt;
+  line-height: 1.7;
+  margin-bottom: 10pt;
+  color: var(--color-text, #1e293b);
+}
+
+.word-problem-question {
+  font-size: 11pt;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--color-text, #1e293b);
+}
+
+.word-problem-question strong {
+  color: #3b82f6;
+}
+
+.word-problem-answer {
+  font-size: 12pt;
+  margin-top: 12pt;
+  padding-left: 12pt;
+}
+
+/* Word problem worked examples */
+.word-problem-worked {
+  background: #fef9c3;
+  border: 1px solid #fde047;
+}
+
+.word-problem-worked .worked-problem-recap {
+  font-size: 9pt;
+  color: #64748b;
+  margin-bottom: 8pt;
+  padding-bottom: 8pt;
+  border-bottom: 1px dashed #e2e8f0;
+  font-style: italic;
+}
+
+/* Print-specific adjustments for word problems */
+@media print {
+  .word-problem {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .problem-type-badge {
+    background-color: #eff6ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .word-problem-worked {
+    background-color: #fef9c3 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

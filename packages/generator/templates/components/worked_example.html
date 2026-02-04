@@ -1,6 +1,25 @@
 {# Worked solution / step-by-step example #}
 {# Variables: worked_solution (string with newlines) or steps (list of strings) #}
+{# For word problems: is_word_problem (bool), word_problem_context (object with story, question) #}
 
+{% if is_word_problem and word_problem_context %}
+<div class="worked-example word-problem-worked">
+  <div class="worked-example-title">Step-by-step Solution (Word Problem):</div>
+  <div class="worked-problem-recap">
+    <strong>Problem:</strong> {{ word_problem_context.story | truncate(120) }}
+    <br><strong>Question:</strong> {{ word_problem_context.question }}
+  </div>
+  <div class="worked-steps">
+    {% if steps %}
+      {% for step in steps %}
+      <div class="worked-step">{{ loop.index }}. {{ step | safe }}</div>
+      {% endfor %}
+    {% elif worked_solution %}
+      {{ worked_solution | replace('\n', '<br>') | safe }}
+    {% endif %}
+  </div>
+</div>
+{% else %}
 <div class="worked-example">
   <div class="worked-example-title">Step-by-step:</div>
   <div class="worked-steps">
@@ -13,3 +32,4 @@
     {% endif %}
   </div>
 </div>
+{% endif %}

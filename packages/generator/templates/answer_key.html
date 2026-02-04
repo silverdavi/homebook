@@ -15,11 +15,20 @@
   <!-- Answers -->
   <div class="answer-list">
     {% for problem in problems %}
-    <div class="answer-entry">
+    <div class="answer-entry{% if problem.is_word_problem %} word-problem-answer-entry{% endif %}">
       <div class="answer-entry-row">
         <span class="answer-entry-number">{{ loop.index }}.</span>
         <div class="answer-entry-content">
+          {% if problem.is_word_problem %}
+          <span class="answer-entry-badge">Word Problem</span>
+          {% endif %}
           <span class="answer-entry-value">{{ problem.answer_html | default(problem.answer_text) | safe }}</span>
+
+          {% if problem.is_word_problem and problem.word_problem_context %}
+          <div class="word-problem-context-recap">
+            <em>{{ problem.word_problem_context.story | truncate(80) }}</em>
+          </div>
+          {% endif %}
 
           {% if problem.solution_steps %}
           <div class="solution-steps">
@@ -29,6 +38,10 @@
               {{ step | safe }}
             </div>
             {% endfor %}
+          </div>
+          {% elif problem.worked_solution %}
+          <div class="solution-steps">
+            {{ problem.worked_solution | replace('\n', '<br>') | safe }}
           </div>
           {% endif %}
         </div>
@@ -119,6 +132,48 @@
 .step-number {
   font-weight: 600;
   color: var(--color-text);
+}
+
+/* Word problem answer entries */
+.word-problem-answer-entry {
+  background: #f8fafc;
+  border-left: 3px solid var(--color-primary, #3b82f6);
+  padding-left: var(--spacing-sm);
+  border-radius: 0 4px 4px 0;
+}
+
+.answer-entry-badge {
+  display: inline-block;
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+  background: #eff6ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.word-problem-context-recap {
+  font-size: 9pt;
+  color: var(--color-text-muted);
+  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+@media print {
+  .word-problem-answer-entry {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .answer-entry-badge {
+    background-color: #eff6ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 /* Footer */

@@ -1,6 +1,48 @@
 {# Single problem component #}
 {# Variables: number, question_html, hint (optional), visual_svg (optional), worked_solution (optional) #}
+{# For word problems: is_word_problem (bool), word_problem_context (object with story, question) #}
 
+{% if is_word_problem and word_problem_context %}
+{# Word Problem Rendering #}
+<div class="problem word-problem-container">
+  <div class="problem-row">
+    <span class="problem-number">{{ number }}.</span>
+    <div class="problem-content">
+
+      <span class="problem-type-badge">Word Problem</span>
+
+      <div class="word-problem">
+        <div class="word-problem-story">
+          {{ word_problem_context.story }}
+        </div>
+        <div class="word-problem-question">
+          <strong>Question:</strong> {{ word_problem_context.question }}
+        </div>
+      </div>
+
+      <div class="word-problem-answer">
+        Answer: _________________
+      </div>
+
+      {% if hint %}
+      {% include 'components/hint_box.html' with context %}
+      {% endif %}
+
+      {% if visual_svg %}
+      <div class="visual-container">
+        {{ visual_svg | safe }}
+      </div>
+      {% endif %}
+
+      {% if worked_solution %}
+      {% include 'components/worked_example.html' with context %}
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% else %}
+{# Standard Computational Problem #}
 <div class="problem">
   <div class="problem-row">
     <span class="problem-number">{{ number }}.</span>
@@ -27,3 +69,4 @@
     </div>
   </div>
 </div>
+{% endif %}
