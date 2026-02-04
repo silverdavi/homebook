@@ -42,3 +42,6 @@ env/
 
 # Template test output
 packages/generator/templates/tests/output/
+
+# LLM Cache
+.cache/
