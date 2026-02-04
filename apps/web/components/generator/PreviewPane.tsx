@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import clsx from "clsx";
 
@@ -10,6 +11,34 @@ interface PreviewPaneProps {
 }
 
 export function PreviewPane({ html, isLoading, className }: PreviewPaneProps) {
+  // Create a blob URL for the iframe to ensure complete style isolation
+  const iframeSrc = useMemo(() => {
+    if (!html) return null;
+    
+    // Wrap the HTML in a complete document if it doesn't have <html> tag
+    const fullHtml = html.includes("<html") ? html : `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { 
+              font-family: system-ui, -apple-system, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+          </style>
+        </head>
+        <body>${html}</body>
+      </html>
+    `;
+    
+    const blob = new Blob([fullHtml], { type: "text/html" });
+    return URL.createObjectURL(blob);
+  }, [html]);
+
   return (
     <div
       className={clsx(
@@ -35,10 +64,12 @@ export function PreviewPane({ html, isLoading, className }: PreviewPaneProps) {
             <Loader2 className="w-8 h-8 animate-spin mb-3" />
             <p className="text-sm">Generating preview...</p>
           </div>
-        ) : html ? (
-          <div
-            className="p-6 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: html }}
+        ) : iframeSrc ? (
+          <iframe
+            src={iframeSrc}
+            className="w-full h-[600px] lg:h-[800px] border-0"
+            title="Worksheet Preview"
+            sandbox="allow-same-origin"
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8">
