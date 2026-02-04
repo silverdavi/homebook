@@ -1,13 +1,14 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { SUBJECT_OPTIONS } from "@/lib/subjects";
+import { getOptionsForSubjectAndTopic } from "@/lib/subjects";
 import type { Subject, WorksheetOptions, WordProblemContext } from "@/lib/types";
 
 interface OptionsPanelProps {
   options: WorksheetOptions;
   onOptionChange: (key: keyof WorksheetOptions, value: WorksheetOptions[keyof WorksheetOptions]) => void;
   subject?: Subject | null;
+  topicId?: string | null;
 }
 
 const OPTION_LABELS: { key: keyof WorksheetOptions; label: string }[] = [
@@ -33,9 +34,12 @@ export function OptionsPanel({
   options,
   onOptionChange,
   subject,
+  topicId,
 }: OptionsPanelProps) {
-  // Get applicable options for the current subject, or show all if no subject selected
-  const applicableOptions = subject ? SUBJECT_OPTIONS[subject] : null;
+  // Get applicable options for the current subject + topic combination
+  const applicableOptions = subject && topicId 
+    ? getOptionsForSubjectAndTopic(subject, topicId) 
+    : null;
 
   // Filter options but exclude word problem sub-options (ratio and context) from main list
   const filteredOptions = applicableOptions

@@ -8,14 +8,9 @@ export const SUBJECT_OPTIONS: Record<string, (keyof WorksheetOptions)[]> = {
   math: [
     "includeAnswerKey",
     "showHints",
-    "includeVisualModels",
     "showWorkedExamples",
     "numberProblems",
-    "showLcdGcfReference",
     "includeIntroPage",
-    "includeWordProblems",
-    "wordProblemRatio",
-    "wordProblemContext",
   ],
   chemistry: [
     "includeAnswerKey",
@@ -33,6 +28,46 @@ export const SUBJECT_OPTIONS: Record<string, (keyof WorksheetOptions)[]> = {
   ],
   reading: ["includeAnswerKey", "showHints", "includeIntroPage"],
 };
+
+/**
+ * Topic-specific options that only appear for certain topics.
+ * These are added on top of the subject options.
+ */
+export const TOPIC_OPTIONS: Record<string, (keyof WorksheetOptions)[]> = {
+  // Fractions-specific options
+  fractions: [
+    "includeVisualModels",
+    "showLcdGcfReference",
+    "includeWordProblems",
+    "wordProblemRatio",
+    "wordProblemContext",
+  ],
+  // Arithmetic can have word problems too
+  arithmetic: [
+    "includeWordProblems",
+    "wordProblemRatio",
+    "wordProblemContext",
+  ],
+  // Decimals/percentages can have word problems
+  decimals: [
+    "includeWordProblems",
+    "wordProblemRatio",
+    "wordProblemContext",
+  ],
+};
+
+/**
+ * Get all applicable options for a subject + topic combination.
+ */
+export function getOptionsForSubjectAndTopic(
+  subject: string,
+  topicId: string
+): (keyof WorksheetOptions)[] {
+  const subjectOpts = SUBJECT_OPTIONS[subject] || [];
+  const topicOpts = TOPIC_OPTIONS[topicId] || [];
+  // Combine and deduplicate
+  return [...new Set([...subjectOpts, ...topicOpts])];
+}
 
 export const FRACTION_SUBTOPICS = [
   { id: "add-same-denom", label: "Add (same denominator)", grade: "3-4" },
