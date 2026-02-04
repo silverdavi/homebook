@@ -14,12 +14,14 @@ import { ProblemCountSlider } from "@/components/generator/ProblemCountSlider";
 import { PersonalizationPanel } from "@/components/generator/PersonalizationPanel";
 import { PreviewPane } from "@/components/generator/PreviewPane";
 import { DownloadButton } from "@/components/generator/DownloadButton";
+import { HelpModal } from "@/components/generator/HelpModal";
 
 export default function GeneratePage() {
   const store = useGeneratorStore();
   const [downloadUrl, setDownloadUrl] = useState<string | undefined>();
   const [filename, setFilename] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const hasSubtopics = store.subtopicIds.length > 0;
 
@@ -74,6 +76,7 @@ export default function GeneratePage() {
             </span>
           </div>
           <button
+            onClick={() => setShowHelp(true)}
             className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
             aria-label="Help"
           >
@@ -165,6 +168,9 @@ export default function GeneratePage() {
           </div>
         </div>
       </main>
+
+      {/* Help Modal */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }
