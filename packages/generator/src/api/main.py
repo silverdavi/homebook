@@ -2,6 +2,7 @@
 
 import base64
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -9,7 +10,7 @@ from typing import Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ from ..models import (
     Difficulty,
     GeneratorConfig,
     Worksheet,
+    WordProblemConfig,
 )
 from ..generators.registry import get_generator
 from ..renderer import render_worksheet
@@ -62,6 +64,19 @@ class GeneratorConfigRequest(BaseModel):
     date: Optional[str] = None
     grade_level: int = 5
 
+    # Word problem settings
+    include_word_problems: bool = False
+    word_problem_ratio: float = Field(default=0.3, ge=0.0, le=1.0)
+    word_problem_context: str = Field(default="mixed")
+
+    @field_validator('word_problem_context')
+    @classmethod
+    def validate_context(cls, v):
+        valid_contexts = ['cooking', 'sports', 'shopping', 'school', 'mixed']
+        if v not in valid_contexts:
+            raise ValueError(f'word_problem_context must be one of {valid_contexts}')
+        return v
+
 
 class ProblemResponse(BaseModel):
     id: str
@@ -92,6 +107,15 @@ class GenerateResponse(BaseModel):
 
 def _to_config(req: GeneratorConfigRequest) -> GeneratorConfig:
     """Convert API request to internal GeneratorConfig."""
+    # Build word problem config if enabled
+    word_problem_config = None
+    if req.include_word_problems:
+        word_problem_config = WordProblemConfig(
+            enabled=True,
+            context_type=req.word_problem_context,
+            word_problem_ratio=req.word_problem_ratio,
+        )
+
     return GeneratorConfig(
         topic=req.topic,
         subtopic=req.subtopic,
@@ -103,6 +127,7 @@ def _to_config(req: GeneratorConfigRequest) -> GeneratorConfig:
         include_answer_key=req.include_answer_key,
         show_lcd_reference=req.show_lcd_reference,
         include_intro_page=req.include_intro_page,
+        word_problem_config=word_problem_config,
         max_denominator=req.max_denominator,
         allow_improper=req.allow_improper,
         require_simplification=req.require_simplification,
@@ -145,8 +170,19 @@ def _generate_worksheet(config: GeneratorConfig) -> Worksheet:
 
 @app.get("/health")
 def health():
-    """Health check endpoint."""
-    return {"status": "ok", "service": "homebook-generator"}
+    """Health check endpoint with LLM availability info."""
+    # Check if LLM is configured (required for word problems and intro pages)
+    llm_available = bool(os.environ.get("OPENAI_API_KEY"))
+
+    return {
+        "status": "ok",
+        "service": "homebook-generator",
+        "llm_available": llm_available,
+        "features": {
+            "word_problems": llm_available,
+            "intro_pages": llm_available,
+        }
+    }
 
 
 @app.post("/preview", response_model=PreviewResponse)
@@ -230,3 +266,27 @@ def list_topics():
     for topic, gen in get_all_generators().items():
         result[topic] = gen.subtopics
     return result
+
+
+@app.get("/cache/stats")
+def cache_stats():
+    """Get LLM cache statistics for monitoring."""
+    from ..llm_service import get_llm_cache_stats
+    
+    stats = get_llm_cache_stats()
+    return {
+        "cache": stats,
+        "message": f"Cache hit rate: {stats['hit_rate']}% ({stats['hits']}/{stats['total']} requests)"
+    }
+
+
+@app.post("/cache/clear-expired")
+def clear_expired_cache():
+    """Clear expired cache entries. Admin endpoint."""
+    from ..cache import clear_expired_cache as do_clear
+    
+    removed = do_clear()
+    return {
+        "removed": removed,
+        "message": f"Cleared {removed} expired cache entries"
+    }
