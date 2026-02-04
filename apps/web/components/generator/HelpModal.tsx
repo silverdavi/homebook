@@ -101,9 +101,9 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 3. Preview Your Worksheet
               </h3>
               <p className="text-sm text-slate-600">
-                Click <strong>"Generate Preview"</strong> to see how your worksheet will look.
+                Click <strong>&quot;Generate Preview&quot;</strong> to see how your worksheet will look.
                 The preview shows the actual problems that will be generated.
-                You can adjust options and regenerate until you're satisfied.
+                You can adjust options and regenerate until you&apos;re satisfied.
               </p>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 4. Generate & Download PDF
               </h3>
               <p className="text-sm text-slate-600">
-                Click <strong>"Generate Worksheet"</strong> to create a print-ready PDF.
+                Click <strong>&quot;Generate Worksheet&quot;</strong> to create a print-ready PDF.
                 The PDF is optimized for standard paper sizes and includes all your
                 selected options. Download and print for your students!
               </p>
@@ -130,7 +130,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <h3 className="font-semibold text-slate-800 mb-2">Tips</h3>
             <ul className="text-sm text-slate-600 space-y-1.5">
               <li>• Add a student name and date in Personalization for custom worksheets</li>
-              <li>• Use "Mixed" difficulty for varied problem complexity</li>
+              <li>• Use &quot;Mixed&quot; difficulty for varied problem complexity</li>
               <li>• Each generation creates fresh, unique problems</li>
               <li>• Standards alignment shows which Common Core standards are covered</li>
             </ul>
