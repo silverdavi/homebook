@@ -29,11 +29,13 @@ def _auto_register() -> None:
     from .chemistry import BalancingEquationsGenerator
     from .biology import MendelianGeneticsGenerator
     from .arithmetic import ArithmeticGenerator
+    from .decimals import DecimalsGenerator
 
     register(FractionGenerator())
     register(BalancingEquationsGenerator())
     register(MendelianGeneticsGenerator())
     register(ArithmeticGenerator())
+    register(DecimalsGenerator())
 
 
 _auto_register()
