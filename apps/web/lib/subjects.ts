@@ -83,6 +83,29 @@ export const BIOLOGY_SUBTOPICS = [
   { id: "pedigree-analysis", label: "Pedigree analysis", grade: "9-10" },
 ] as const;
 
+export const ARITHMETIC_SUBTOPICS = [
+  { id: "addition", label: "Addition", grade: "K-3" },
+  { id: "subtraction", label: "Subtraction", grade: "K-3" },
+  { id: "multiplication", label: "Multiplication", grade: "2-5" },
+  { id: "division", label: "Division", grade: "3-6" },
+  { id: "mixed", label: "Mixed Operations", grade: "2-6" },
+] as const;
+
+export const DECIMALS_SUBTOPICS = [
+  { id: "decimal-addition", label: "Decimal Addition", grade: "4-6" },
+  { id: "decimal-subtraction", label: "Decimal Subtraction", grade: "4-6" },
+  { id: "decimal-multiplication", label: "Decimal Multiplication", grade: "5-7" },
+  { id: "decimal-division", label: "Decimal Division", grade: "5-7" },
+  { id: "decimal-to-fraction", label: "Decimals to Fractions", grade: "4-5" },
+  { id: "fraction-to-decimal", label: "Fractions to Decimals", grade: "4-5" },
+  { id: "percent-of-number", label: "Percent of a Number", grade: "5-7" },
+  { id: "number-to-percent", label: "Number to Percent", grade: "5-7" },
+  { id: "percent-to-decimal", label: "Percent to Decimal", grade: "5-7" },
+  { id: "decimal-to-percent", label: "Decimal to Percent", grade: "5-7" },
+  { id: "percent-increase", label: "Percent Increase", grade: "6-8" },
+  { id: "percent-decrease", label: "Percent Decrease", grade: "6-8" },
+] as const;
+
 export const SUBJECTS: Record<string, SubjectConfig> = {
   math: {
     id: "math",
@@ -96,6 +119,18 @@ export const SUBJECTS: Record<string, SubjectConfig> = {
         name: "Fractions",
         grades: ["3", "4", "5", "6"],
         subtopics: [...FRACTION_SUBTOPICS],
+      },
+      arithmetic: {
+        id: "arithmetic",
+        name: "Arithmetic",
+        grades: ["K", "1", "2", "3", "4", "5", "6"],
+        subtopics: [...ARITHMETIC_SUBTOPICS],
+      },
+      decimals: {
+        id: "decimals",
+        name: "Decimals & Percentages",
+        grades: ["4", "5", "6", "7", "8"],
+        subtopics: [...DECIMALS_SUBTOPICS],
       },
     },
   },
