@@ -1,6 +1,17 @@
 """Generator service configuration."""
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env from project root
+_project_root = Path(__file__).parent.parent.parent.parent
+_env_file = _project_root / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
+else:
+    # Try local .env
+    load_dotenv()
 
 # S3 Configuration
 S3_BUCKET = os.getenv("S3_BUCKET", "homebook-worksheets")
