@@ -1,7 +1,5 @@
 import type { WorksheetConfig, WorksheetResult } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 /**
  * Convert frontend config (camelCase) to API format (snake_case)
  */
@@ -29,14 +27,15 @@ function toApiConfig(config: WorksheetConfig) {
 }
 
 export async function generatePreview(config: WorksheetConfig): Promise<string> {
-  const res = await fetch(`${API_URL}/preview`, {
+  const res = await fetch("/api/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(toApiConfig(config)),
   });
 
   if (!res.ok) {
-    throw new Error(`Preview generation failed: ${res.statusText}`);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Preview generation failed: ${res.statusText}`);
   }
 
   const data = await res.json();
@@ -45,7 +44,6 @@ export async function generatePreview(config: WorksheetConfig): Promise<string> 
 
 /**
  * Generate a descriptive filename from the worksheet config
- * Example: "math-fractions-worksheet.pdf" or "chemistry-balancing-equations-worksheet.pdf"
  */
 function generateFilename(config: WorksheetConfig): string {
   const subject = config.subject.toLowerCase();
@@ -60,18 +58,18 @@ function generateFilename(config: WorksheetConfig): string {
 export async function generateWorksheet(
   config: WorksheetConfig
 ): Promise<WorksheetResult> {
-  const res = await fetch(`${API_URL}/generate`, {
+  const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(toApiConfig(config)),
   });
 
   if (!res.ok) {
-    throw new Error(`Worksheet generation failed: ${res.statusText}`);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Worksheet generation failed: ${res.statusText}`);
   }
 
   const data = await res.json();
-  // Map API response (snake_case) to frontend types (camelCase)
   return {
     worksheetId: data.worksheet_id,
     downloadUrl: data.pdf_url,
