@@ -1,11 +1,10 @@
 "use client";
 
-import { Download, Check, Sparkles } from "lucide-react";
+import { Download, Check, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DownloadButtonProps {
   onGenerate: () => void;
-  onPreview: () => void;
   isGenerating: boolean;
   downloadUrl?: string;
   filename?: string;
@@ -14,7 +13,6 @@ interface DownloadButtonProps {
 
 export function DownloadButton({
   onGenerate,
-  onPreview,
   isGenerating,
   downloadUrl,
   filename,
@@ -22,44 +20,41 @@ export function DownloadButton({
 }: DownloadButtonProps) {
   return (
     <div className="space-y-3">
-      <Button
-        onClick={onPreview}
-        variant="secondary"
-        size="lg"
-        className="w-full"
-        disabled={disabled}
-      >
-        <Sparkles className="w-4 h-4 mr-2" />
-        Generate Preview
-      </Button>
-      <Button
-        onClick={onGenerate}
-        variant="primary"
-        size="lg"
-        isLoading={isGenerating}
-        className="w-full"
-        disabled={disabled}
-      >
-        {downloadUrl ? (
-          <>
-            <Check className="w-4 h-4 mr-2" />
-            Download Ready
-          </>
-        ) : (
-          <>
-            <Download className="w-4 h-4 mr-2" />
-            Generate PDF
-          </>
-        )}
-      </Button>
-      {downloadUrl && (
-        <a
-          href={downloadUrl}
-          download={filename}
-          className="block text-center text-sm text-subject-math hover:underline"
+      {downloadUrl ? (
+        <>
+          <a
+            href={downloadUrl}
+            download={filename}
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
+          >
+            <Check className="w-5 h-5" />
+            Download PDF
+          </a>
+          <button
+            onClick={onGenerate}
+            className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            Generate new worksheet
+          </button>
+        </>
+      ) : (
+        <Button
+          onClick={onGenerate}
+          variant="primary"
+          size="lg"
+          isLoading={isGenerating}
+          className="w-full"
+          disabled={disabled}
         >
-          Click to download worksheet
-        </a>
+          <FileText className="w-4 h-4 mr-2" />
+          {isGenerating ? "Generating PDF..." : "Generate & Download PDF"}
+        </Button>
+      )}
+      
+      {disabled && (
+        <p className="text-xs text-slate-400 text-center">
+          Select at least one subtopic to generate a worksheet
+        </p>
       )}
     </div>
   );
