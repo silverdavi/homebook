@@ -54,17 +54,18 @@ const INITIAL_LIVES = 5;
 const CATCH_ANIM_MS = 280; // ms to show burst animation before letter disappears
 const COUNTDOWN_SECS = 3;
 
-/** Speed slider (1-5) maps to game parameters.
- *  speed 1 = ~0.8 letters/sec, speed 5 = ~2.5 letters/sec
+/** Speed slider (1-10) maps to game parameters.
+ *  speed 1 = ~0.5 lps (chill), speed 10 = ~5.0 lps (insane)
  */
 function getSpeedConfig(speed: number, level: number) {
-  const t = (speed - 1) / 4; // 0..1
-  const baseSpeed = 0.4 + t * 0.8 + (level - 1) * 0.07;
-  const spawnInterval = 1400 - t * 700 - (level - 1) * 25;
+  const t = (speed - 1) / 9; // 0..1
+  const baseSpeed = 0.3 + t * 1.5 + (level - 1) * 0.06;
+  const spawnInterval = 2000 - t * 1800 - (level - 1) * 20;
+  const clamped = Math.max(200, spawnInterval);
   return {
     baseSpeed,
-    spawnInterval: Math.max(300, spawnInterval),
-    lps: +(1000 / Math.max(300, spawnInterval)).toFixed(1),
+    spawnInterval: clamped,
+    lps: +(1000 / clamped).toFixed(1),
   };
 }
 
@@ -122,7 +123,7 @@ export function LetterRainGame() {
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
 
   // ── Settings (toggles) ──
-  const [speed, setSpeed] = useState(3); // 1-5
+  const [speed, setSpeed] = useState(4); // 1-10
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [includeSpaces, setIncludeSpaces] = useState(false);
 
@@ -595,12 +596,12 @@ export function LetterRainGame() {
                     <span className="text-xs font-bold text-indigo-400 tabular-nums">{getSpeedConfig(speed, 1).lps} letters/sec</span>
                   </div>
                   <input
-                    type="range" min={1} max={5} step={1} value={speed}
+                    type="range" min={1} max={10} step={1} value={speed}
                     onChange={(e) => setSpeed(Number(e.target.value))}
                     className="w-full accent-indigo-500"
                   />
                   <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
-                    <span>Slow</span><span>Fast</span>
+                    <span>Chill</span><span>Normal</span><span>Insane</span>
                   </div>
                 </div>
 

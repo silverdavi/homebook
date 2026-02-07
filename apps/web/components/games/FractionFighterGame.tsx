@@ -145,7 +145,7 @@ export function FractionFighterGame() {
 
   // ── Settings ──
   const [showBars, setShowBars] = useState(true);
-  const [timerSpeed, setTimerSpeed] = useState(3); // 1 (slow) to 5 (fast)
+  const [timerSpeed, setTimerSpeed] = useState(5); // 1 (relaxed) to 10 (blitz)
 
   const nextProblem = useCallback(
     (lvl: number) => {
@@ -157,8 +157,8 @@ export function FractionFighterGame() {
       setPhase("playing");
 
       const baseTime = getTimePerQuestion(lvl);
-      const timerMult = 1.5 - (timerSpeed - 1) * 0.2; // speed 1 => 1.5x, speed 5 => 0.7x
-      const questionTime = Math.round(baseTime * timerMult);
+      const timerMult = 2.0 - (timerSpeed - 1) * 0.18; // speed 1 => 2.0x, speed 10 => 0.38x
+      const questionTime = Math.round(baseTime * Math.max(0.3, timerMult));
 
       // Start countdown
       if (timerRef.current) clearInterval(timerRef.current);
@@ -319,11 +319,16 @@ export function FractionFighterGame() {
             <div className="max-w-xs mx-auto mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs text-slate-400">Timer speed</span>
-                <span className="text-xs font-bold text-red-400 tabular-nums">{["Very slow", "Slow", "Normal", "Fast", "Very fast"][timerSpeed - 1]}</span>
+                <span className="text-xs font-bold text-red-400 tabular-nums">
+                  {(5 * Math.max(0.3, 2.0 - (timerSpeed - 1) * 0.18)).toFixed(1)}s / question
+                </span>
               </div>
-              <input type="range" min={1} max={5} step={1} value={timerSpeed}
+              <input type="range" min={1} max={10} step={1} value={timerSpeed}
                 onChange={(e) => setTimerSpeed(Number(e.target.value))}
                 className="w-full accent-red-500" />
+              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                <span>Relaxed</span><span>Blitz</span>
+              </div>
             </div>
 
             {/* Toggles */}

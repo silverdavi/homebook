@@ -287,11 +287,14 @@ export function MathBlitzGame() {
             <div className="max-w-xs mx-auto mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs text-slate-400">Duration</span>
-                <span className="text-xs font-bold text-emerald-400 tabular-nums">{gameDuration}s</span>
+                <span className="text-xs font-bold text-emerald-400 tabular-nums">{gameDuration >= 60 ? `${gameDuration / 60}m` : `${gameDuration}s`}</span>
               </div>
-              <input type="range" min={30} max={120} step={15} value={gameDuration}
+              <input type="range" min={15} max={300} step={15} value={gameDuration}
                 onChange={(e) => setGameDuration(Number(e.target.value))}
                 className="w-full accent-emerald-500" />
+              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                <span>15s sprint</span><span>5 min marathon</span>
+              </div>
             </div>
 
             {/* Operation toggles */}

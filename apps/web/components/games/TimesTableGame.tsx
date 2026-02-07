@@ -138,6 +138,7 @@ export function TimesTableGame() {
   const [mode, setMode] = useState<GameMode>("sprint");
   const [tables, setTables] = useState(TABLE_GROUPS[0].tables);
   const [tableIdx, setTableIdx] = useState(0);
+  const [sprintCount, setSprintCount] = useState(20);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -238,7 +239,7 @@ export function TimesTableGame() {
 
         setTimeout(() => {
           const nextSolved = solved + 1;
-          if (mode === "sprint" && nextSolved >= MODES.sprint.totalProblems) {
+          if (mode === "sprint" && nextSolved >= sprintCount) {
             finishGame();
           } else if (mode === "target" && score + points >= TARGET_SCORE) {
             finishGame();
@@ -330,6 +331,20 @@ export function TimesTableGame() {
               </div>
             </div>
 
+            {/* Sprint problems slider */}
+            <div className="max-w-xs mx-auto">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-slate-400">Sprint problems</span>
+                <span className="text-xs font-bold text-amber-400 tabular-nums">{sprintCount}</span>
+              </div>
+              <input type="range" min={5} max={50} step={5} value={sprintCount}
+                onChange={(e) => setSprintCount(Number(e.target.value))}
+                className="w-full accent-amber-500" />
+              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                <span>Quick 5</span><span>Endurance 50</span>
+              </div>
+            </div>
+
             {/* Toggle */}
             <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer max-w-xs mx-auto">
               <span className="text-xs text-slate-400">Show visual grid</span>
@@ -389,7 +404,7 @@ export function TimesTableGame() {
                   </div>
                 )}
                 {mode === "sprint" && (
-                  <span className="text-slate-400 tabular-nums">{solved}/{MODES.sprint.totalProblems}</span>
+                  <span className="text-slate-400 tabular-nums">{solved}/{sprintCount}</span>
                 )}
                 {mode === "target" && (
                   <div className="flex items-center gap-2">

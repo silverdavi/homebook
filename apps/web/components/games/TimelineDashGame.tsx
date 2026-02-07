@@ -313,9 +313,12 @@ export function TimelineDashGame() {
                 <span className="text-xs text-slate-400">Events per round</span>
                 <span className="text-xs font-bold text-violet-400 tabular-nums">{eventsPerRound}</span>
               </div>
-              <input type="range" min={3} max={6} step={1} value={eventsPerRound}
+              <input type="range" min={3} max={8} step={1} value={eventsPerRound}
                 onChange={(e) => setEventsPerRound(Number(e.target.value))}
                 className="w-full accent-violet-500" />
+              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                <span>Quick</span><span>Challenge</span>
+              </div>
             </div>
 
             {/* Rounds slider */}
@@ -324,9 +327,12 @@ export function TimelineDashGame() {
                 <span className="text-xs text-slate-400">Rounds</span>
                 <span className="text-xs font-bold text-violet-400 tabular-nums">{totalRounds}</span>
               </div>
-              <input type="range" min={3} max={10} step={1} value={totalRounds}
+              <input type="range" min={3} max={20} step={1} value={totalRounds}
                 onChange={(e) => setTotalRounds(Number(e.target.value))}
                 className="w-full accent-violet-500" />
+              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                <span>Short</span><span>Marathon</span>
+              </div>
             </div>
 
             {/* Category toggles */}
