@@ -325,7 +325,7 @@ export function TriviaQuizGame() {
         trackGamePlayed("trivia-quiz", score);
         const profile = getProfile();
         const medals = checkAchievements(
-          { score, accuracy: Math.round(accuracy * 100), timeSeconds: elapsed },
+          { gameId: "trivia-quiz", score, accuracy: Math.round(accuracy * 100), timeSeconds: elapsed },
           profile.totalGamesPlayed,
           profile.gamesPlayedByGameId,
         );

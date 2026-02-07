@@ -323,6 +323,7 @@ export function WordSearchGame() {
               const profile = getProfile();
               const medals = checkAchievements(
                 {
+                  gameId: "word-search",
                   score: finalScore,
                   wordsBuilt: newPlaced.length,
                   timeSeconds: elapsed,

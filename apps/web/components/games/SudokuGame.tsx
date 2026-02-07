@@ -239,7 +239,7 @@ export function SudokuGame() {
             trackGamePlayed("sudoku", score);
             const profile = getProfile();
             const medals = checkAchievements(
-              { score, moves: moveCount + 1, timeSeconds: elapsed },
+              { gameId: "sudoku", score, moves: moveCount + 1, timeSeconds: elapsed },
               profile.totalGamesPlayed,
               profile.gamesPlayedByGameId,
             );

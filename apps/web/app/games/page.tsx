@@ -201,6 +201,67 @@ const GAMES: GameCardProps[] = [
     available: true,
     badge: "NEW",
   },
+  // ── E-Reader Compatible (Kindle, Kobo, Boox) ──
+  {
+    title: "Sudoku",
+    description:
+      "Classic 9x9 number puzzles. Works on e-readers! Tap-only, no dragging needed.",
+    emoji: "🔢",
+    href: "/games/sudoku",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
+  {
+    title: "Crossword",
+    description:
+      "Educational crosswords on science, math, and history. On-screen keyboard included.",
+    emoji: "📝",
+    href: "/games/crossword",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
+  {
+    title: "Word Search",
+    description:
+      "Find hidden vocabulary words in a letter grid. Tap start and end letters.",
+    emoji: "🔍",
+    href: "/games/word-search",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
+  {
+    title: "Trivia Quiz",
+    description:
+      "Multiple-choice trivia across all subjects. Large buttons, e-reader friendly!",
+    emoji: "❓",
+    href: "/games/trivia-quiz",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
+  {
+    title: "Nonogram",
+    description:
+      "Fill cells using number clues to reveal a hidden picture. Pure logic puzzle!",
+    emoji: "🧩",
+    href: "/games/nonogram",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
+  {
+    title: "Number Puzzle",
+    description:
+      "Slide numbered tiles into order. Classic 15-puzzle with a math expressions mode!",
+    emoji: "🎲",
+    href: "/games/number-puzzle",
+    color: "#64748b",
+    available: true,
+    badge: "E-INK",
+  },
 ];
 
 function GameCard({

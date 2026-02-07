@@ -1,0 +1,1045 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Trophy, RotateCcw, Check } from "lucide-react";
+import Link from "next/link";
+import {
+  getLocalHighScore,
+  setLocalHighScore,
+  trackGamePlayed,
+  getProfile,
+} from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
+import type { NewAchievement } from "@/lib/games/achievements";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver } from "@/lib/games/audio";
+
+// ── E-ink utilities ─────────────────────────────────────────────────
+
+function isEinkDevice() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes("kindle") || ua.includes("kobo") || ua.includes("boox");
+}
+
+function useEinkMode(): [boolean, () => void] {
+  const [eink, setEink] = useState(false);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("eink_mode");
+      if (stored === "true" || isEinkDevice()) setEink(true);
+    } catch {}
+  }, []);
+  const toggle = () => {
+    setEink((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("eink_mode", String(next));
+      } catch {}
+      return next;
+    });
+  };
+  return [eink, toggle];
+}
+
+// ── Types ───────────────────────────────────────────────────────────
+
+type GamePhase = "menu" | "playing" | "complete";
+type GridSize = 5 | 10;
+
+/** Cell state: 0 = empty, 1 = filled, 2 = marked-X */
+type CellState = 0 | 1 | 2;
+
+interface NonogramPuzzle {
+  name: string;
+  grid: boolean[][];
+}
+
+const GAME_ID = "nonogram";
+
+// ── Style helpers ───────────────────────────────────────────────────
+
+const cx = (eink: boolean, e: string, s: string) => (eink ? e : s);
+
+function selBtn(eink: boolean, active: boolean) {
+  if (eink)
+    return `px-4 py-2 border-2 font-bold text-lg ${active ? "bg-black text-white border-black" : "bg-white text-black border-black"}`;
+  return `px-4 py-2 rounded-lg font-medium transition-all ${active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`;
+}
+
+function actionBtn(eink: boolean, primary = false) {
+  if (eink)
+    return primary
+      ? "px-6 py-3 border-4 border-black text-lg font-bold"
+      : "px-6 py-3 border-2 border-black text-lg font-bold";
+  if (primary)
+    return "px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-lg font-bold hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/30";
+  return "px-6 py-3 bg-gray-800 rounded-xl text-lg font-bold text-gray-300 hover:bg-gray-700 transition-colors";
+}
+
+// ── Clue generation ─────────────────────────────────────────────────
+
+function generateClues(grid: boolean[][]): {
+  rows: number[][];
+  cols: number[][];
+} {
+  const rows = grid.map((row) => {
+    const groups: number[] = [];
+    let count = 0;
+    for (const cell of row) {
+      if (cell) count++;
+      else if (count > 0) {
+        groups.push(count);
+        count = 0;
+      }
+    }
+    if (count > 0) groups.push(count);
+    return groups.length ? groups : [0];
+  });
+  const cols = Array.from({ length: grid[0].length }, (_, c) => {
+    const groups: number[] = [];
+    let count = 0;
+    for (let r = 0; r < grid.length; r++) {
+      if (grid[r][c]) count++;
+      else if (count > 0) {
+        groups.push(count);
+        count = 0;
+      }
+    }
+    if (count > 0) groups.push(count);
+    return groups.length ? groups : [0];
+  });
+  return { rows, cols };
+}
+
+// ── Puzzles ─────────────────────────────────────────────────────────
+
+const b = (rows: number[][]): boolean[][] =>
+  rows.map((r) => r.map((v) => v === 1));
+
+const PUZZLES_5: NonogramPuzzle[] = [
+  {
+    name: "Heart",
+    grid: b([
+      [0, 1, 0, 1, 0],
+      [1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 0],
+      [0, 0, 1, 0, 0],
+    ]),
+  },
+  {
+    name: "Plus",
+    grid: b([
+      [0, 0, 1, 0, 0],
+      [0, 0, 1, 0, 0],
+      [1, 1, 1, 1, 1],
+      [0, 0, 1, 0, 0],
+      [0, 0, 1, 0, 0],
+    ]),
+  },
+  {
+    name: "Arrow",
+    grid: b([
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 1, 0],
+      [1, 0, 1, 0, 1],
+      [0, 0, 1, 0, 0],
+      [0, 0, 1, 0, 0],
+    ]),
+  },
+];
+
+const PUZZLES_10: NonogramPuzzle[] = [
+  {
+    name: "Star",
+    grid: b([
+      [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+      [0, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+      [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
+      [1, 1, 0, 0, 0, 0, 0, 0, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]),
+  },
+  {
+    name: "House",
+    grid: b([
+      [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+      [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 1, 0, 0, 0, 0, 0, 0, 1, 1],
+      [1, 1, 0, 1, 1, 0, 0, 0, 1, 1],
+      [1, 1, 0, 1, 1, 0, 0, 0, 1, 1],
+      [1, 1, 0, 0, 0, 0, 1, 0, 1, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]),
+  },
+  {
+    name: "Smiley",
+    grid: b([
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+      [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+      [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+      [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+      [1, 1, 1, 0, 1, 1, 0, 1, 1, 1],
+      [0, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+    ]),
+  },
+];
+
+function getPuzzlesForSize(size: GridSize): NonogramPuzzle[] {
+  return size === 5 ? PUZZLES_5 : PUZZLES_10;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────
+
+function formatTime(s: number) {
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+}
+
+function hsKey(size: GridSize) {
+  return `nonogram-best-${size}`;
+}
+
+function createEmptyBoard(size: number): CellState[][] {
+  return Array.from({ length: size }, () => Array(size).fill(0) as CellState[]);
+}
+
+/** Check if the player's filled cells match the solution exactly. */
+function checkSolution(
+  board: CellState[][],
+  solution: boolean[][]
+): boolean {
+  for (let r = 0; r < solution.length; r++) {
+    for (let c = 0; c < solution[0].length; c++) {
+      const playerFilled = board[r][c] === 1;
+      if (playerFilled !== solution[r][c]) return false;
+    }
+  }
+  return true;
+}
+
+/** Calculate score: base points for size, bonus for speed, penalty for extra moves. */
+function calculateScore(
+  size: GridSize,
+  elapsed: number,
+  moves: number
+): number {
+  const filledCount = size === 5 ? 25 : 100;
+  const basePoints = size === 5 ? 500 : 1500;
+  const timeBonus = Math.max(0, (size === 5 ? 120 : 300) - elapsed) * 2;
+  const movePenalty = Math.max(0, (moves - filledCount) * 3);
+  return Math.max(100, basePoints + timeBonus - movePenalty);
+}
+
+/** Check if a row clue is satisfied by the current board row. */
+function isRowComplete(
+  board: CellState[][],
+  rowIdx: number,
+  expectedClue: number[]
+): boolean {
+  const row = board[rowIdx];
+  const groups: number[] = [];
+  let count = 0;
+  for (const cell of row) {
+    if (cell === 1) count++;
+    else if (count > 0) {
+      groups.push(count);
+      count = 0;
+    }
+  }
+  if (count > 0) groups.push(count);
+  if (groups.length === 0) groups.push(0);
+  if (groups.length !== expectedClue.length) return false;
+  return groups.every((g, i) => g === expectedClue[i]);
+}
+
+/** Check if a column clue is satisfied by the current board column. */
+function isColComplete(
+  board: CellState[][],
+  colIdx: number,
+  expectedClue: number[]
+): boolean {
+  const groups: number[] = [];
+  let count = 0;
+  for (let r = 0; r < board.length; r++) {
+    if (board[r][colIdx] === 1) count++;
+    else if (count > 0) {
+      groups.push(count);
+      count = 0;
+    }
+  }
+  if (count > 0) groups.push(count);
+  if (groups.length === 0) groups.push(0);
+  if (groups.length !== expectedClue.length) return false;
+  return groups.every((g, i) => g === expectedClue[i]);
+}
+
+// ── Component ───────────────────────────────────────────────────────
+
+export function NonogramGame() {
+  const [eink, toggleEink] = useEinkMode();
+  const [phase, setPhase] = useState<GamePhase>("menu");
+  const [gridSize, setGridSize] = useState<GridSize>(5);
+  const [puzzleIndex, setPuzzleIndex] = useState(0);
+  const [board, setBoard] = useState<CellState[][]>([]);
+  const [solution, setSolution] = useState<boolean[][]>([]);
+  const [clues, setClues] = useState<{ rows: number[][]; cols: number[][] }>({
+    rows: [],
+    cols: [],
+  });
+  const [moves, setMoves] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
+  const [score, setScore] = useState(0);
+  const [wrongCheck, setWrongCheck] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<NewAchievement[]>([]);
+  const [puzzleName, setPuzzleName] = useState("");
+
+  useGameMusic();
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const id = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
+
+  // Load best score when size changes
+  useEffect(() => {
+    setBestScore(getLocalHighScore(hsKey(gridSize)));
+  }, [gridSize]);
+
+  const startGame = useCallback(
+    (idx?: number) => {
+      const puzzles = getPuzzlesForSize(gridSize);
+      const pi = idx ?? puzzleIndex;
+      const puzzle = puzzles[pi % puzzles.length];
+      const sol = puzzle.grid;
+      const size = sol.length;
+      setSolution(sol);
+      setClues(generateClues(sol));
+      setBoard(createEmptyBoard(size));
+      setMoves(0);
+      setElapsed(0);
+      setScore(0);
+      setWrongCheck(false);
+      setNewAchievements([]);
+      setPuzzleName(puzzle.name);
+      setPuzzleIndex(pi % puzzles.length);
+      setPhase("playing");
+      sfxClick();
+    },
+    [gridSize, puzzleIndex]
+  );
+
+  const handleCellClick = useCallback(
+    (r: number, c: number) => {
+      if (phase !== "playing") return;
+      sfxClick();
+      setBoard((prev) => {
+        const next = prev.map((row) => [...row]);
+        // Cycle: 0 → 1 → 2 → 0
+        next[r][c] = ((prev[r][c] + 1) % 3) as CellState;
+        return next;
+      });
+      setMoves((m) => m + 1);
+    },
+    [phase]
+  );
+
+  const handleValidate = useCallback(() => {
+    if (phase !== "playing") return;
+
+    if (checkSolution(board, solution)) {
+      sfxCorrect();
+      sfxGameOver();
+      const finalScore = calculateScore(gridSize, elapsed, moves);
+      setScore(finalScore);
+      const key = hsKey(gridSize);
+      const prev = getLocalHighScore(key);
+      if (finalScore > prev) {
+        setLocalHighScore(key, finalScore);
+        setBestScore(finalScore);
+      }
+      trackGamePlayed(GAME_ID, finalScore);
+      const p = getProfile();
+      const ach = checkAchievements(
+        {
+          gameId: GAME_ID,
+          score: finalScore,
+          moves,
+          elapsed,
+          level: gridSize,
+          accuracy: 100,
+        },
+        p.totalGamesPlayed,
+        p.gamesPlayedByGameId
+      );
+      if (ach.length > 0) setNewAchievements(ach);
+      setPhase("complete");
+    } else {
+      sfxWrong();
+      setWrongCheck(true);
+      setTimeout(() => setWrongCheck(false), 1500);
+    }
+  }, [phase, board, solution, gridSize, elapsed, moves]);
+
+  const handleReset = useCallback(() => {
+    if (phase !== "playing") return;
+    sfxClick();
+    setBoard(createEmptyBoard(solution.length));
+    setMoves(0);
+    setElapsed(0);
+    setWrongCheck(false);
+  }, [phase, solution]);
+
+  // ── Compute clue completion status ──
+  const rowComplete = clues.rows.map((clue, r) =>
+    board.length > 0 ? isRowComplete(board, r, clue) : false
+  );
+  const colComplete = clues.cols.map((clue, c) =>
+    board.length > 0 ? isColComplete(board, c, clue) : false
+  );
+
+  // Max clue lengths for header sizing
+  const maxRowClueLen = clues.rows.reduce(
+    (max, r) => Math.max(max, r.length),
+    0
+  );
+  const maxColClueLen = clues.cols.reduce(
+    (max, c) => Math.max(max, c.length),
+    0
+  );
+
+  const cellSize = gridSize === 5 ? (eink ? 52 : 48) : eink ? 34 : 32;
+  const clueFs = gridSize === 5 ? 16 : 12;
+  const puzzles = getPuzzlesForSize(gridSize);
+
+  // ── Render ────────────────────────────────────────────────────────
+
+  return (
+    <div
+      className={cx(
+        eink,
+        "min-h-screen bg-white text-black",
+        "min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 text-white"
+      )}
+    >
+      {/* E-ink Banner */}
+      <div
+        className={cx(
+          eink,
+          "w-full border-b-2 border-black px-4 py-2 flex items-center justify-between text-sm",
+          "w-full border-b border-gray-700 bg-gray-800/50 px-4 py-2 flex items-center justify-between text-sm text-gray-300"
+        )}
+      >
+        <span>{eink ? "E-Ink Mode ON" : "E-Ink Mode OFF"}</span>
+        <button
+          onClick={toggleEink}
+          className={cx(
+            eink,
+            "px-3 py-1 border-2 border-black font-bold",
+            "px-3 py-1 border border-gray-500 rounded hover:bg-gray-700 transition-colors"
+          )}
+        >
+          {eink ? "Switch to Standard" : "Switch to E-Ink"}
+        </button>
+      </div>
+
+      {/* Header */}
+      <div className="max-w-3xl mx-auto px-4 pt-4">
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/games"
+            className={cx(
+              eink,
+              "flex items-center gap-1 text-black underline font-bold",
+              "flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+            )}
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Link>
+          <h1
+            className={cx(
+              eink,
+              "text-2xl font-bold text-black",
+              "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400"
+            )}
+          >
+            Nonogram
+          </h1>
+          <AudioToggles />
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 pb-8">
+        {/* ── Menu Phase ── */}
+        {phase === "menu" && (
+          <div className="mt-8">
+            <p
+              className={cx(
+                eink,
+                "text-center text-lg mb-6 font-bold",
+                "text-center text-gray-300 mb-6"
+              )}
+            >
+              Fill in the grid using the number clues! Each number tells you how
+              many consecutive cells are filled in that row or column.
+            </p>
+
+            {/* Grid Size */}
+            <div className="mb-6">
+              <label
+                className={cx(
+                  eink,
+                  "block text-lg font-bold mb-2 text-center",
+                  "block text-sm font-medium text-gray-400 mb-2 text-center"
+                )}
+              >
+                Grid Size
+              </label>
+              <div className="flex justify-center gap-3">
+                {([5, 10] as GridSize[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setGridSize(s);
+                      setPuzzleIndex(0);
+                      sfxClick();
+                    }}
+                    className={selBtn(eink, gridSize === s)}
+                  >
+                    {s}×{s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Puzzle Selection */}
+            <div className="mb-6">
+              <label
+                className={cx(
+                  eink,
+                  "block text-lg font-bold mb-2 text-center",
+                  "block text-sm font-medium text-gray-400 mb-2 text-center"
+                )}
+              >
+                Puzzle
+              </label>
+              <div className="flex justify-center gap-3 flex-wrap">
+                {puzzles.map((p, i) => (
+                  <button
+                    key={p.name}
+                    onClick={() => {
+                      setPuzzleIndex(i);
+                      sfxClick();
+                    }}
+                    className={selBtn(eink, puzzleIndex === i)}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Best Score */}
+            {bestScore > 0 && (
+              <div
+                className={cx(
+                  eink,
+                  "text-center mb-6 border-2 border-black p-3",
+                  "text-center mb-6 bg-gray-800/50 rounded-lg p-3"
+                )}
+              >
+                <Trophy
+                  className={cx(
+                    eink,
+                    "w-5 h-5 inline mr-1",
+                    "w-5 h-5 inline mr-1 text-yellow-400"
+                  )}
+                />
+                <span className={cx(eink, "font-bold", "text-gray-300")}>
+                  Best: {bestScore} pts
+                </span>
+              </div>
+            )}
+
+            {/* How to Play */}
+            <div
+              className={cx(
+                eink,
+                "border-2 border-black p-4 mb-6",
+                "bg-gray-800/30 rounded-xl p-4 mb-6 border border-gray-700"
+              )}
+            >
+              <h3
+                className={cx(
+                  eink,
+                  "font-bold text-lg mb-2",
+                  "font-bold text-sm text-gray-300 mb-2"
+                )}
+              >
+                How to Play
+              </h3>
+              <ul
+                className={cx(
+                  eink,
+                  "list-disc list-inside text-sm space-y-1",
+                  "list-disc list-inside text-sm text-gray-400 space-y-1"
+                )}
+              >
+                <li>
+                  Click a cell to cycle: empty → filled → marked-X → empty
+                </li>
+                <li>
+                  Row/column numbers show groups of consecutive filled cells
+                </li>
+                <li>
+                  Use X marks to note cells you know are empty
+                </li>
+                <li>
+                  Press &quot;Check&quot; when you think you&apos;ve solved it!
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex justify-center">
+              <button onClick={() => startGame()} className={actionBtn(eink, true)}>
+                Start Puzzle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Playing Phase ── */}
+        {phase === "playing" && (
+          <div>
+            {/* Stats Bar */}
+            <div
+              className={cx(
+                eink,
+                "flex justify-between items-center border-2 border-black p-3 mb-4",
+                "flex justify-between items-center bg-gray-800/50 rounded-lg p-3 mb-4"
+              )}
+            >
+              <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
+                Moves:{" "}
+                <span className={cx(eink, "", "text-white font-bold")}>
+                  {moves}
+                </span>
+              </div>
+              <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
+                Time:{" "}
+                <span className={cx(eink, "", "text-white font-bold")}>
+                  {formatTime(elapsed)}
+                </span>
+              </div>
+              <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
+                {puzzleName} ({gridSize}×{gridSize})
+              </div>
+            </div>
+
+            {/* Wrong Check Feedback */}
+            {wrongCheck && (
+              <div
+                className={cx(
+                  eink,
+                  "text-center border-2 border-black p-2 mb-3 font-bold",
+                  "text-center bg-red-900/50 border border-red-500/50 rounded-lg p-2 mb-3 text-red-300"
+                )}
+              >
+                Not quite right — keep trying!
+              </div>
+            )}
+
+            {/* Nonogram Grid */}
+            <div className="flex justify-center mb-4 overflow-x-auto">
+              <div className="inline-block">
+                <table
+                  className="border-collapse"
+                  style={{ borderSpacing: 0 }}
+                >
+                  <thead>
+                    {/* Column clues */}
+                    {Array.from({ length: maxColClueLen }, (_, clueRow) => (
+                      <tr key={`col-clue-${clueRow}`}>
+                        {/* Empty corner cell */}
+                        {clueRow === 0 && (
+                          <td
+                            rowSpan={maxColClueLen}
+                            style={{
+                              width: maxRowClueLen * (clueFs + 8),
+                              minWidth: maxRowClueLen * (clueFs + 8),
+                            }}
+                          />
+                        )}
+                        {clues.cols.map((col, ci) => {
+                          const padded = Array.from(
+                            { length: maxColClueLen },
+                            (_, i) =>
+                              i < maxColClueLen - col.length
+                                ? null
+                                : col[i - (maxColClueLen - col.length)]
+                          );
+                          return (
+                            <td
+                              key={`ch-${ci}-${clueRow}`}
+                              style={{
+                                width: cellSize,
+                                height: clueFs + 8,
+                                fontSize: clueFs,
+                                textAlign: "center",
+                                verticalAlign: "bottom",
+                                padding: 0,
+                              }}
+                              className={
+                                colComplete[ci]
+                                  ? cx(
+                                      eink,
+                                      "font-bold text-gray-400 line-through",
+                                      "font-bold text-green-400/60 line-through"
+                                    )
+                                  : cx(
+                                      eink,
+                                      "font-bold text-black",
+                                      "font-medium text-gray-300"
+                                    )
+                              }
+                            >
+                              {padded[clueRow] !== null
+                                ? padded[clueRow]
+                                : ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {board.map((row, r) => (
+                      <tr key={`row-${r}`}>
+                        {/* Row clues */}
+                        <td
+                          style={{
+                            height: cellSize,
+                            paddingRight: 6,
+                            fontSize: clueFs,
+                            textAlign: "right",
+                            whiteSpace: "nowrap",
+                          }}
+                          className={
+                            rowComplete[r]
+                              ? cx(
+                                  eink,
+                                  "font-bold text-gray-400 line-through",
+                                  "font-bold text-green-400/60 line-through"
+                                )
+                              : cx(
+                                  eink,
+                                  "font-bold text-black",
+                                  "font-medium text-gray-300"
+                                )
+                          }
+                        >
+                          {clues.rows[r]?.join(" ") ?? ""}
+                        </td>
+                        {/* Grid cells */}
+                        {row.map((cell, c) => {
+                          const thick5 =
+                            gridSize === 10
+                              ? {
+                                  borderTop:
+                                    r % 5 === 0 && r > 0
+                                      ? eink
+                                        ? "3px solid black"
+                                        : "2px solid rgba(255,255,255,0.3)"
+                                      : undefined,
+                                  borderLeft:
+                                    c % 5 === 0 && c > 0
+                                      ? eink
+                                        ? "3px solid black"
+                                        : "2px solid rgba(255,255,255,0.3)"
+                                      : undefined,
+                                }
+                              : {};
+
+                          return (
+                            <td
+                              key={`cell-${r}-${c}`}
+                              onClick={() => handleCellClick(r, c)}
+                              style={{
+                                width: cellSize,
+                                height: cellSize,
+                                minWidth: cellSize,
+                                minHeight: cellSize,
+                                cursor: "pointer",
+                                textAlign: "center",
+                                verticalAlign: "middle",
+                                fontSize: cellSize * 0.5,
+                                padding: 0,
+                                ...thick5,
+                              }}
+                              className={
+                                eink
+                                  ? `border border-black select-none ${
+                                      cell === 1
+                                        ? "bg-black text-white"
+                                        : cell === 2
+                                          ? "bg-white text-black font-bold"
+                                          : "bg-white"
+                                    }`
+                                  : `border border-gray-600 select-none ${
+                                      cell === 1
+                                        ? "bg-indigo-500 transition-colors"
+                                        : cell === 2
+                                          ? "bg-gray-800 text-gray-400 font-bold transition-colors"
+                                          : "bg-gray-900/80 hover:bg-gray-700/50 transition-colors"
+                                    }`
+                              }
+                            >
+                              {cell === 2 ? "×" : ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3 flex-wrap">
+              <button
+                onClick={handleValidate}
+                className={cx(
+                  eink,
+                  "flex items-center gap-2 px-5 py-2.5 border-4 border-black font-bold text-lg",
+                  "flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-bold hover:from-green-500 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
+                )}
+              >
+                <Check className="w-5 h-5" /> Check
+              </button>
+              <button
+                onClick={handleReset}
+                className={cx(
+                  eink,
+                  "flex items-center gap-2 px-4 py-2 border-2 border-black font-bold",
+                  "flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                )}
+              >
+                <RotateCcw className="w-4 h-4" /> Reset
+              </button>
+              <button
+                onClick={() => setPhase("menu")}
+                className={cx(
+                  eink,
+                  "flex items-center gap-2 px-4 py-2 border-2 border-black font-bold",
+                  "flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+                )}
+              >
+                <ArrowLeft className="w-4 h-4" /> Menu
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Complete Phase ── */}
+        {phase === "complete" && (
+          <div className="mt-8 text-center">
+            <div
+              className={cx(
+                eink,
+                "border-4 border-black p-8 mb-6",
+                "bg-gray-800/50 rounded-2xl p-8 mb-6 shadow-xl"
+              )}
+            >
+              <Trophy
+                className={cx(
+                  eink,
+                  "w-16 h-16 mx-auto mb-4 text-black",
+                  "w-16 h-16 mx-auto mb-4 text-yellow-400"
+                )}
+              />
+              <h2
+                className={cx(
+                  eink,
+                  "text-3xl font-bold mb-2",
+                  "text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-400"
+                )}
+              >
+                Puzzle Complete!
+              </h2>
+              <p
+                className={cx(
+                  eink,
+                  "text-xl font-bold mb-4",
+                  "text-lg text-gray-400 mb-4"
+                )}
+              >
+                You solved &quot;{puzzleName}&quot;!
+              </p>
+
+              <div className={eink ? "mt-4 space-y-2 text-xl" : "mt-4 space-y-2"}>
+                <p className={cx(eink, "font-bold", "text-gray-300")}>
+                  Score:{" "}
+                  <span
+                    className={cx(
+                      eink,
+                      "",
+                      "text-white font-bold text-xl"
+                    )}
+                  >
+                    {score}
+                  </span>
+                </p>
+                <p className={cx(eink, "font-bold", "text-gray-300")}>
+                  Moves:{" "}
+                  <span
+                    className={cx(
+                      eink,
+                      "",
+                      "text-white font-bold text-xl"
+                    )}
+                  >
+                    {moves}
+                  </span>
+                </p>
+                <p className={cx(eink, "font-bold", "text-gray-300")}>
+                  Time:{" "}
+                  <span
+                    className={cx(
+                      eink,
+                      "",
+                      "text-white font-bold text-xl"
+                    )}
+                  >
+                    {formatTime(elapsed)}
+                  </span>
+                </p>
+                <p className={cx(eink, "font-bold", "text-gray-300")}>
+                  Size:{" "}
+                  <span className={cx(eink, "", "text-white font-bold")}>
+                    {gridSize}×{gridSize}
+                  </span>
+                </p>
+                {bestScore > 0 && (
+                  <p className={cx(eink, "font-bold", "text-gray-300")}>
+                    Best:{" "}
+                    <span
+                      className={cx(
+                        eink,
+                        "",
+                        "text-yellow-400 font-bold"
+                      )}
+                    >
+                      {bestScore} pts
+                    </span>
+                    {score >= bestScore && (
+                      <span
+                        className={cx(
+                          eink,
+                          " ml-2 font-bold",
+                          " ml-2 text-green-400 font-bold"
+                        )}
+                      >
+                        ★ New Record!
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              {/* Solved board mini-display */}
+              <div className="flex justify-center mt-6">
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${gridSize}, ${gridSize === 5 ? 28 : 16}px)`,
+                    gap: "1px",
+                    ...(eink ? { border: "2px solid black" } : {}),
+                  }}
+                >
+                  {solution.map((row, r) =>
+                    row.map((filled, c) => (
+                      <div
+                        key={`sol-${r}-${c}`}
+                        style={{
+                          width: gridSize === 5 ? 28 : 16,
+                          height: gridSize === 5 ? 28 : 16,
+                        }}
+                        className={
+                          filled
+                            ? cx(
+                                eink,
+                                "bg-black",
+                                "bg-indigo-500"
+                              )
+                            : cx(
+                                eink,
+                                "bg-white border border-gray-300",
+                                "bg-gray-800"
+                              )
+                        }
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-3 flex-wrap">
+              <button
+                onClick={() => {
+                  const nextIdx = (puzzleIndex + 1) % puzzles.length;
+                  setPuzzleIndex(nextIdx);
+                  startGame(nextIdx);
+                }}
+                className={actionBtn(eink, true)}
+              >
+                Next Puzzle
+              </button>
+              <button
+                onClick={() => startGame()}
+                className={actionBtn(eink)}
+              >
+                Replay
+              </button>
+              <button
+                onClick={() => setPhase("menu")}
+                className={actionBtn(eink)}
+              >
+                Menu
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Achievement Toasts */}
+      {newAchievements.map((a, i) => (
+        <AchievementToast
+          key={`${a.medalId}-${a.tier}`}
+          name={a.name}
+          tier={a.tier}
+          onDismiss={() =>
+            setNewAchievements((prev) => prev.filter((_, j) => j !== i))
+          }
+        />
+      ))}
+    </div>
+  );
+}
