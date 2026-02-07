@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Check, FileText } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DownloadButtonProps {

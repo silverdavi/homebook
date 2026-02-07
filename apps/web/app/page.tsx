@@ -5,6 +5,7 @@ import {
   BarChart3,
   FileDown,
   BookCheck,
+  Gamepad2,
 } from "lucide-react";
 
 const FEATURES = [
@@ -51,12 +52,21 @@ export default function HomePage() {
           <span className="font-display text-xl font-bold text-slate-800">
             teacher<span className="text-subject-math">.ninja</span>
           </span>
-          <Link
-            href="/generate"
-            className="text-sm font-medium text-subject-math hover:text-subject-math/80 transition-colors"
-          >
-            Start Creating
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/games"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              Games
+            </Link>
+            <Link
+              href="/generate"
+              className="text-sm font-medium text-subject-math hover:text-subject-math/80 transition-colors"
+            >
+              Worksheets
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -128,6 +138,45 @@ export default function HomePage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Game Arena CTA */}
+      <section className="border-t border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-full px-3 py-1 mb-4">
+                <Gamepad2 className="w-3.5 h-3.5" />
+                For Students
+              </div>
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900">
+                Game Arena
+              </h2>
+              <p className="mt-3 text-slate-500 max-w-md">
+                Educational games that make learning irresistible. Students practice
+                reading, math, and science facts through engaging arcade-style gameplay.
+              </p>
+              <Link
+                href="/games"
+                className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-500 transition-all active:scale-[0.98]"
+              >
+                Explore Games
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="flex gap-3">
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center text-4xl border border-slate-100">
+                🌧️
+              </div>
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center text-4xl border border-slate-100 opacity-50">
+                ⚡
+              </div>
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center text-4xl border border-slate-100 opacity-50">
+                ⚔️
+              </div>
+            </div>
           </div>
         </div>
       </section>
