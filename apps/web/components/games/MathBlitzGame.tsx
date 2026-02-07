@@ -303,7 +303,7 @@ export function MathBlitzGame() {
                 <button
                   key={`${choice}-${i}`}
                   onClick={() => handleAnswer(choice)}
-                  className="py-5 bg-white/10 hover:bg-emerald-500/30 border border-white/10 hover:border-emerald-400/50 rounded-xl text-2xl font-bold text-white transition-all active:scale-95"
+                  className="py-4 sm:py-5 bg-white/10 hover:bg-emerald-500/30 border border-white/10 hover:border-emerald-400/50 rounded-xl text-xl sm:text-2xl font-bold text-white transition-all active:scale-95 min-h-[56px]"
                 >
                   {choice}
                 </button>

@@ -264,7 +264,7 @@ export function WordBuilderGame() {
                       key={i}
                       onClick={() => handleLetterClick(i)}
                       disabled={selected.includes(i)}
-                      className={`w-12 h-12 rounded-xl text-xl font-bold transition-all ${
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-lg sm:text-xl font-bold transition-all ${
                         selected.includes(i)
                           ? "bg-white/5 border border-white/5 text-slate-700 scale-90"
                           : "bg-white/10 border border-white/20 text-white hover:bg-amber-500/30 hover:border-amber-400/50 active:scale-90"

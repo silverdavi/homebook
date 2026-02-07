@@ -33,15 +33,15 @@ function FractionDisplay({
   const sd = d / g;
   return (
     <div className="flex flex-col items-center">
-      <span className="text-4xl font-bold" style={{ color }}>
+      <span className="text-3xl sm:text-4xl font-bold" style={{ color }}>
         {sn}
       </span>
-      <div className="w-12 h-0.5 my-1" style={{ backgroundColor: color }} />
-      <span className="text-4xl font-bold" style={{ color }}>
+      <div className="w-10 sm:w-12 h-0.5 my-1" style={{ backgroundColor: color }} />
+      <span className="text-3xl sm:text-4xl font-bold" style={{ color }}>
         {sd}
       </span>
       {/* Visual bar */}
-      <div className="mt-4 w-32 h-6 bg-white/10 rounded overflow-hidden border border-white/20">
+      <div className="mt-3 sm:mt-4 w-24 sm:w-32 h-5 sm:h-6 bg-white/10 rounded overflow-hidden border border-white/20">
         <div
           className="h-full rounded transition-all duration-300"
           style={{

@@ -43,7 +43,7 @@ type ChosenDifficulty = "easy" | "medium" | "hard" | "auto";
 
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 550;
-const LETTER_SIZE = 46;
+const LETTER_SIZE = 50;
 const GROUND_Y = GAME_HEIGHT - 40;
 const INITIAL_LIVES = 5;
 
@@ -399,23 +399,23 @@ export function LetterRainGame() {
       {/* Live stats bar — always visible during play */}
       {(phase === "playing" || phase === "levelComplete") && (
         <div className="w-full max-w-[850px] px-4 mb-1">
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1 text-slate-400">
-                <Target className="w-3 h-3" />
+                <Target className="w-3.5 h-3.5" />
                 <span className="text-white font-bold">{accuracy}%</span>
               </div>
               <div className="flex items-center gap-1 text-slate-400">
-                <Gauge className="w-3 h-3" />
+                <Gauge className="w-3.5 h-3.5" />
                 <span className="text-white font-bold">{lpm}</span>
-                <span className="text-slate-600">lpm</span>
+                <span className="text-slate-600 hidden sm:inline">lpm</span>
               </div>
-              <div className="text-slate-600">{totalCaught} caught · {totalMissed} missed</div>
+              <div className="text-slate-600 hidden sm:block">{totalCaught}/{totalCaught + totalMissed}</div>
             </div>
             <div className="flex items-center gap-1.5" style={{ color: DIFFICULTY_META[activeDiff].color }}>
               <span>{DIFFICULTY_META[activeDiff].emoji}</span>
-              <span className="font-medium">{DIFFICULTY_META[activeDiff].label}</span>
-              <span className="text-slate-600">· Lvl {level}</span>
+              <span className="font-medium hidden sm:inline">{DIFFICULTY_META[activeDiff].label}</span>
+              <span className="text-slate-500">Lv{level}</span>
             </div>
           </div>
         </div>
@@ -424,7 +424,7 @@ export function LetterRainGame() {
       {/* Sentence tracker — shows full sentence with progress */}
       {phase === "playing" && sentence && (
         <div className="w-full max-w-[850px] px-4 mb-1">
-          <div className="bg-white/[0.03] rounded-lg px-3 py-1.5 border border-white/5 font-mono text-sm tracking-wide leading-relaxed overflow-hidden">
+          <div className="bg-white/[0.03] rounded-lg px-3 py-1.5 border border-white/5 font-mono text-xs sm:text-sm tracking-wide leading-relaxed overflow-x-auto whitespace-nowrap">
             {sentence.split("").map((ch, i) => {
               const isCaught = i < nextCharIndex;
               const isNext = i === nextExpectedIdx;

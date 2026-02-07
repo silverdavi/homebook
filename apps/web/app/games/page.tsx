@@ -49,6 +49,26 @@ const GAMES: GameCardProps[] = [
     available: true,
   },
   {
+    title: "Times Tables",
+    description:
+      "Master multiplication with visual grids! Sprint, survival, and target modes.",
+    emoji: "✖️",
+    href: "/games/times-table",
+    color: "#8b5cf6",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Fraction Lab",
+    description:
+      "See, compare, add, and find equivalent fractions with bars and pie charts.",
+    emoji: "🥧",
+    href: "/games/fraction-lab",
+    color: "#f97316",
+    available: true,
+    badge: "NEW",
+  },
+  {
     title: "Element Match",
     description:
       "Match chemical element symbols to their names. A memory game with a science twist!",

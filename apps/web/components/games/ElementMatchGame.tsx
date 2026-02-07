@@ -189,28 +189,28 @@ export function ElementMatchGame() {
 
             {/* Grid */}
             <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
+              className="grid gap-1.5 sm:gap-2"
+              style={{ gridTemplateColumns: `repeat(${Math.min(gridCols, 4)}, 1fr)` }}
             >
               {cards.map((card) => (
                 <button
                   key={card.id}
                   onClick={() => handleCardClick(card.id)}
                   disabled={card.matched || card.flipped}
-                  className={`aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex items-center justify-center text-center p-1 ${
+                  className={`aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex items-center justify-center text-center p-1 min-h-[56px] ${
                     card.matched
                       ? "bg-green-500/20 border-2 border-green-400/50 text-green-400"
                       : card.flipped
                       ? "bg-blue-500/20 border-2 border-blue-400/50 text-white"
-                      : "bg-white/10 border-2 border-white/10 hover:border-blue-400/30 hover:bg-white/15 text-transparent"
+                      : "bg-white/10 border-2 border-white/10 hover:border-blue-400/30 hover:bg-white/15 text-transparent active:scale-95"
                   }`}
                 >
                   {card.flipped || card.matched ? (
-                    <span className={card.type === "symbol" ? "text-2xl" : "text-xs"}>
+                    <span className={card.type === "symbol" ? "text-xl sm:text-2xl" : "text-[10px] sm:text-xs"}>
                       {card.content}
                     </span>
                   ) : (
-                    <span className="text-2xl text-slate-600">?</span>
+                    <span className="text-xl sm:text-2xl text-slate-600">?</span>
                   )}
                 </button>
               ))}

@@ -22,7 +22,7 @@ interface ScoreEntry {
 const SCORES_DIR = path.join(process.cwd(), ".data");
 const SCORES_FILE = path.join(SCORES_DIR, "scores.json");
 const MAX_SCORES_PER_GAME = 50;
-const VALID_GAMES = ["letter-rain", "math-blitz", "fraction-fighter", "element-match", "word-builder"];
+const VALID_GAMES = ["letter-rain", "math-blitz", "fraction-fighter", "element-match", "word-builder", "times-table", "fraction-lab"];
 
 async function readScores(): Promise<ScoreEntry[]> {
   try {
