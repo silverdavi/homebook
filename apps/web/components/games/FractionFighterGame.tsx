@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Heart, Zap } from "lucide-react";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ArrowLeft, Trophy, RotateCcw, Heart } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { StreakBadge, HeartRecovery } from "@/components/games/RewardEffects";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo } from "@/lib/games/audio";
 import Link from "next/link";
 
 type GamePhase = "menu" | "playing" | "result" | "gameOver";
@@ -23,10 +28,12 @@ function FractionDisplay({
   n,
   d,
   color,
+  showBar = true,
 }: {
   n: number;
   d: number;
   color: string;
+  showBar?: boolean;
 }) {
   const g = gcd(n, d);
   const sn = n / g;
@@ -41,6 +48,7 @@ function FractionDisplay({
         {sd}
       </span>
       {/* Visual bar */}
+      {showBar && (
       <div className="mt-3 sm:mt-4 w-24 sm:w-32 h-5 sm:h-6 bg-white/10 rounded overflow-hidden border border-white/20">
         <div
           className="h-full rounded transition-all duration-300"
@@ -51,9 +59,21 @@ function FractionDisplay({
           }}
         />
       </div>
+      )}
     </div>
   );
 }
+
+const COMPARE_TIPS = [
+  "If denominators match, the bigger numerator wins!",
+  "Cross-multiply to compare: a/b vs c/d → check a×d vs b×c.",
+  "1/2 is always a useful benchmark — is the fraction more or less than half?",
+  "A fraction closer to 1 has a numerator close to its denominator.",
+  "3/4 > 2/3 because 3×3 = 9 > 4×2 = 8.",
+  "Fractions with smaller denominators represent bigger pieces.",
+  "Convert to decimals in your head: 3/4 = 0.75, 2/3 ≈ 0.67.",
+  "Unit fractions (1/n) get smaller as n gets bigger.",
+];
 
 const INITIAL_LIVES = 5;
 
@@ -101,6 +121,7 @@ function generatePairTuned(level: number): FractionPair {
 }
 
 export function FractionFighterGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
@@ -111,8 +132,20 @@ export function FractionFighterGame() {
   const [result, setResult] = useState<"correct" | "wrong" | "timeout" | null>(null);
   const [timeLeft, setTimeLeft] = useState(100);
   const [highScore, setHighScore] = useState(() => getLocalHighScore("fractionFighter_highScore"));
+  const [showHeartRecovery, setShowHeartRecovery] = useState(false);
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [tipIdx, setTipIdx] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (pair) setTipIdx(Math.floor(Math.random() * 100));
+  }, [pair]);
+
+  // ── Settings ──
+  const [showBars, setShowBars] = useState(true);
+  const [timerSpeed, setTimerSpeed] = useState(3); // 1 (slow) to 5 (fast)
 
   const nextProblem = useCallback(
     (lvl: number) => {
@@ -123,7 +156,9 @@ export function FractionFighterGame() {
       startTimeRef.current = Date.now();
       setPhase("playing");
 
-      const questionTime = getTimePerQuestion(lvl);
+      const baseTime = getTimePerQuestion(lvl);
+      const timerMult = 1.5 - (timerSpeed - 1) * 0.2; // speed 1 => 1.5x, speed 5 => 0.7x
+      const questionTime = Math.round(baseTime * timerMult);
 
       // Start countdown
       if (timerRef.current) clearInterval(timerRef.current);
@@ -170,15 +205,30 @@ export function FractionFighterGame() {
       if (choice === pair.answer) {
         const speed = timeLeft / 100;
         const points = Math.round(10 + speed * 20);
-        setScore((s) => s + points);
+        const newStreak = streak + 1;
+        setScore((s) => s + points + (newStreak > 0 && newStreak % 5 === 0 ? 50 : 0));
         setStreak((s) => {
           const ns = s + 1;
           setBestStreak((b) => Math.max(b, ns));
           return ns;
         });
+        if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        else sfxCorrect();
+        if (newStreak >= 10 && newStreak % 10 === 0) {
+          sfxHeart();
+          setLives((l) => {
+            if (l < INITIAL_LIVES) {
+              setShowHeartRecovery(true);
+              setTimeout(() => setShowHeartRecovery(false), 1500);
+              return Math.min(INITIAL_LIVES, l + 1);
+            }
+            return l;
+          });
+        }
         setResult("correct");
         setLevel((l) => l + (streak > 0 && streak % 5 === 4 ? 1 : 0));
       } else {
+        sfxWrong();
         setStreak(0);
         setResult("wrong");
         setLives((l) => {
@@ -220,8 +270,24 @@ export function FractionFighterGame() {
     setLevel(1);
     setStreak(0);
     setBestStreak(0);
+    setShowHeartRecovery(false);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
     nextProblem(1);
   };
+
+  useEffect(() => {
+    if (phase !== "gameOver") return;
+    sfxGameOver();
+    trackGamePlayed("fraction-fighter", score);
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "fraction-fighter", score, level, bestStreak },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on game over
 
   useEffect(() => {
     return () => {
@@ -236,18 +302,39 @@ export function FractionFighterGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-lg font-bold text-white">Fraction Fighter</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
         {/* MENU */}
         {phase === "menu" && (
-          <div className="text-center">
+          <div className="text-center w-full">
             <div className="text-6xl mb-4">⚔️</div>
             <h2 className="text-3xl font-bold text-white mb-2">Fraction Fighter</h2>
-            <p className="text-slate-400 mb-8 max-w-sm mx-auto">
-              Two fractions enter. Tap the bigger one before time runs out! Visual bars help you compare.
+            <p className="text-slate-400 mb-6 max-w-sm mx-auto">
+              Two fractions enter. Tap the bigger one before time runs out!
             </p>
+
+            {/* Timer speed slider */}
+            <div className="max-w-xs mx-auto mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-slate-400">Timer speed</span>
+                <span className="text-xs font-bold text-red-400 tabular-nums">{["Very slow", "Slow", "Normal", "Fast", "Very fast"][timerSpeed - 1]}</span>
+              </div>
+              <input type="range" min={1} max={5} step={1} value={timerSpeed}
+                onChange={(e) => setTimerSpeed(Number(e.target.value))}
+                className="w-full accent-red-500" />
+            </div>
+
+            {/* Toggles */}
+            <div className="max-w-xs mx-auto mb-5 space-y-2">
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <span className="text-xs text-slate-400">Show visual bars</span>
+                <input type="checkbox" checked={showBars} onChange={(e) => setShowBars(e.target.checked)}
+                  className="rounded accent-red-500 w-4 h-4" />
+              </label>
+            </div>
+
             <button onClick={startGame} className="px-10 py-4 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-500/30">
               Fight!
             </button>
@@ -269,14 +356,10 @@ export function FractionFighterGame() {
                   <Heart key={i} className={`w-5 h-5 transition-all ${i < lives ? "text-red-400 fill-red-400" : "text-slate-700 scale-75"}`} />
                 ))}
               </div>
-              {streak >= 3 && (
-                <div className="flex items-center gap-1 text-yellow-400 animate-bounce">
-                  <Zap className="w-4 h-4 fill-yellow-400" />
-                  <span className="text-sm font-bold">x{streak}</span>
-                </div>
-              )}
+              <StreakBadge streak={streak} />
               <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
             </div>
+            <HeartRecovery show={showHeartRecovery} />
 
             {/* Timer bar */}
             <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -289,6 +372,13 @@ export function FractionFighterGame() {
               />
             </div>
 
+            {/* Comparison tip */}
+            {phase === "playing" && (
+              <div className="text-center text-[11px] text-slate-500 italic px-4">
+                💡 {COMPARE_TIPS[tipIdx % COMPARE_TIPS.length]}
+              </div>
+            )}
+
             {/* Question */}
             <div className="text-center text-slate-400 text-sm mb-2">
               Which fraction is <span className="text-white font-bold">bigger</span>?
@@ -299,31 +389,31 @@ export function FractionFighterGame() {
               <button
                 onClick={() => handleChoice("left")}
                 disabled={phase === "result"}
-                className={`flex-1 py-8 rounded-2xl border-2 transition-all active:scale-95 ${
+                className={`flex-1 py-8 rounded-2xl border-2 transition-all duration-200 active:scale-95 shadow-lg ${
                   phase === "result"
                     ? pair.answer === "left"
-                      ? "border-green-400 bg-green-500/20"
-                      : "border-red-400/30 bg-red-500/10 opacity-50"
-                    : "border-white/10 bg-white/5 hover:border-red-400/50 hover:bg-white/10"
+                      ? "border-green-400 bg-green-500/20 shadow-green-500/10"
+                      : "border-red-400/30 bg-red-500/10 opacity-50 shadow-black/10"
+                    : "border-white/10 bg-white/5 hover:border-red-400/50 hover:bg-white/10 hover:shadow-xl hover:shadow-red-500/10"
                 }`}
               >
-                <FractionDisplay n={pair.a[0]} d={pair.a[1]} color={phase === "result" && pair.answer === "left" ? "#4ade80" : "#f87171"} />
+                <FractionDisplay n={pair.a[0]} d={pair.a[1]} color={phase === "result" && pair.answer === "left" ? "#4ade80" : "#f87171"} showBar={showBars} />
               </button>
 
-              <div className="text-2xl font-bold text-slate-500">VS</div>
+              <div className="text-2xl font-bold text-slate-500 drop-shadow-sm">VS</div>
 
               <button
                 onClick={() => handleChoice("right")}
                 disabled={phase === "result"}
-                className={`flex-1 py-8 rounded-2xl border-2 transition-all active:scale-95 ${
+                className={`flex-1 py-8 rounded-2xl border-2 transition-all duration-200 active:scale-95 shadow-lg ${
                   phase === "result"
                     ? pair.answer === "right"
-                      ? "border-green-400 bg-green-500/20"
-                      : "border-blue-400/30 bg-blue-500/10 opacity-50"
-                    : "border-white/10 bg-white/5 hover:border-blue-400/50 hover:bg-white/10"
+                      ? "border-green-400 bg-green-500/20 shadow-green-500/10"
+                      : "border-blue-400/30 bg-blue-500/10 opacity-50 shadow-black/10"
+                    : "border-white/10 bg-white/5 hover:border-blue-400/50 hover:bg-white/10 hover:shadow-xl hover:shadow-blue-500/10"
                 }`}
               >
-                <FractionDisplay n={pair.b[0]} d={pair.b[1]} color={phase === "result" && pair.answer === "right" ? "#4ade80" : "#60a5fa"} />
+                <FractionDisplay n={pair.b[0]} d={pair.b[1]} color={phase === "result" && pair.answer === "right" ? "#4ade80" : "#60a5fa"} showBar={showBars} />
               </button>
             </div>
 
@@ -350,6 +440,16 @@ export function FractionFighterGame() {
             <div className="mb-3">
               <ScoreSubmit game="fraction-fighter" score={score} level={level} stats={{ bestStreak }} />
             </div>
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
             <div className="flex gap-3 justify-center">
               <button onClick={startGame} className="px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Again

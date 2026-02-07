@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Zap, Timer, Star } from "lucide-react";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ArrowLeft, Trophy, RotateCcw, Timer, Star } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
 // ── Types ──
@@ -27,11 +32,12 @@ type GamePhase = "menu" | "countdown" | "playing" | "gameOver";
  *   13+:  all ops, range 1-100, mult 2-12
  * Wrong answer spread scales with difficulty for harder guessing.
  */
-function generateProblem(difficulty: number): Problem {
-  const ops: Operation[] =
+function generateProblem(difficulty: number, enabledOps?: Operation[]): Problem {
+  const autoOps: Operation[] =
     difficulty <= 3 ? ["add", "subtract"] :
     difficulty <= 7 ? ["add", "subtract", "multiply"] :
     ["add", "subtract", "multiply", "divide"];
+  const ops = enabledOps && enabledOps.length > 0 ? enabledOps : autoOps;
   const op = ops[Math.floor(Math.random() * ops.length)];
 
   let a: number, b: number, answer: number, question: string;
@@ -85,10 +91,22 @@ function generateProblem(difficulty: number): Problem {
 
 // ── Constants ──
 
+const MATH_TIPS = [
+  "Addition: start from the bigger number and count up.",
+  "Subtraction: think of it as 'how far apart are these numbers?'",
+  "Multiplying by 2 is the same as doubling.",
+  "Division: 'how many groups of this size fit in that number?'",
+  "Order of operations: Parentheses, Exponents, Multiply/Divide, Add/Subtract.",
+  "To add 9, add 10 then subtract 1.",
+  "Even + Even = Even, Odd + Odd = Even, Even + Odd = Odd.",
+  "To subtract quickly, round up and adjust: 83 - 27 → 83 - 30 + 3.",
+];
+
 const GAME_DURATION = 60; // seconds
 const COUNTDOWN_SECS = 3;
 
 export function MathBlitzGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -99,8 +117,30 @@ export function MathBlitzGame() {
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECS);
   const [highScore, setHighScore] = useState(() => getLocalHighScore("mathBlitz_highScore"));
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [mathTipIdx, setMathTipIdx] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef(1);
+  const problemStartTimeRef = useRef(0);
+
+  // ── Settings ──
+  const [gameDuration, setGameDuration] = useState(60);
+  const [enabledOps, setEnabledOps] = useState<Operation[]>(["add", "subtract", "multiply", "divide"]);
+
+  const toggleOp = (op: Operation) => {
+    setEnabledOps((prev) => {
+      if (prev.includes(op)) {
+        const next = prev.filter((o) => o !== op);
+        return next.length > 0 ? next : prev; // at least one must stay
+      }
+      return [...prev, op];
+    });
+  };
+
+  useEffect(() => {
+    if (problem) setMathTipIdx(Math.floor(Math.random() * 100));
+  }, [problem]);
 
   // Countdown
   useEffect(() => {
@@ -108,18 +148,37 @@ export function MathBlitzGame() {
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
-          // Use setTimeout to avoid setState-in-effect lint
+          sfxCountdownGo();
           setTimeout(() => {
             setPhase("playing");
-            setProblem(generateProblem(1));
+            setProblem(generateProblem(1, enabledOps));
           }, 0);
           return 0;
         }
+        sfxCountdown();
         return c - 1;
       });
     }, 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown]);
+  }, [phase, countdown, enabledOps]);
+
+  useEffect(() => {
+    if (phase === "playing" && problem) problemStartTimeRef.current = Date.now();
+  }, [phase, problem]);
+
+  // On game over: track and achievements
+  useEffect(() => {
+    if (phase !== "gameOver") return;
+    sfxGameOver();
+    trackGamePlayed("math-blitz", score);
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "math-blitz", score, solved, bestStreak },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on game over
 
   // Game timer
   useEffect(() => {
@@ -154,26 +213,32 @@ export function MathBlitzGame() {
   const handleAnswer = useCallback(
     (choice: number) => {
       if (phase !== "playing" || !problem) return;
+      const answeredAt = Date.now();
+      const problemStartedAt = problemStartTimeRef.current;
 
       if (choice === problem.answer) {
         const newStreak = streak + 1;
-        const multiplier = 1 + Math.floor(newStreak / 5) * 0.5;
-        const points = Math.round(10 * multiplier);
+        const { mult } = getMultiplierFromStreak(newStreak);
+        let points = Math.round(10 * mult);
+        if (answeredAt - problemStartedAt < 1000) points += 5;
         setScore((s) => s + points);
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
         setSolved((s) => s + 1);
         setFlash("correct");
         difficultyRef.current = Math.floor(newStreak / 3) + 1;
+        if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        else sfxCorrect();
       } else {
+        sfxWrong();
         setStreak(0);
         setFlash("wrong");
       }
 
       setTimeout(() => setFlash(null), 200);
-      setProblem(generateProblem(difficultyRef.current));
+      setProblem(generateProblem(difficultyRef.current, enabledOps));
     },
-    [phase, problem, streak]
+    [phase, problem, streak, enabledOps]
   );
 
   const startGame = () => {
@@ -181,15 +246,17 @@ export function MathBlitzGame() {
     setStreak(0);
     setBestStreak(0);
     setSolved(0);
-    setTimeLeft(GAME_DURATION);
+    setTimeLeft(gameDuration);
     setCountdown(COUNTDOWN_SECS);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
     difficultyRef.current = 1;
     setPhase("countdown");
   };
 
   const timerColor =
     timeLeft > 20 ? "text-green-400" : timeLeft > 10 ? "text-yellow-400" : "text-red-400";
-  const timerBarWidth = (timeLeft / GAME_DURATION) * 100;
+  const timerBarWidth = (timeLeft / gameDuration) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-emerald-950 to-slate-950 flex flex-col items-center">
@@ -203,18 +270,43 @@ export function MathBlitzGame() {
           Games
         </Link>
         <h1 className="text-lg font-bold text-white">Math Blitz</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
         {/* MENU */}
         {phase === "menu" && (
-          <div className="text-center">
+          <div className="text-center w-full">
             <div className="text-6xl mb-4">⚡</div>
             <h2 className="text-3xl font-bold text-white mb-2">Math Blitz</h2>
-            <p className="text-slate-400 mb-8 max-w-sm mx-auto">
-              Solve as many math problems as you can in 60 seconds! Difficulty increases with your streak.
+            <p className="text-slate-400 mb-6 max-w-sm mx-auto">
+              Solve as many problems as you can! Difficulty increases with your streak.
             </p>
+
+            {/* Duration slider */}
+            <div className="max-w-xs mx-auto mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-slate-400">Duration</span>
+                <span className="text-xs font-bold text-emerald-400 tabular-nums">{gameDuration}s</span>
+              </div>
+              <input type="range" min={30} max={120} step={15} value={gameDuration}
+                onChange={(e) => setGameDuration(Number(e.target.value))}
+                className="w-full accent-emerald-500" />
+            </div>
+
+            {/* Operation toggles */}
+            <div className="max-w-xs mx-auto mb-5 space-y-1.5">
+              <div className="text-xs text-slate-500 text-left mb-1">Operations</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {([["add", "+"], ["subtract", "−"], ["multiply", "×"], ["divide", "÷"]] as [Operation, string][]).map(([op, label]) => (
+                  <button key={op} onClick={() => toggleOp(op)}
+                    className={`py-2 rounded-lg text-sm font-bold transition-all ${enabledOps.includes(op) ? "bg-emerald-500/25 border border-emerald-400/50 text-emerald-400" : "bg-white/5 border border-white/10 text-slate-600"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={startGame}
               className="px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/30"
@@ -258,6 +350,11 @@ export function MathBlitzGame() {
               />
             </div>
 
+            {/* Math tip */}
+            <div className="text-center text-[11px] text-slate-500 italic px-4">
+              💡 {MATH_TIPS[mathTipIdx % MATH_TIPS.length]}
+            </div>
+
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -266,12 +363,7 @@ export function MathBlitzGame() {
                   {timeLeft}s
                 </span>
               </div>
-              {streak >= 3 && (
-                <div className="flex items-center gap-1 text-yellow-400 animate-bounce">
-                  <Zap className="w-4 h-4 fill-yellow-400" />
-                  <span className="text-sm font-bold">x{streak}</span>
-                </div>
-              )}
+              <StreakBadge streak={streak} />
               <div className="text-right">
                 <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{solved} solved</div>
@@ -290,8 +382,8 @@ export function MathBlitzGame() {
             )}
 
             {/* Problem */}
-            <div className="bg-white/5 backdrop-blur rounded-2xl border border-white/10 p-8 text-center">
-              <div className="text-5xl font-bold text-white mb-2 tracking-wide">
+            <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 text-center shadow-lg shadow-black/20">
+              <div className="text-5xl font-bold text-white mb-2 tracking-wide drop-shadow-sm">
                 {problem.question}
               </div>
               <div className="text-lg text-slate-400">= ?</div>
@@ -303,7 +395,7 @@ export function MathBlitzGame() {
                 <button
                   key={`${choice}-${i}`}
                   onClick={() => handleAnswer(choice)}
-                  className="py-4 sm:py-5 bg-white/10 hover:bg-emerald-500/30 border border-white/10 hover:border-emerald-400/50 rounded-xl text-xl sm:text-2xl font-bold text-white transition-all active:scale-95 min-h-[56px]"
+                  className="py-4 sm:py-5 bg-white/10 hover:bg-emerald-500/25 border border-white/10 hover:border-emerald-400/40 rounded-xl text-xl sm:text-2xl font-bold text-white transition-all duration-200 active:scale-95 min-h-[56px] shadow-md hover:shadow-emerald-500/20 hover:shadow-lg"
                 >
                   {choice}
                 </button>
@@ -330,6 +422,16 @@ export function MathBlitzGame() {
             <div className="mb-3">
               <ScoreSubmit game="math-blitz" score={score} level={Math.floor(bestStreak / 3) + 1} stats={{ solved, bestStreak }} />
             </div>
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={startGame}

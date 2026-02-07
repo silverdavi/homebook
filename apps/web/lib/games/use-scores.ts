@@ -97,3 +97,41 @@ export function setLocalHighScore(key: string, score: number): void {
     // Ignore
   }
 }
+
+// ── Player profile (for achievements & profile modal) ──
+
+const STORAGE_KEY_PROFILE = "playerProfile";
+
+export interface PlayerProfile {
+  totalGamesPlayed: number;
+  gamesPlayedByGameId: Record<string, number>;
+  totalScore: number;
+}
+
+export function getProfile(): PlayerProfile {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY_PROFILE) : null;
+    if (!raw) return { totalGamesPlayed: 0, gamesPlayedByGameId: {}, totalScore: 0 };
+    const parsed = JSON.parse(raw) as PlayerProfile;
+    return {
+      totalGamesPlayed: typeof parsed.totalGamesPlayed === "number" ? parsed.totalGamesPlayed : 0,
+      gamesPlayedByGameId: parsed.gamesPlayedByGameId && typeof parsed.gamesPlayedByGameId === "object" ? parsed.gamesPlayedByGameId : {},
+      totalScore: typeof parsed.totalScore === "number" ? parsed.totalScore : 0,
+    };
+  } catch {
+    return { totalGamesPlayed: 0, gamesPlayedByGameId: {}, totalScore: 0 };
+  }
+}
+
+/** Call when a game ends to update profile counts (for achievements and profile modal). */
+export function trackGamePlayed(gameId: string, score: number = 0): void {
+  try {
+    const profile = getProfile();
+    profile.totalGamesPlayed += 1;
+    profile.gamesPlayedByGameId[gameId] = (profile.gamesPlayedByGameId[gameId] ?? 0) + 1;
+    profile.totalScore += score;
+    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+  } catch {
+    // Ignore
+  }
+}

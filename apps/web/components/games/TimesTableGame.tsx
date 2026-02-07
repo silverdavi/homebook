@@ -1,12 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Zap, Star, Check, X } from "lucide-react";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ArrowLeft, Trophy, RotateCcw, Star, Check, X } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
-type GamePhase = "menu" | "playing" | "feedback" | "complete";
+type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
+const COUNTDOWN_SECS = 3;
 type GameMode = "sprint" | "survival" | "target";
 
 interface Problem {
@@ -107,15 +113,27 @@ const MODES = {
 } as const;
 
 const TABLE_GROUPS = [
-  { label: "Easy (2-5)", tables: [2, 3, 4, 5], color: "#22c55e" },
-  { label: "Medium (2-9)", tables: [2, 3, 4, 5, 6, 7, 8, 9], color: "#f59e0b" },
-  { label: "Hard (2-12)", tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], color: "#ef4444" },
-  { label: "Tricky (6-12)", tables: [6, 7, 8, 9, 11, 12], color: "#a855f7" },
+  { label: "Tables 2-5", tables: [2, 3, 4, 5], color: "#22c55e" },
+  { label: "Tables 2-9", tables: [2, 3, 4, 5, 6, 7, 8, 9], color: "#f59e0b" },
+  { label: "Tables 2-12", tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], color: "#ef4444" },
+  { label: "Tables 6-12", tables: [6, 7, 8, 9, 11, 12], color: "#a855f7" },
+];
+
+const MULT_TIPS = [
+  "Multiplying by 9? The digits of the answer always add up to 9!",
+  "Any number × 0 = 0, any number × 1 = the number itself.",
+  "To multiply by 5, multiply by 10 then divide by 2.",
+  "Multiplication is commutative: 3 × 7 = 7 × 3.",
+  "Square numbers: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144.",
+  "To multiply by 11, add the digits and put the sum in the middle.",
+  "Double and halve: 4 × 15 = 8 × 7.5 — works for mental math!",
+  "The product of two even numbers is always even.",
 ];
 
 const TARGET_SCORE = 500;
 
 export function TimesTableGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [mode, setMode] = useState<GameMode>("sprint");
   const [tables, setTables] = useState(TABLE_GROUPS[0].tables);
@@ -133,8 +151,45 @@ export function TimesTableGame() {
   const [showGrid, setShowGrid] = useState(true);
   const [usedPairs] = useState(new Set<string>());
   const [highScore, setHighScore] = useState(() => getLocalHighScore("timesTable_highScore"));
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [multTipIdx, setMultTipIdx] = useState(0);
   const startRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [countdownVal, setCountdownVal] = useState(COUNTDOWN_SECS);
+
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setMultTipIdx((i) => (i + 1) % MULT_TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "complete") return;
+    const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsed * 5 - wrong * 50) : score;
+    trackGamePlayed("times-table", finalScore);
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "times-table", score: finalScore, mode, timeSeconds: elapsed, elapsed },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on complete
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    if (countdownVal <= 0) {
+      sfxCountdownGo();
+      setPhase("playing");
+      startRef.current = Date.now();
+      return;
+    }
+    sfxCountdown();
+    const t = setTimeout(() => setCountdownVal((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, countdownVal]);
 
   // Timer
   useEffect(() => {
@@ -154,6 +209,7 @@ export function TimesTableGame() {
 
   const finishGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    sfxLevelUp();
     setPhase("complete");
     const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsed * 5 - wrong * 50) : score;
     setScore(finalScore);
@@ -170,13 +226,15 @@ export function TimesTableGame() {
 
       if (choice === problem.answer) {
         const newStreak = streak + 1;
-        const multiplier = 1 + Math.floor(newStreak / 5) * 0.5;
-        const points = Math.round(10 * multiplier);
+        const { mult } = getMultiplierFromStreak(newStreak);
+        const points = Math.round(10 * mult);
         setScore((s) => s + points);
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
         setSolved((s) => s + 1);
         setFeedback("correct");
+        if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        else sfxCorrect();
 
         setTimeout(() => {
           const nextSolved = solved + 1;
@@ -189,6 +247,7 @@ export function TimesTableGame() {
           }
         }, 600);
       } else {
+        sfxWrong();
         setStreak(0);
         setWrong((w) => w + 1);
         setFeedback("wrong");
@@ -220,12 +279,14 @@ export function TimesTableGame() {
     setWrong(0);
     setLives(3);
     setElapsed(0);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
     usedPairs.clear();
-    setTimeout(() => { startRef.current = Date.now(); }, 0);
     setProblem(generateProblem(tables, usedPairs));
     setFeedback(null);
     setSelectedAnswer(null);
-    setPhase("playing");
+    setCountdownVal(COUNTDOWN_SECS);
+    setPhase("countdown");
   }, [tables, usedPairs]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -238,7 +299,7 @@ export function TimesTableGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-lg font-bold text-white">Times Tables</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
@@ -269,10 +330,10 @@ export function TimesTableGame() {
               </div>
             </div>
 
-            {/* Visual toggle */}
-            <label className="flex items-center justify-center gap-2 text-sm text-slate-400 cursor-pointer">
-              <input type="checkbox" checked={showGrid} onChange={() => setShowGrid(!showGrid)} className="rounded" />
-              Show visual grid
+            {/* Toggle */}
+            <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer max-w-xs mx-auto">
+              <span className="text-xs text-slate-400">Show visual grid</span>
+              <input type="checkbox" checked={showGrid} onChange={() => setShowGrid(!showGrid)} className="rounded accent-amber-500 w-4 h-4" />
             </label>
 
             {/* Mode picker */}
@@ -305,6 +366,15 @@ export function TimesTableGame() {
           </div>
         )}
 
+        {/* COUNTDOWN */}
+        {phase === "countdown" && (
+          <div className="text-center">
+            <div className="text-8xl font-bold text-amber-400 animate-pulse tabular-nums">
+              {countdownVal > 0 ? countdownVal : "GO!"}
+            </div>
+          </div>
+        )}
+
         {/* PLAYING */}
         {(phase === "playing" || phase === "feedback") && problem && (
           <div className="w-full space-y-4">
@@ -331,21 +401,23 @@ export function TimesTableGame() {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                {streak >= 3 && (
-                  <div className="flex items-center gap-1 text-yellow-400 animate-bounce">
-                    <Zap className="w-3.5 h-3.5 fill-yellow-400" />
-                    <span className="text-xs font-bold">x{streak}</span>
-                  </div>
-                )}
+                <StreakBadge streak={streak} />
                 <span className="text-white font-bold tabular-nums">{formatTime(elapsed)}</span>
               </div>
             </div>
 
+            {/* Multiplication tip */}
+            {!feedback && (
+              <div className="text-center text-[11px] text-slate-500 italic px-4">
+                💡 {MULT_TIPS[multTipIdx]}
+              </div>
+            )}
+
             {/* Problem display */}
-            <div className={`rounded-2xl border p-6 text-center transition-all duration-300 ${
-              feedback === "correct" ? "border-green-400/30 bg-green-500/10" :
-              feedback === "wrong" ? "border-red-400/30 bg-red-500/10" :
-              "border-white/10 bg-white/5"
+            <div className={`rounded-2xl border p-6 text-center transition-all duration-300 shadow-lg ${
+              feedback === "correct" ? "border-green-400/30 bg-green-500/10 shadow-green-500/10" :
+              feedback === "wrong" ? "border-red-400/30 bg-red-500/10 shadow-red-500/10" :
+              "border-white/10 bg-white/5 shadow-black/20"
             }`}>
               {/* Visual grid */}
               {showGrid && (
@@ -381,14 +453,14 @@ export function TimesTableGame() {
                     key={`${choice}-${i}`}
                     onClick={() => handleAnswer(choice)}
                     disabled={feedback !== null}
-                    className={`py-4 rounded-xl text-xl sm:text-2xl font-bold transition-all min-h-[56px] ${
+                    className={`py-4 rounded-xl text-xl sm:text-2xl font-bold transition-all duration-200 min-h-[56px] shadow-md ${
                       showResult && isCorrect
-                        ? "bg-green-500/20 border-2 border-green-400 text-green-400"
+                        ? "bg-green-500/20 border-2 border-green-400 text-green-400 shadow-green-500/20"
                         : showResult && isSelected && !isCorrect
-                        ? "bg-red-500/20 border-2 border-red-400 text-red-400"
+                        ? "bg-red-500/20 border-2 border-red-400 text-red-400 shadow-red-500/20"
                         : showResult
                         ? "bg-white/5 border border-white/5 text-slate-600"
-                        : "bg-white/10 border border-white/10 text-white hover:bg-violet-500/20 hover:border-violet-400/40 active:scale-95"
+                        : "bg-white/10 border border-white/10 text-white hover:bg-violet-500/20 hover:border-violet-400/40 hover:shadow-lg hover:shadow-violet-500/20 active:scale-95"
                     }`}
                   >
                     {choice}
@@ -432,6 +504,17 @@ export function TimesTableGame() {
             )}
 
             <ScoreSubmit game="times-table" score={score} level={tableIdx + 1} stats={{ mode, solved, accuracy: `${accuracy}%`, time: formatTime(elapsed) }} />
+
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
 
             <div className="flex gap-3 justify-center">
               <button onClick={() => startGame(mode)} className="px-6 py-3 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">

@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Check, X, Heart } from "lucide-react";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement } from "@/lib/games/audio";
 import Link from "next/link";
 
 type GamePhase = "menu" | "playing" | "feedback" | "complete";
@@ -231,9 +235,37 @@ const CHALLENGE_SETS = [
   { label: "Mixed", emoji: "🎲", types: ["identify", "compare", "add", "equivalent"] as ChallengeType[], color: "#ef4444" },
 ];
 
+const FRACTION_TIPS: Record<ChallengeType, string[]> = {
+  identify: [
+    "The numerator is the top number — it tells you how many parts you have.",
+    "The denominator is the bottom number — it tells how many equal parts make a whole.",
+    "A fraction bar shows parts of a whole visually.",
+    "3/4 means 3 out of 4 equal parts.",
+  ],
+  compare: [
+    "To compare fractions with the same denominator, just compare the numerators.",
+    "Cross-multiply to compare: a/b vs c/d → compare a×d with b×c.",
+    "A bigger denominator means smaller pieces (if numerators are the same).",
+    "Convert to the same denominator to compare fractions easily.",
+  ],
+  add: [
+    "You can only add fractions that have the same denominator.",
+    "Find the Least Common Denominator (LCD) before adding fractions.",
+    "When adding fractions: add the numerators, keep the denominator.",
+    "Always simplify your answer by dividing by the GCD.",
+  ],
+  equivalent: [
+    "Multiply both numerator and denominator by the same number to get an equivalent fraction.",
+    "1/2 = 2/4 = 3/6 = 4/8 — all equivalent!",
+    "Dividing both parts by their GCD gives the simplest form.",
+    "Equivalent fractions represent the same point on a number line.",
+  ],
+};
+
 const LIVES = 5;
 
 export function FractionLabGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [level, setLevel] = useState(1);
@@ -247,6 +279,25 @@ export function FractionLabGame() {
   const [setIdx, setSetIdx] = useState(0);
   const [usePie, setUsePie] = useState(false);
   const [highScore, setHighScore] = useState(() => getLocalHighScore("fractionLab_highScore"));
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [tipIdx, setTipIdx] = useState(0);
+
+  useEffect(() => {
+    if (challenge) setTipIdx(Math.floor(Math.random() * 100));
+  }, [challenge]);
+
+  useEffect(() => {
+    if (phase !== "complete") return;
+    trackGamePlayed("fraction-lab", score);
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "fraction-lab", score, level, solved, accuracy: solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100 },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on complete
 
   const nextChallenge = useCallback(() => {
     const lvl = Math.floor(solved / 3) + 1;
@@ -263,16 +314,19 @@ export function FractionLabGame() {
       setSelectedAnswer(choice);
 
       if (choice === challenge.answer) {
+        sfxCorrect();
         setScore((s) => s + 10);
         setSolved((s) => s + 1);
         setFeedback("correct");
         setTimeout(() => nextChallenge(), 1200);
       } else {
+        sfxWrong();
         setWrong((w) => w + 1);
         setFeedback("wrong");
         const nl = lives - 1;
         setLives(nl);
         if (nl <= 0) {
+          sfxGameOver();
           setTimeout(() => {
             setPhase("complete");
             setScore((s) => {
@@ -296,6 +350,8 @@ export function FractionLabGame() {
     setSolved(0);
     setWrong(0);
     setLevel(1);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
     setChallenge(generateChallenge(1, types));
     setFeedback(null);
     setSelectedAnswer(null);
@@ -312,7 +368,7 @@ export function FractionLabGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-lg font-bold text-white">Fraction Lab</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
@@ -379,8 +435,15 @@ export function FractionLabGame() {
               <div className="text-white font-bold tabular-nums">{score}</div>
             </div>
 
+            {/* Educational tip */}
+            {!feedback && (
+              <div className="text-center text-[11px] text-slate-500 italic px-4">
+                💡 {FRACTION_TIPS[challenge.type][tipIdx % FRACTION_TIPS[challenge.type].length]}
+              </div>
+            )}
+
             {/* Question */}
-            <div className="text-center text-white text-lg font-semibold">
+            <div className="text-center text-white text-lg font-semibold drop-shadow-sm">
               {challenge.question}
             </div>
 
@@ -424,14 +487,14 @@ export function FractionLabGame() {
                     key={`${choice}-${i}`}
                     onClick={() => handleAnswer(choice)}
                     disabled={feedback !== null}
-                    className={`py-4 rounded-xl text-lg sm:text-xl font-bold transition-all min-h-[52px] ${
+                    className={`py-4 rounded-xl text-lg sm:text-xl font-bold transition-all duration-200 min-h-[52px] shadow-md ${
                       showResult && isCorrect
-                        ? "bg-green-500/20 border-2 border-green-400 text-green-400"
+                        ? "bg-green-500/20 border-2 border-green-400 text-green-400 shadow-green-500/20"
                         : showResult && isSelected && !isCorrect
-                        ? "bg-red-500/20 border-2 border-red-400 text-red-400"
+                        ? "bg-red-500/20 border-2 border-red-400 text-red-400 shadow-red-500/20"
                         : showResult
                         ? "bg-white/5 border border-white/5 text-slate-600"
-                        : "bg-white/10 border border-white/10 text-white hover:bg-orange-500/20 hover:border-orange-400/40 active:scale-95"
+                        : "bg-white/10 border border-white/10 text-white hover:bg-orange-500/20 hover:border-orange-400/40 hover:shadow-lg hover:shadow-orange-500/20 active:scale-95"
                     }`}
                   >
                     {choice}
@@ -461,6 +524,17 @@ export function FractionLabGame() {
             )}
 
             <ScoreSubmit game="fraction-lab" score={score} level={level} stats={{ solved, accuracy: `${accuracy}%` }} />
+
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
 
             <div className="flex gap-3 justify-center">
               <button onClick={() => startGame(challengeTypes, setIdx)} className="px-6 py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">

@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trophy, Lightbulb, SkipForward, Star } from "lucide-react";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxAchievement } from "@/lib/games/audio";
 import Link from "next/link";
 import { SCIENCE_WORDS } from "@/lib/games/science-data";
 
@@ -82,6 +86,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function WordBuilderGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(0);
@@ -92,6 +97,28 @@ export function WordBuilderGame() {
   const [skips, setSkips] = useState(3);
   const [usedWords] = useState<Set<number>>(new Set());
   const [highScore, setHighScore] = useState(() => getLocalHighScore("wordBuilder_highScore"));
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const hasTrackedSessionRef = useRef(false);
+
+  // ── Settings ──
+  const [autoHint, setAutoHint] = useState(false);
+
+  useEffect(() => {
+    if (phase !== "correct") return;
+    const wordsBuilt = level;
+    if (!hasTrackedSessionRef.current) {
+      trackGamePlayed("word-builder", score);
+      hasTrackedSessionRef.current = true;
+    }
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "word-builder", score, wordsBuilt },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase, level, score]); // eslint-disable-line react-hooks/exhaustive-deps -- wordsBuilt = level when correct
 
   const saveHighScore = useCallback((newScore: number) => {
     if (newScore > highScore) {
@@ -106,9 +133,9 @@ export function WordBuilderGame() {
     setWordData(data);
     setScrambled(scramble(data.word).split(""));
     setSelected([]);
-    setShowHint(false);
+    setShowHint(autoHint);
     setPhase("playing");
-  }, [usedWords]);
+  }, [usedWords, autoHint]);
 
   const handleLetterClick = useCallback(
     (scrambledIdx: number) => {
@@ -122,6 +149,7 @@ export function WordBuilderGame() {
 
       const target = wordData.word;
       if (built === target) {
+        sfxCorrect();
         const points = showHint ? 5 : 10;
         setScore((s) => {
           const ns = s + points;
@@ -132,6 +160,7 @@ export function WordBuilderGame() {
         setPhase("correct");
         setTimeout(() => loadWord(), 1500);
       } else if (built.length === target.length && built !== target) {
+        sfxWrong();
         setTimeout(() => setSelected([]), 300);
       }
     },
@@ -152,6 +181,9 @@ export function WordBuilderGame() {
     setScore(0);
     setLevel(0);
     setSkips(3);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
+    hasTrackedSessionRef.current = false;
     usedWords.clear();
     loadWord();
   };
@@ -166,18 +198,28 @@ export function WordBuilderGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-lg font-bold text-white">Word Builder</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
         {/* MENU */}
         {phase === "menu" && (
-          <div className="text-center">
+          <div className="text-center w-full">
             <div className="text-6xl mb-4">🔤</div>
             <h2 className="text-3xl font-bold text-white mb-2">Word Builder</h2>
-            <p className="text-slate-400 mb-8 max-w-sm mx-auto">
+            <p className="text-slate-400 mb-6 max-w-sm mx-auto">
               Unscramble letters to build vocabulary words from science, math, geography, and more!
             </p>
+
+            {/* Toggle */}
+            <div className="max-w-xs mx-auto mb-5">
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <span className="text-xs text-slate-400">Always show hint</span>
+                <input type="checkbox" checked={autoHint} onChange={(e) => setAutoHint(e.target.checked)}
+                  className="rounded accent-amber-500 w-4 h-4" />
+              </label>
+            </div>
+
             <button onClick={startGame} className="px-10 py-4 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/30">
               Start
             </button>
@@ -192,6 +234,16 @@ export function WordBuilderGame() {
         {/* PLAYING / CORRECT */}
         {(phase === "playing" || phase === "correct") && wordData && (
           <div className="w-full space-y-6">
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-slate-400 text-sm">
@@ -236,12 +288,12 @@ export function WordBuilderGame() {
               {wordData.word.split("").map((_, i) => (
                 <div
                   key={i}
-                  className={`w-11 h-12 rounded-lg border-2 flex items-center justify-center text-xl font-bold transition-all ${
+                  className={`w-11 h-12 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all duration-200 shadow-md ${
                     i < builtWord.length
                       ? phase === "correct"
-                        ? "border-green-400 bg-green-500/20 text-green-400"
-                        : "border-amber-400 bg-amber-500/20 text-white"
-                      : "border-white/20 bg-white/5 text-transparent"
+                        ? "border-green-400 bg-green-500/25 text-green-400 shadow-green-500/20"
+                        : "border-amber-400 bg-amber-500/25 text-white shadow-amber-500/20"
+                      : "border-white/20 bg-white/5 text-transparent shadow-black/10"
                   }`}
                 >
                   {i < builtWord.length ? builtWord[i] : "·"}
@@ -264,10 +316,10 @@ export function WordBuilderGame() {
                       key={i}
                       onClick={() => handleLetterClick(i)}
                       disabled={selected.includes(i)}
-                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-lg sm:text-xl font-bold transition-all ${
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-lg sm:text-xl font-bold transition-all duration-200 shadow-md ${
                         selected.includes(i)
-                          ? "bg-white/5 border border-white/5 text-slate-700 scale-90"
-                          : "bg-white/10 border border-white/20 text-white hover:bg-amber-500/30 hover:border-amber-400/50 active:scale-90"
+                          ? "bg-white/5 border border-white/10 text-slate-600 scale-95 shadow-inner"
+                          : "bg-white/10 border border-white/20 text-white hover:bg-amber-500/30 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/20 active:scale-95"
                       }`}
                     >
                       {letter}

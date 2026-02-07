@@ -32,26 +32,9 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt -q
             
-            # Stop existing process
-            pkill -f uvicorn || true
-            sleep 2
+            sudo systemctl restart homebook-api
+            sleep 5
             
-            # Start API in background
-            nohup venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &
-            
-            # Wait for startup
-            sleep 8
-            
-            # Health check
-            if curl -sf http://localhost:8000/health; then
-              echo ""
-              echo "✅ API deployed successfully!"
-            else
-              echo "❌ Health check failed"
-              tail -50 /tmp/uvicorn.log
-              exit 1
-            fi
+            curl -sf http://localhost:8000/health && echo "✅ API deployed!" || exit 1
 
-# Required secrets:
-#   EC2_HOST - EC2 public IP (44.209.209.79)
-#   EC2_SSH_KEY - Private SSH key (~/.ssh/homebook-key.pem)
+# Required secrets: EC2_HOST, EC2_SSH_KEY

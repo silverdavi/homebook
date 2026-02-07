@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Clock } from "lucide-react";
+import { trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick } from "@/lib/games/audio";
 import Link from "next/link";
 import { getElementsByDifficulty } from "@/lib/games/science-data";
 
@@ -31,14 +36,28 @@ function createCards(pairCount: number, difficulty: Difficulty): Card[] {
   return cards.sort(() => Math.random() - 0.5);
 }
 
+const CHEMISTRY_TIPS = [
+  "Elements in the same column of the periodic table have similar properties.",
+  "Noble gases (He, Ne, Ar) are extremely stable and rarely react.",
+  "Metals are on the left side of the periodic table, nonmetals on the right.",
+  "The atomic number tells you how many protons an element has.",
+  "Elements are organized by increasing atomic number in the periodic table.",
+  "H₂O is made of 2 hydrogen atoms and 1 oxygen atom.",
+  "Iron (Fe) gets its symbol from the Latin word 'ferrum'.",
+  "Gold (Au) comes from the Latin 'aurum' meaning 'shining dawn'.",
+  "Carbon is the basis of all organic chemistry.",
+  "Chlorine (Cl) is used to purify drinking water.",
+];
+
 const GRID_OPTIONS: { label: string; pairs: number; cols: number; difficulty: Difficulty; emoji: string }[] = [
-  { label: "4×2 Easy", pairs: 4, cols: 4, difficulty: "easy", emoji: "🌤️" },
-  { label: "4×3 Medium", pairs: 6, cols: 4, difficulty: "medium", emoji: "🌦️" },
-  { label: "4×4 Hard", pairs: 8, cols: 4, difficulty: "hard", emoji: "⛈️" },
-  { label: "5×4 Expert", pairs: 10, cols: 5, difficulty: "hard", emoji: "💀" },
+  { label: "8 cards · 4 pairs", pairs: 4, cols: 4, difficulty: "easy", emoji: "🧪" },
+  { label: "12 cards · 6 pairs", pairs: 6, cols: 4, difficulty: "medium", emoji: "⚗️" },
+  { label: "16 cards · 8 pairs", pairs: 8, cols: 4, difficulty: "hard", emoji: "🔬" },
+  { label: "20 cards · 10 pairs", pairs: 10, cols: 5, difficulty: "hard", emoji: "🧬" },
 ];
 
 export function ElementMatchGame() {
+  useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedIds, setFlippedIds] = useState<number[]>([]);
@@ -56,6 +75,28 @@ export function ElementMatchGame() {
     } catch { /* ignore */ }
     return {};
   });
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [chemTipIdx, setChemTipIdx] = useState(0);
+
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setChemTipIdx((i) => (i + 1) % CHEMISTRY_TIPS.length), 6000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "won") return;
+    const scoreVal = Math.max(1, 1000 - elapsed * 10 - moves * 5);
+    trackGamePlayed("element-match", scoreVal);
+    const profile = getProfile();
+    const newOnes = checkAchievements(
+      { gameId: "element-match", timeSeconds: elapsed, elapsed, moves, totalPairs },
+      profile.totalGamesPlayed,
+      profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on won
 
   // Timer
   useEffect(() => {
@@ -72,6 +113,8 @@ export function ElementMatchGame() {
     setTotalPairs(pairCount);
     setElapsed(0);
     setGridCols(cols);
+    setAchievementQueue([]);
+    setShowAchievementIndex(0);
     setPhase("playing");
   }, []);
 
@@ -84,6 +127,7 @@ export function ElementMatchGame() {
       if (!card || card.flipped || card.matched) return;
 
       const newFlipped = [...flippedIds, cardId];
+      sfxClick();
       setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, flipped: true } : c)));
       setFlippedIds(newFlipped);
 
@@ -93,6 +137,7 @@ export function ElementMatchGame() {
 
         if (first.pairId === second.pairId) {
           // Match!
+          sfxCorrect();
           setTimeout(() => {
             setCards((prev) =>
               prev.map((c) =>
@@ -103,6 +148,7 @@ export function ElementMatchGame() {
             setMatchedPairs((m) => {
               const nm = m + 1;
               if (nm === totalPairs) {
+                sfxLevelUp();
                 setPhase("won");
                 // Save best time
                 const key = `${totalPairs}`;
@@ -120,6 +166,7 @@ export function ElementMatchGame() {
           }, 400);
         } else {
           // No match
+          sfxWrong();
           setTimeout(() => {
             setCards((prev) =>
               prev.map((c) =>
@@ -143,7 +190,7 @@ export function ElementMatchGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-lg font-bold text-white">Element Match</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
       <div className="w-full max-w-lg px-4 flex-1 flex flex-col items-center justify-center">
@@ -187,6 +234,11 @@ export function ElementMatchGame() {
               <div className="text-slate-400">{moves} moves</div>
             </div>
 
+            {/* Chemistry tip */}
+            <div className="text-center text-[11px] text-slate-500 italic px-2">
+              💡 {CHEMISTRY_TIPS[chemTipIdx]}
+            </div>
+
             {/* Grid */}
             <div
               className="grid gap-1.5 sm:gap-2"
@@ -197,20 +249,20 @@ export function ElementMatchGame() {
                   key={card.id}
                   onClick={() => handleCardClick(card.id)}
                   disabled={card.matched || card.flipped}
-                  className={`aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex items-center justify-center text-center p-1 min-h-[56px] ${
+                  className={`aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex items-center justify-center text-center p-1 min-h-[56px] shadow-md ${
                     card.matched
-                      ? "bg-green-500/20 border-2 border-green-400/50 text-green-400"
+                      ? "bg-green-500/25 border-2 border-green-400/60 text-green-400 shadow-green-500/20"
                       : card.flipped
-                      ? "bg-blue-500/20 border-2 border-blue-400/50 text-white"
-                      : "bg-white/10 border-2 border-white/10 hover:border-blue-400/30 hover:bg-white/15 text-transparent active:scale-95"
+                      ? "bg-blue-500/25 border-2 border-blue-400/60 text-white shadow-lg shadow-blue-500/20"
+                      : "bg-white/[0.08] border-2 border-white/10 hover:border-blue-400/40 hover:bg-white/15 hover:shadow-lg text-transparent active:scale-95"
                   }`}
                 >
                   {card.flipped || card.matched ? (
-                    <span className={card.type === "symbol" ? "text-xl sm:text-2xl" : "text-[10px] sm:text-xs"}>
+                    <span className={card.type === "symbol" ? "text-xl sm:text-2xl drop-shadow-sm" : "text-[10px] sm:text-xs"}>
                       {card.content}
                     </span>
                   ) : (
-                    <span className="text-xl sm:text-2xl text-slate-600">?</span>
+                    <span className="text-xl sm:text-2xl text-slate-500">?</span>
                   )}
                 </button>
               ))}
@@ -235,6 +287,16 @@ export function ElementMatchGame() {
             <div className="mb-3">
               <ScoreSubmit game="element-match" score={Math.max(1, 1000 - elapsed * 10 - moves * 5)} level={totalPairs} stats={{ time: formatTime(elapsed), moves }} />
             </div>
+            {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+              <AchievementToast
+                name={achievementQueue[showAchievementIndex].name}
+                tier={achievementQueue[showAchievementIndex].tier}
+                onDismiss={() => {
+                  if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                  setShowAchievementIndex((i) => i + 1);
+                }}
+              />
+            )}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => startGame(totalPairs, gridCols)}

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { GamesArenaHeader } from "./GamesArenaHeader";
 
 interface GameCardProps {
   title: string;
@@ -84,7 +85,8 @@ const GAMES: GameCardProps[] = [
     emoji: "🕰️",
     href: "/games/timeline-dash",
     color: "#8b5cf6",
-    available: false,
+    available: true,
+    badge: "NEW",
   },
 ];
 
@@ -143,24 +145,7 @@ function GameCard({
 export default function GamesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-white/5">
-        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            teacher.ninja
-          </Link>
-          <Link
-            href="/generate"
-            className="text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            Worksheets
-          </Link>
-        </div>
-      </header>
+      <GamesArenaHeader />
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-16 pb-12 text-center">

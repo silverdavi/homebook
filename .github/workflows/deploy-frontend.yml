@@ -29,28 +29,13 @@ jobs:
             git reset --hard origin/main
             
             cd apps/web
+            rm -rf .next/lock
             npm ci --silent
             npm run build
             
-            # Stop existing process
-            pkill -f "next-server" || true
-            sleep 2
+            sudo systemctl restart homebook-web
+            sleep 5
             
-            # Start frontend in background
-            nohup npm start > /tmp/next.log 2>&1 &
-            
-            # Wait for startup
-            sleep 8
-            
-            # Health check
-            if curl -sf http://localhost:3000 > /dev/null; then
-              echo "✅ Frontend deployed successfully!"
-            else
-              echo "❌ Health check failed"
-              tail -50 /tmp/next.log
-              exit 1
-            fi
+            curl -sf http://localhost:3000 > /dev/null && echo "✅ Frontend deployed!" || exit 1
 
-# Required secrets:
-#   EC2_HOST - EC2 public IP (44.209.209.79)
-#   EC2_SSH_KEY - Private SSH key (~/.ssh/homebook-key.pem)
+# Required secrets: EC2_HOST, EC2_SSH_KEY

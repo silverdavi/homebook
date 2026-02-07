@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Heart, Star, Trophy, RotateCcw, ArrowLeft, Zap, Target, Gauge } from "lucide-react";
+import { Heart, Star, Trophy, RotateCcw, ArrowLeft, Target, Gauge } from "lucide-react";
 import { pickSentence, CATEGORIES } from "@/lib/games/sentences";
-import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
+import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { StreakBadge, HeartRecovery, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
+import { AchievementToast } from "@/components/games/AchievementToast";
+import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
 // ── Types ──
@@ -20,6 +25,7 @@ interface FallingLetter {
   wobbleSpeed: number;
   spawned: boolean;
   caught: boolean;
+  catchTime: number; // performance.now() when caught, 0 if not caught
   missed: boolean;
 }
 
@@ -36,8 +42,7 @@ interface Particle {
   char?: string;
 }
 
-type GamePhase = "menu" | "intro" | "playing" | "levelComplete" | "gameOver";
-type ChosenDifficulty = "easy" | "medium" | "hard" | "auto";
+type GamePhase = "menu" | "intro" | "countdown" | "playing" | "levelComplete" | "gameOver";
 
 // ── Constants ──
 
@@ -46,19 +51,22 @@ const GAME_HEIGHT = 550;
 const LETTER_SIZE = 50;
 const GROUND_Y = GAME_HEIGHT - 40;
 const INITIAL_LIVES = 5;
+const CATCH_ANIM_MS = 280; // ms to show burst animation before letter disappears
+const COUNTDOWN_SECS = 3;
 
-const DIFFICULTY_CONFIG = {
-  easy: { baseSpeed: 0.5, speedIncrement: 0.06, spawnInterval: 1400, spawnIntervalDecrement: 30, minSpawnInterval: 600 },
-  medium: { baseSpeed: 0.8, speedIncrement: 0.08, spawnInterval: 1000, spawnIntervalDecrement: 30, minSpawnInterval: 400 },
-  hard: { baseSpeed: 1.1, speedIncrement: 0.1, spawnInterval: 700, spawnIntervalDecrement: 25, minSpawnInterval: 300 },
-};
-
-const DIFFICULTY_META: Record<string, { label: string; emoji: string; color: string }> = {
-  easy: { label: "Easy", emoji: "🌤️", color: "#22c55e" },
-  medium: { label: "Medium", emoji: "🌦️", color: "#f59e0b" },
-  hard: { label: "Hard", emoji: "⛈️", color: "#ef4444" },
-  auto: { label: "Auto", emoji: "🎯", color: "#6366f1" },
-};
+/** Speed slider (1-5) maps to game parameters.
+ *  speed 1 = ~0.8 letters/sec, speed 5 = ~2.5 letters/sec
+ */
+function getSpeedConfig(speed: number, level: number) {
+  const t = (speed - 1) / 4; // 0..1
+  const baseSpeed = 0.4 + t * 0.8 + (level - 1) * 0.07;
+  const spawnInterval = 1400 - t * 700 - (level - 1) * 25;
+  return {
+    baseSpeed,
+    spawnInterval: Math.max(300, spawnInterval),
+    lps: +(1000 / Math.max(300, spawnInterval)).toFixed(1),
+  };
+}
 
 function getCategoryColor(cat: string): string {
   return CATEGORIES.find((c) => c.id === cat)?.color || "#6366f1";
@@ -77,14 +85,19 @@ const STARS = Array.from({ length: 50 }).map((_, i) => ({
 // ── Component ──
 
 export function LetterRainGame() {
+  useGameMusic();
   const containerRef = useRef<HTMLDivElement>(null);
   const animFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const spawnTimerRef = useRef<number>(0);
   const levelStartRef = useRef<number>(0);
+  const levelStartMissedRef = useRef<number>(0);
+  const totalMissedRef = useRef<number>(0);
+  const nextCharRef = useRef(0); // always-current nextCharIndex for use in updaters
   const [scale, setScale] = useState(1);
 
   const [phase, setPhase] = useState<GamePhase>("menu");
+  const [countdownVal, setCountdownVal] = useState(COUNTDOWN_SECS);
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
@@ -93,17 +106,28 @@ export function LetterRainGame() {
   const [sentence, setSentence] = useState("");
   const [sentenceCategory, setSentenceCategory] = useState("");
   const [nextCharIndex, setNextCharIndex] = useState(0);
-  const [, setBuiltText] = useState("");
   const [letters, setLetters] = useState<FallingLetter[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [flash, setFlash] = useState<"good" | "bad" | null>(null);
   const [usedSentences] = useState<Set<number>>(new Set());
   const [totalCaught, setTotalCaught] = useState(0);
   const [totalMissed, setTotalMissed] = useState(0);
-  const [chosenDifficulty, setChosenDifficulty] = useState<ChosenDifficulty>("auto");
   const [highScore, setHighScore] = useState(() => getLocalHighScore("letterRain_highScore"));
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [elapsedSecs, setElapsedSecs] = useState(0);
+  const [perfectLevels, setPerfectLevels] = useState(0);
+  const [showHeartRecovery, setShowHeartRecovery] = useState(false);
+  const [showPerfectToast, setShowPerfectToast] = useState(false);
+  const [achievementQueue, setAchievementQueue] = useState<Array<{ medalId: string; name: string; tier: "bronze" | "silver" | "gold" }>>([]);
+  const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+
+  // ── Settings (toggles) ──
+  const [speed, setSpeed] = useState(3); // 1-5
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [includeSpaces, setIncludeSpaces] = useState(false);
+
+  // Keep nextCharRef in sync
+  useEffect(() => { nextCharRef.current = nextCharIndex; }, [nextCharIndex]);
 
   useEffect(() => {
     function handleResize() {
@@ -115,6 +139,41 @@ export function LetterRainGame() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => { totalMissedRef.current = totalMissed; }, [totalMissed]);
+  useEffect(() => {
+    if (phase === "playing") levelStartMissedRef.current = totalMissed;
+  }, [phase, totalMissed]);
+
+  // On game over: track play and check achievements
+  useEffect(() => {
+    if (phase !== "gameOver") return;
+    sfxGameOver();
+    trackGamePlayed("letter-rain", score);
+    const profile = getProfile();
+    const acc = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
+    const l = elapsedSecs > 0 ? Math.round((totalCaught / elapsedSecs) * 60) : 0;
+    const newOnes = checkAchievements(
+      { gameId: "letter-rain", score, level, accuracy: acc, lpm: l, bestCombo, perfectLevels },
+      profile.totalGamesPlayed, profile.gamesPlayedByGameId
+    );
+    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Countdown timer
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    if (countdownVal <= 0) {
+      sfxCountdownGo();
+      setPhase("playing");
+      lastTimeRef.current = performance.now();
+      levelStartRef.current = performance.now();
+      return;
+    }
+    sfxCountdown();
+    const t = setTimeout(() => setCountdownVal((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, countdownVal]);
+
   // Elapsed time tracker
   useEffect(() => {
     if (phase !== "playing") return;
@@ -124,23 +183,13 @@ export function LetterRainGame() {
     return () => clearInterval(t);
   }, [phase]);
 
-  const getActiveDifficulty = useCallback(
-    (lvl: number) => {
-      if (chosenDifficulty !== "auto") return chosenDifficulty;
-      if (lvl <= 3) return "easy";
-      if (lvl <= 7) return "medium";
-      return "hard";
-    },
-    [chosenDifficulty]
-  );
-
-  const prepareLetters = useCallback((text: string): FallingLetter[] => {
+  const prepareLetters = useCallback((text: string, spaces: boolean, caseSens: boolean): FallingLetter[] => {
     const result: FallingLetter[] = [];
     for (let i = 0; i < text.length; i++) {
-      if (text[i] === " ") continue;
+      if (!spaces && text[i] === " ") continue;
       result.push({
         id: `${i}-${Math.random().toString(36).slice(2, 6)}`,
-        char: text[i].toUpperCase(),
+        char: caseSens ? text[i] : text[i].toUpperCase(),
         sentenceIndex: i,
         x: 50 + Math.random() * (GAME_WIDTH - 100),
         y: -LETTER_SIZE - Math.random() * 60,
@@ -149,6 +198,7 @@ export function LetterRainGame() {
         wobbleSpeed: 0.02 + Math.random() * 0.03,
         spawned: false,
         caught: false,
+        catchTime: 0,
         missed: false,
       });
     }
@@ -157,157 +207,164 @@ export function LetterRainGame() {
 
   const startLevel = useCallback(
     (lvl: number) => {
-      const diff = getActiveDifficulty(lvl);
-      const { sentence: picked, index } = pickSentence(diff, usedSentences, selectedCategory);
+      // Pick difficulty bucket based on speed for sentence selection
+      const diffBucket = speed <= 2 ? "easy" : speed <= 4 ? "medium" : "hard";
+      const { sentence: picked, index } = pickSentence(diffBucket as "easy" | "medium" | "hard", usedSentences, selectedCategory);
       usedSentences.add(index);
       setSentence(picked.text);
       setSentenceCategory(picked.category);
       setNextCharIndex(0);
-      setBuiltText("");
-      setLetters(prepareLetters(picked.text));
+      nextCharRef.current = 0;
+      setLetters(prepareLetters(picked.text, includeSpaces, caseSensitive));
       spawnTimerRef.current = 0;
       setElapsedSecs(0);
       setPhase("intro");
+      // Show sentence for memorization, then countdown
       setTimeout(() => {
-        setPhase("playing");
-        lastTimeRef.current = performance.now();
-        levelStartRef.current = performance.now();
-      }, 2500 + picked.text.length * 25);
+        setCountdownVal(COUNTDOWN_SECS);
+        setPhase("countdown");
+      }, 2000 + picked.text.length * 20);
     },
-    [getActiveDifficulty, prepareLetters, usedSentences, selectedCategory]
+    [speed, prepareLetters, usedSentences, selectedCategory, includeSpaces, caseSensitive]
   );
 
   // Water splash particles
   const spawnSplash = useCallback(
     (x: number, y: number, color: string, count: number, char?: string) => {
       const newP: Particle[] = [];
-      // Water droplets
       for (let i = 0; i < count; i++) {
         const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2;
-        const speed = 2 + Math.random() * 4;
-        newP.push({
-          id: `s-${Date.now()}-${i}`,
-          x, y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          life: 1,
-          color,
-          size: 2 + Math.random() * 5,
-          type: "splash",
-        });
+        const spd = 2 + Math.random() * 4;
+        newP.push({ id: `s-${Date.now()}-${i}`, x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, life: 1, color, size: 2 + Math.random() * 5, type: "splash" });
       }
-      // Sparkle ring
       for (let i = 0; i < 6; i++) {
         const angle = (Math.PI * 2 * i) / 6;
-        newP.push({
-          id: `k-${Date.now()}-${i}`,
-          x: x + Math.cos(angle) * 15,
-          y: y + Math.sin(angle) * 15,
-          vx: Math.cos(angle) * 1,
-          vy: Math.sin(angle) * 1,
-          life: 0.8,
-          color: "#ffffff",
-          size: 2,
-          type: "sparkle",
-        });
+        newP.push({ id: `k-${Date.now()}-${i}`, x: x + Math.cos(angle) * 15, y: y + Math.sin(angle) * 15, vx: Math.cos(angle) * 1.5, vy: Math.sin(angle) * 1.5, life: 0.8, color: "#ffffff", size: 2.5, type: "sparkle" });
       }
-      // Floating letter
       if (char) {
-        newP.push({
-          id: `t-${Date.now()}`,
-          x, y: y - 10,
-          vx: 0,
-          vy: -1.5,
-          life: 1,
-          color,
-          size: 16,
-          type: "text",
-          char,
-        });
+        newP.push({ id: `t-${Date.now()}`, x, y: y - 10, vx: 0, vy: -1.5, life: 1, color, size: 16, type: "text", char });
       }
       setParticles((prev) => [...prev, ...newP]);
     },
     []
   );
 
-  // Ground ripple when letter misses
   const spawnRipple = useCallback((x: number) => {
     const newP: Particle[] = [];
     for (let i = 0; i < 3; i++) {
-      newP.push({
-        id: `r-${Date.now()}-${i}`,
-        x,
-        y: GROUND_Y,
-        vx: 0,
-        vy: 0,
-        life: 0.8,
-        color: "#ef4444",
-        size: 10 + i * 15,
-        type: "ripple",
-      });
+      newP.push({ id: `r-${Date.now()}-${i}`, x, y: GROUND_Y, vx: 0, vy: 0, life: 0.8, color: "#ef4444", size: 10 + i * 15, type: "ripple" });
     }
     setParticles((prev) => [...prev, ...newP]);
   }, []);
 
+  // ── Click handler — side-effects OUTSIDE of setLetters updater ──
   const handleLetterClick = useCallback(
     (letterId: string) => {
       if (phase !== "playing") return;
+
+      // Read current letters synchronously
       setLetters((prev) => {
         const letter = prev.find((l) => l.id === letterId);
         if (!letter || letter.caught || letter.missed) return prev;
 
-        let expectedIndex = nextCharIndex;
-        while (expectedIndex < sentence.length && sentence[expectedIndex] === " ") expectedIndex++;
+        // Use ref for always-current nextCharIndex
+        let expectedIndex = nextCharRef.current;
+        const sent = sentence;
+        if (!includeSpaces) {
+          while (expectedIndex < sent.length && sent[expectedIndex] === " ") expectedIndex++;
+        }
 
         if (letter.sentenceIndex === expectedIndex) {
-          const newCombo = combo + 1;
-          const multiplier = 1 + Math.floor(newCombo / 5) * 0.5;
-          const points = Math.round(10 * multiplier);
-          setScore((s) => s + points);
-          setCombo(newCombo);
-          setBestCombo((bc) => Math.max(bc, newCombo));
-          setTotalCaught((c) => c + 1);
+          // ── Correct letter ──
+          const now = performance.now();
 
-          let addedText = "";
-          for (let i = nextCharIndex; i <= letter.sentenceIndex; i++) addedText += sentence[i];
-          setBuiltText((bt) => bt + addedText);
-          setNextCharIndex(letter.sentenceIndex + 1);
+          // Advance nextCharIndex
+          const newNextChar = letter.sentenceIndex + 1;
+          nextCharRef.current = newNextChar;
+          // Schedule React state update
+          setTimeout(() => setNextCharIndex(newNextChar), 0);
 
-          spawnSplash(letter.x + LETTER_SIZE / 2, letter.y + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 12, letter.char);
-          setFlash("good");
-          setTimeout(() => setFlash(null), 150);
+          // Score, combo, etc. — scheduled outside the updater
+          setTimeout(() => {
+            const newCombo = combo + 1;
+            const { mult } = getMultiplierFromStreak(newCombo);
+            const points = Math.round(10 * mult);
+            setScore((s) => s + points);
+            setCombo(newCombo);
+            setBestCombo((bc) => Math.max(bc, newCombo));
+            setTotalCaught((c) => c + 1);
 
-          const remaining = sentence.slice(letter.sentenceIndex + 1);
-          if (!remaining.split("").some((c) => c !== " ")) {
-            setScore((s) => s + 50 * level);
-            setTimeout(() => setPhase("levelComplete"), 300);
-          }
-          return prev.map((l) => (l.id === letterId ? { ...l, caught: true } : l));
+            // SFX
+            if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
+            else sfxCorrect();
+
+            // Heart recovery every 10-streak
+            if (newCombo >= 10 && newCombo % 10 === 0) {
+              sfxHeart();
+              setLives((lv) => {
+                if (lv < INITIAL_LIVES) {
+                  setShowHeartRecovery(true);
+                  setTimeout(() => setShowHeartRecovery(false), 1500);
+                  return Math.min(INITIAL_LIVES, lv + 1);
+                }
+                return lv;
+              });
+            }
+
+            // Splash particles
+            spawnSplash(letter.x + LETTER_SIZE / 2, letter.y + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letter.char);
+            setFlash("good");
+            setTimeout(() => setFlash(null), 150);
+
+            // Check if sentence complete
+            const remaining = sent.slice(newNextChar);
+            const done = includeSpaces
+              ? remaining.length === 0
+              : !remaining.split("").some((c) => c !== " ");
+            if (done) {
+              sfxLevelUp();
+              setScore((s) => s + 50 * level);
+              setTimeout(() => {
+                const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
+                if (missesThisLevel === 0) {
+                  setScore((s) => s + 100);
+                  setPerfectLevels((p) => p + 1);
+                  setShowPerfectToast(true);
+                  setTimeout(() => setShowPerfectToast(false), 2000);
+                }
+                setPhase("levelComplete");
+              }, 300);
+            }
+          }, 0);
+
+          // Mark letter as caught with timestamp (for burst animation)
+          return prev.map((l) => (l.id === letterId ? { ...l, caught: true, catchTime: now } : l));
         } else {
-          setCombo(0);
-          setFlash("bad");
-          setTimeout(() => setFlash(null), 200);
+          // ── Wrong letter ──
+          setTimeout(() => {
+            sfxWrong();
+            setCombo(0);
+            setFlash("bad");
+            setTimeout(() => setFlash(null), 200);
+          }, 0);
           return prev;
         }
       });
     },
-    [phase, nextCharIndex, sentence, combo, level, spawnSplash, sentenceCategory]
+    [phase, sentence, combo, level, spawnSplash, sentenceCategory, includeSpaces]
   );
 
-  // Game loop
+  // ── Game loop ──
   useEffect(() => {
     if (phase !== "playing") return;
-    const diff = getActiveDifficulty(level);
-    const config = DIFFICULTY_CONFIG[diff];
-    const currentSpeed = config.baseSpeed + (level - 1) * config.speedIncrement;
-    const currentSpawnInterval = Math.max(config.minSpawnInterval, config.spawnInterval - (level - 1) * config.spawnIntervalDecrement);
+    const config = getSpeedConfig(speed, level);
 
     function gameLoop(time: number) {
       const dt = Math.min(time - lastTimeRef.current, 50);
       lastTimeRef.current = time;
 
       spawnTimerRef.current += dt;
-      if (spawnTimerRef.current >= currentSpawnInterval) {
+      if (spawnTimerRef.current >= config.spawnInterval) {
         spawnTimerRef.current = 0;
         setLetters((prev) => {
           const unspawned = prev.filter((l) => !l.spawned && !l.caught);
@@ -315,16 +372,22 @@ export function LetterRainGame() {
           const toSpawn = unspawned[0];
           return prev.map((l) =>
             l.id === toSpawn.id
-              ? { ...l, spawned: true, speed: currentSpeed * (0.85 + Math.random() * 0.3), x: 40 + Math.random() * (GAME_WIDTH - 80) }
+              ? { ...l, spawned: true, speed: config.baseSpeed * (0.85 + Math.random() * 0.3), x: 40 + Math.random() * (GAME_WIDTH - 80) }
               : l
           );
         });
       }
 
+      const now = performance.now();
+
       setLetters((prev) => {
         let lostLife = false;
         let missX = 0;
         const updated = prev.map((l) => {
+          // Remove fully-animated caught letters
+          if (l.caught && l.catchTime > 0 && now - l.catchTime > CATCH_ANIM_MS) {
+            return l; // will be filtered below
+          }
           if (!l.spawned || l.caught || l.missed) return l;
           const newY = l.y + l.speed * dt * 0.06;
           const newWobble = l.wobble + l.wobbleSpeed * dt;
@@ -363,25 +426,28 @@ export function LetterRainGame() {
     }
     animFrameRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animFrameRef.current);
-  }, [phase, level, getActiveDifficulty, spawnRipple]);
+  }, [phase, level, speed, spawnRipple]);
 
   const startGame = () => {
     setScore(0); setLives(INITIAL_LIVES); setLevel(1); setCombo(0); setBestCombo(0);
-    setTotalCaught(0); setTotalMissed(0); setElapsedSecs(0);
+    setTotalCaught(0); setTotalMissed(0); setElapsedSecs(0); setPerfectLevels(0);
+    setShowHeartRecovery(false); setShowPerfectToast(false); setAchievementQueue([]); setShowAchievementIndex(0);
     usedSentences.clear();
     startLevel(1);
   };
   const nextLevel = () => { const n = level + 1; setLevel(n); startLevel(n); };
 
   const catColor = getCategoryColor(sentenceCategory);
-  const activeDiff = getActiveDifficulty(level);
   const accuracy = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
   const lpm = elapsedSecs > 0 ? Math.round((totalCaught / elapsedSecs) * 60) : 0;
+  const { lps } = getSpeedConfig(speed, level);
 
   // Compute which char index is the next expected letter
   const nextExpectedIdx = (() => {
     let idx = nextCharIndex;
-    while (idx < sentence.length && sentence[idx] === " ") idx++;
+    if (!includeSpaces) {
+      while (idx < sentence.length && sentence[idx] === " ") idx++;
+    }
     return idx;
   })();
 
@@ -393,10 +459,10 @@ export function LetterRainGame() {
           <ArrowLeft className="w-4 h-4" /> Games
         </Link>
         <h1 className="text-base font-bold text-white tracking-wide">Letter Rain</h1>
-        <div className="w-16" />
+        <AudioToggles />
       </div>
 
-      {/* Live stats bar — always visible during play */}
+      {/* Live stats bar */}
       {(phase === "playing" || phase === "levelComplete") && (
         <div className="w-full max-w-[850px] px-4 mb-1">
           <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
@@ -412,16 +478,15 @@ export function LetterRainGame() {
               </div>
               <div className="text-slate-600 hidden sm:block">{totalCaught}/{totalCaught + totalMissed}</div>
             </div>
-            <div className="flex items-center gap-1.5" style={{ color: DIFFICULTY_META[activeDiff].color }}>
-              <span>{DIFFICULTY_META[activeDiff].emoji}</span>
-              <span className="font-medium hidden sm:inline">{DIFFICULTY_META[activeDiff].label}</span>
+            <div className="flex items-center gap-1.5 text-indigo-400">
+              <span className="font-medium hidden sm:inline">{lps} lps</span>
               <span className="text-slate-500">Lv{level}</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Sentence tracker — shows full sentence with progress */}
+      {/* Sentence tracker */}
       {phase === "playing" && sentence && (
         <div className="w-full max-w-[850px] px-4 mb-1">
           <div className="bg-white/[0.03] rounded-lg px-3 py-1.5 border border-white/5 font-mono text-xs sm:text-sm tracking-wide leading-relaxed overflow-x-auto whitespace-nowrap">
@@ -433,16 +498,11 @@ export function LetterRainGame() {
                 <span
                   key={i}
                   className={`transition-colors duration-200 ${
-                    isCaught
-                      ? "text-green-400"
-                      : isNext
-                      ? "text-white font-bold"
+                    isCaught ? "text-green-400"
+                      : isNext ? "text-white font-bold"
                       : "text-slate-700"
                   }`}
-                  style={isNext && !isSpace ? {
-                    textShadow: `0 0 8px ${catColor}`,
-                    borderBottom: `2px solid ${catColor}`,
-                  } : undefined}
+                  style={isNext && !isSpace ? { textShadow: `0 0 8px ${catColor}`, borderBottom: `2px solid ${catColor}` } : undefined}
                 >
                   {ch}
                 </span>
@@ -474,13 +534,23 @@ export function LetterRainGame() {
 
           {/* Water surface / ground */}
           <div className="absolute left-0 right-0 bottom-0" style={{ height: 40 * scale }}>
-            <div className="absolute inset-0" style={{
-              background: "linear-gradient(180deg, transparent 0%, rgba(56,189,248,0.04) 30%, rgba(56,189,248,0.12) 100%)",
-            }} />
-            <div className="absolute top-0 left-0 right-0 h-px" style={{
-              background: "linear-gradient(90deg, transparent 5%, rgba(56,189,248,0.3) 30%, rgba(56,189,248,0.5) 50%, rgba(56,189,248,0.3) 70%, transparent 95%)",
-            }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(56,189,248,0.04) 30%, rgba(56,189,248,0.12) 100%)" }} />
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent 5%, rgba(56,189,248,0.3) 30%, rgba(56,189,248,0.5) 50%, rgba(56,189,248,0.3) 70%, transparent 95%)" }} />
           </div>
+
+          {/* Reward toasts */}
+          <HeartRecovery show={showHeartRecovery} />
+          <BonusToast show={showPerfectToast} text="Perfect level!" points={100} />
+          {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
+            <AchievementToast
+              name={achievementQueue[showAchievementIndex].name}
+              tier={achievementQueue[showAchievementIndex].tier}
+              onDismiss={() => {
+                if (showAchievementIndex + 1 >= achievementQueue.length) setAchievementQueue([]);
+                setShowAchievementIndex((i) => i + 1);
+              }}
+            />
+          )}
 
           {/* Flash */}
           {flash && (
@@ -495,7 +565,7 @@ export function LetterRainGame() {
           <div className="absolute inset-0" style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
 
             {/* HUD */}
-            {phase !== "menu" && (
+            {phase !== "menu" && phase !== "countdown" && (
               <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-2.5 z-20">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: INITIAL_LIVES }).map((_, i) => (
@@ -503,12 +573,7 @@ export function LetterRainGame() {
                   ))}
                 </div>
                 <div className="flex items-center gap-3">
-                  {combo >= 3 && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 animate-bounce">
-                      <Zap className="w-3.5 h-3.5 fill-yellow-400" />
-                      <span className="text-xs font-bold">x{combo}</span>
-                    </div>
-                  )}
+                  <StreakBadge streak={combo} />
                   <div className="text-xl font-bold text-white tabular-nums">{score.toLocaleString()}</div>
                 </div>
               </div>
@@ -519,24 +584,41 @@ export function LetterRainGame() {
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-8">
                 <div className="text-5xl mb-2">🌧️</div>
                 <h2 className="text-3xl font-bold text-white mb-1 tracking-tight">Letter Rain</h2>
-                <p className="text-slate-500 text-center text-sm mb-4 max-w-xs">
+                <p className="text-slate-500 text-center text-sm mb-5 max-w-xs">
                   Read the sentence, then catch falling letters in order to rebuild it!
                 </p>
 
-                <div className="grid grid-cols-4 gap-2 mb-4 w-full max-w-md">
-                  {(["auto", "easy", "medium", "hard"] as ChosenDifficulty[]).map((d) => {
-                    const meta = DIFFICULTY_META[d];
-                    const sel = chosenDifficulty === d;
-                    return (
-                      <button key={d} onClick={() => setChosenDifficulty(d)}
-                        className={`rounded-xl py-2 px-2 text-center transition-all border ${sel ? "border-white/20 bg-white/10 scale-105" : "border-white/5 bg-white/[0.02] hover:bg-white/5"}`}>
-                        <div className="text-lg">{meta.emoji}</div>
-                        <div className={`text-xs font-bold mt-0.5 ${sel ? "text-white" : "text-slate-500"}`}>{meta.label}</div>
-                      </button>
-                    );
-                  })}
+                {/* Speed slider */}
+                <div className="w-full max-w-xs mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-slate-400">Speed</span>
+                    <span className="text-xs font-bold text-indigo-400 tabular-nums">{getSpeedConfig(speed, 1).lps} letters/sec</span>
+                  </div>
+                  <input
+                    type="range" min={1} max={5} step={1} value={speed}
+                    onChange={(e) => setSpeed(Number(e.target.value))}
+                    className="w-full accent-indigo-500"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                    <span>Slow</span><span>Fast</span>
+                  </div>
                 </div>
 
+                {/* Toggles */}
+                <div className="w-full max-w-xs space-y-2 mb-4">
+                  <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                    <span className="text-xs text-slate-400">Case sensitive</span>
+                    <input type="checkbox" checked={caseSensitive} onChange={(e) => setCaseSensitive(e.target.checked)}
+                      className="rounded accent-indigo-500 w-4 h-4" />
+                  </label>
+                  <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                    <span className="text-xs text-slate-400">Include spaces</span>
+                    <input type="checkbox" checked={includeSpaces} onChange={(e) => setIncludeSpaces(e.target.checked)}
+                      className="rounded accent-indigo-500 w-4 h-4" />
+                  </label>
+                </div>
+
+                {/* Category picker */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-4">
                   <button onClick={() => setSelectedCategory(undefined)}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${!selectedCategory ? "bg-indigo-500 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
@@ -566,7 +648,7 @@ export function LetterRainGame() {
             {phase === "intro" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-8">
                 <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500 mb-4">
-                  Level {level} · {DIFFICULTY_META[activeDiff].emoji} {DIFFICULTY_META[activeDiff].label}
+                  Level {level}
                 </div>
                 <div className="text-2xl font-bold text-center leading-relaxed max-w-lg" style={{ color: catColor }}>
                   &ldquo;{sentence}&rdquo;
@@ -581,41 +663,65 @@ export function LetterRainGame() {
               </div>
             )}
 
-            {/* FALLING LETTERS — Water drop style */}
+            {/* COUNTDOWN */}
+            {phase === "countdown" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                <div className="text-8xl font-bold text-indigo-400 animate-pulse tabular-nums">
+                  {countdownVal > 0 ? countdownVal : "GO!"}
+                </div>
+              </div>
+            )}
+
+            {/* FALLING LETTERS */}
             {(phase === "playing" || phase === "levelComplete") &&
               letters.map((letter) => {
-                if (!letter.spawned || letter.caught) return null;
-                const isNext = letter.sentenceIndex === nextExpectedIdx;
-                const wobbleX = Math.sin(letter.wobble) * 3;
+                if (!letter.spawned) return null;
+                // Hide fully-animated caught letters
+                if (letter.caught && letter.catchTime > 0 && performance.now() - letter.catchTime > CATCH_ANIM_MS) return null;
+
+                const isCaught = letter.caught;
+                const isNext = !isCaught && letter.sentenceIndex === nextExpectedIdx;
+                const wobbleX = isCaught ? 0 : Math.sin(letter.wobble) * 3;
+
+                // Burst animation: scale up + fade out
+                const catchProgress = isCaught ? Math.min(1, (performance.now() - letter.catchTime) / CATCH_ANIM_MS) : 0;
+                const burstScale = isCaught ? 1 + catchProgress * 1.2 : 1;
+                const burstOpacity = isCaught ? 1 - catchProgress : 1;
+
                 return (
                   <button
                     key={letter.id}
-                    onClick={() => handleLetterClick(letter.id)}
-                    disabled={letter.missed}
-                    className={`absolute flex items-center justify-center select-none
-                      ${letter.missed ? "opacity-15 pointer-events-none" : "cursor-pointer hover:scale-110 active:scale-90"}`}
+                    onClick={() => !isCaught && handleLetterClick(letter.id)}
+                    disabled={letter.missed || isCaught}
+                    className={`absolute flex items-center justify-center select-none rounded-xl
+                      ${letter.missed ? "opacity-20 pointer-events-none" : isCaught ? "pointer-events-none" : "cursor-pointer hover:scale-105 active:scale-95"}`}
                     style={{
                       width: LETTER_SIZE,
                       height: LETTER_SIZE,
                       left: letter.x + wobbleX,
                       top: letter.y,
-                      borderRadius: "50% 50% 50% 50% / 40% 40% 60% 60%",
+                      transform: `scale(${burstScale})`,
+                      opacity: letter.missed ? 0.2 : burstOpacity,
                       background: letter.missed
-                        ? "rgba(40,40,60,0.3)"
+                        ? "rgba(30,30,45,0.6)"
+                        : isCaught
+                        ? `linear-gradient(145deg, rgba(255,255,255,0.3) 0%, ${catColor}ff 50%, ${catColor}ff 100%)`
                         : isNext
-                        ? `radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.25), ${catColor}ee 40%, ${catColor}99 100%)`
-                        : `radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.15), ${catColor}aa 40%, ${catColor}55 100%)`,
+                        ? `linear-gradient(145deg, rgba(255,255,255,0.12) 0%, ${catColor}88 50%, ${catColor}cc 100%)`
+                        : `linear-gradient(145deg, rgba(255,255,255,0.06) 0%, ${catColor}44 50%, ${catColor}66 100%)`,
                       boxShadow: letter.missed
-                        ? "none"
+                        ? "0 2px 8px rgba(0,0,0,0.2)"
+                        : isCaught
+                        ? `0 0 30px ${catColor}, 0 0 60px ${catColor}88`
                         : isNext
-                        ? `0 0 25px ${catColor}50, 0 4px 20px ${catColor}30, inset 0 -3px 6px rgba(0,0,0,0.15)`
-                        : `0 0 10px ${catColor}20, 0 2px 8px rgba(0,0,0,0.2), inset 0 -2px 4px rgba(0,0,0,0.1)`,
-                      fontSize: "1.2rem",
-                      fontWeight: 800,
-                      color: letter.missed ? "#333" : "white",
-                      textShadow: letter.missed ? "none" : "0 1px 4px rgba(0,0,0,0.5)",
-                      transition: "transform 0.08s",
-                      border: isNext ? `2px solid rgba(255,255,255,0.25)` : "none",
+                        ? `0 6px 16px rgba(0,0,0,0.35), 0 0 0 2px ${catColor}99, inset 0 1px 0 rgba(255,255,255,0.2)`
+                        : `0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)`,
+                      border: letter.missed ? "1px solid rgba(255,255,255,0.06)" : `1px solid ${isNext ? `${catColor}dd` : `${catColor}44`}`,
+                      fontSize: "1.25rem",
+                      fontWeight: 700,
+                      color: letter.missed ? "#475569" : "white",
+                      textShadow: letter.missed ? "none" : isCaught ? `0 0 12px white` : "0 1px 2px rgba(0,0,0,0.4)",
+                      transition: isCaught ? "none" : "transform 0.1s ease, box-shadow 0.15s ease",
                     }}
                   >
                     {letter.char}
@@ -625,32 +731,15 @@ export function LetterRainGame() {
 
             {/* Particles */}
             {particles.map((p) => (
-              <div key={p.id} className="absolute pointer-events-none" style={{
-                left: p.x, top: p.y, opacity: p.life,
-              }}>
+              <div key={p.id} className="absolute pointer-events-none" style={{ left: p.x, top: p.y, opacity: p.life }}>
                 {p.type === "text" && p.char ? (
                   <span className="text-base font-black" style={{ color: p.color, textShadow: `0 0 12px ${p.color}`, fontSize: p.size }}>{p.char}</span>
                 ) : p.type === "ripple" ? (
-                  <div style={{
-                    width: p.size, height: p.size * 0.3,
-                    borderRadius: "50%",
-                    border: `1px solid ${p.color}`,
-                    transform: "translate(-50%, -50%)",
-                  }} />
+                  <div style={{ width: p.size, height: p.size * 0.3, borderRadius: "50%", border: `1px solid ${p.color}`, transform: "translate(-50%, -50%)" }} />
                 ) : p.type === "sparkle" ? (
-                  <div style={{
-                    width: p.size, height: p.size,
-                    borderRadius: "50%",
-                    backgroundColor: p.color,
-                    boxShadow: `0 0 4px ${p.color}`,
-                  }} />
+                  <div style={{ width: p.size, height: p.size, borderRadius: "50%", backgroundColor: p.color, boxShadow: `0 0 4px ${p.color}` }} />
                 ) : (
-                  <div style={{
-                    width: p.size, height: p.size,
-                    borderRadius: "50% 50% 50% 50% / 40% 40% 60% 60%",
-                    backgroundColor: p.color,
-                    opacity: 0.7,
-                  }} />
+                  <div style={{ width: p.size, height: p.size, borderRadius: 6, backgroundColor: p.color, opacity: 0.8, boxShadow: `0 1px 3px rgba(0,0,0,0.2)` }} />
                 )}
               </div>
             ))}
@@ -676,18 +765,16 @@ export function LetterRainGame() {
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/50 backdrop-blur-sm px-6">
                 <h3 className="text-2xl font-bold text-white mb-2">Game Over</h3>
                 <div className="text-4xl font-bold text-indigo-400 mb-3">{score.toLocaleString()}</div>
-
                 <div className="grid grid-cols-4 gap-3 mb-3 text-center w-full max-w-sm">
                   <div><div className="text-xl font-bold text-white">{level}</div><div className="text-[9px] text-slate-500 uppercase">Level</div></div>
                   <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[9px] text-slate-500 uppercase">Accuracy</div></div>
                   <div><div className="text-xl font-bold text-cyan-400">{lpm}</div><div className="text-[9px] text-slate-500 uppercase">LPM</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
                 </div>
-
                 {score >= highScore && score > 0 && (
                   <p className="text-yellow-400 text-sm font-medium mb-1.5 flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> New High Score!</p>
                 )}
-                <div className="mb-2 w-full max-w-xs"><ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, lpm, bestCombo }} /></div>
+                <div className="mb-2 w-full max-w-xs"><ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, lpm, bestCombo, perfectLevels }} /></div>
                 <div className="flex gap-3">
                   <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm">
                     <RotateCcw className="w-3.5 h-3.5" /> Again
@@ -710,7 +797,7 @@ export function LetterRainGame() {
             </div>
             <div className="bg-white/[0.02] rounded-xl p-2.5 border border-white/5">
               <div className="text-lg mb-0.5">💧</div>
-              <div className="text-[10px] text-slate-500">Tap drops in order</div>
+              <div className="text-[10px] text-slate-500">Tap letters in order</div>
             </div>
             <div className="bg-white/[0.02] rounded-xl p-2.5 border border-white/5">
               <div className="text-lg mb-0.5">⚡</div>
