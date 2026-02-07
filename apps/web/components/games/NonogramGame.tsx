@@ -248,6 +248,118 @@ function getPuzzlesForSize(size: GridSize): NonogramPuzzle[] {
   return size === 5 ? PUZZLES_5 : PUZZLES_10;
 }
 
+// ── Dynamic Puzzle Generation ────────────────────────────────────────
+
+type SymmetryMode = "none" | "horizontal" | "vertical" | "both" | "rotational";
+
+/**
+ * Generate a random nonogram puzzle procedurally.
+ * Uses density + optional symmetry to create interesting, varied puzzles.
+ */
+function generateRandomPuzzle(
+  size: number,
+  density = 0.45,
+  symmetry: SymmetryMode = "none"
+): boolean[][] {
+  const grid: boolean[][] = Array.from({ length: size }, () =>
+    Array(size).fill(false)
+  );
+
+  // Helper to fill with symmetry
+  const setCell = (r: number, c: number, val: boolean) => {
+    grid[r][c] = val;
+    switch (symmetry) {
+      case "horizontal":
+        grid[size - 1 - r][c] = val;
+        break;
+      case "vertical":
+        grid[r][size - 1 - c] = val;
+        break;
+      case "both":
+        grid[size - 1 - r][c] = val;
+        grid[r][size - 1 - c] = val;
+        grid[size - 1 - r][size - 1 - c] = val;
+        break;
+      case "rotational":
+        grid[c][size - 1 - r] = val;
+        grid[size - 1 - r][size - 1 - c] = val;
+        grid[size - 1 - c][r] = val;
+        break;
+    }
+  };
+
+  // Fill cells according to density
+  // For symmetric modes, only fill the "source" region and mirror
+  if (symmetry === "none") {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        grid[r][c] = Math.random() < density;
+      }
+    }
+  } else if (symmetry === "horizontal") {
+    const halfR = Math.ceil(size / 2);
+    for (let r = 0; r < halfR; r++) {
+      for (let c = 0; c < size; c++) {
+        setCell(r, c, Math.random() < density);
+      }
+    }
+  } else if (symmetry === "vertical") {
+    const halfC = Math.ceil(size / 2);
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < halfC; c++) {
+        setCell(r, c, Math.random() < density);
+      }
+    }
+  } else if (symmetry === "both") {
+    const halfR = Math.ceil(size / 2);
+    const halfC = Math.ceil(size / 2);
+    for (let r = 0; r < halfR; r++) {
+      for (let c = 0; c < halfC; c++) {
+        setCell(r, c, Math.random() < density);
+      }
+    }
+  } else {
+    // rotational — fill one quadrant
+    const halfR = Math.ceil(size / 2);
+    const halfC = Math.ceil(size / 2);
+    for (let r = 0; r < halfR; r++) {
+      for (let c = 0; c < halfC; c++) {
+        setCell(r, c, Math.random() < density);
+      }
+    }
+  }
+
+  // Validate: ensure at least one filled cell per row and column to avoid
+  // trivial all-zero rows/cols (boring). Also ensure at least one empty.
+  for (let r = 0; r < size; r++) {
+    if (grid[r].every((c) => !c)) {
+      grid[r][Math.floor(Math.random() * size)] = true;
+    }
+    if (grid[r].every((c) => c)) {
+      grid[r][Math.floor(Math.random() * size)] = false;
+    }
+  }
+  for (let c = 0; c < size; c++) {
+    const col = grid.map((row) => row[c]);
+    if (col.every((v) => !v)) {
+      grid[Math.floor(Math.random() * size)][c] = true;
+    }
+    if (col.every((v) => v)) {
+      grid[Math.floor(Math.random() * size)][c] = false;
+    }
+  }
+
+  return grid;
+}
+
+const SYMMETRY_OPTIONS: { key: SymmetryMode; label: string }[] = [
+  { key: "none", label: "Random" },
+  { key: "horizontal", label: "↕ Horizontal" },
+  { key: "vertical", label: "↔ Vertical" },
+  { key: "both", label: "✦ Both Axes" },
+  { key: "rotational", label: "↻ Rotational" },
+];
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function formatTime(s: number) {
@@ -262,16 +374,19 @@ function createEmptyBoard(size: number): CellState[][] {
   return Array.from({ length: size }, () => Array(size).fill(0) as CellState[]);
 }
 
-/** Check if the player's filled cells match the solution exactly. */
-function checkSolution(
+/**
+ * Check if the player's board satisfies ALL row and column clues.
+ * Accepts ANY valid solution, not just the intended template.
+ */
+function checkSolutionByClues(
   board: CellState[][],
-  solution: boolean[][]
+  expectedClues: { rows: number[][]; cols: number[][] }
 ): boolean {
-  for (let r = 0; r < solution.length; r++) {
-    for (let c = 0; c < solution[0].length; c++) {
-      const playerFilled = board[r][c] === 1;
-      if (playerFilled !== solution[r][c]) return false;
-    }
+  for (let r = 0; r < board.length; r++) {
+    if (!isRowComplete(board, r, expectedClues.rows[r])) return false;
+  }
+  for (let c = 0; c < board[0].length; c++) {
+    if (!isColComplete(board, c, expectedClues.cols[c])) return false;
   }
   return true;
 }
@@ -339,12 +454,16 @@ export function NonogramGame() {
   const [phase, setPhase] = useState<GamePhase>("menu");
   const [gridSize, setGridSize] = useState<GridSize>(5);
   const [puzzleIndex, setPuzzleIndex] = useState(0);
+  const [puzzleMode, setPuzzleMode] = useState<"preset" | "random">("preset");
+  const [density, setDensity] = useState(45); // percent
+  const [symmetry, setSymmetry] = useState<SymmetryMode>("none");
   const [board, setBoard] = useState<CellState[][]>([]);
-  const [solution, setSolution] = useState<boolean[][]>([]);
+  const [playerBoard, setPlayerBoard] = useState<CellState[][]>([]); // snapshot of player's solution for completion screen
   const [clues, setClues] = useState<{ rows: number[][]; cols: number[][] }>({
     rows: [],
     cols: [],
   });
+  const [puzzleLabel, setPuzzleLabel] = useState("");
   const [moves, setMoves] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [bestScore, setBestScore] = useState(0);
@@ -366,27 +485,46 @@ export function NonogramGame() {
     setBestScore(getLocalHighScore(hsKey(gridSize)));
   }, [gridSize]);
 
-  const startGame = useCallback(
+  const startPresetGame = useCallback(
     (idx?: number) => {
       const puzzles = getPuzzlesForSize(gridSize);
       const pi = idx ?? puzzleIndex;
       const puzzle = puzzles[pi % puzzles.length];
       const sol = puzzle.grid;
       const size = sol.length;
-      setSolution(sol);
       setClues(generateClues(sol));
       setBoard(createEmptyBoard(size));
+      setPlayerBoard([]);
       setMoves(0);
       setElapsed(0);
       setScore(0);
       setWrongCheck(false);
       setNewAchievements([]);
       setPuzzleIndex(pi % puzzles.length);
+      setPuzzleLabel(`Puzzle #${(pi % puzzles.length) + 1}`);
+      setPuzzleMode("preset");
       setPhase("playing");
       sfxClick();
     },
     [gridSize, puzzleIndex]
   );
+
+  const startRandomGame = useCallback(() => {
+    const sol = generateRandomPuzzle(gridSize, density / 100, symmetry);
+    setClues(generateClues(sol));
+    setBoard(createEmptyBoard(gridSize));
+    setPlayerBoard([]);
+    setMoves(0);
+    setElapsed(0);
+    setScore(0);
+    setWrongCheck(false);
+    setNewAchievements([]);
+    const symLabel = symmetry === "none" ? "" : ` (${SYMMETRY_OPTIONS.find(s => s.key === symmetry)?.label ?? ""})`;
+    setPuzzleLabel(`Random ${density}%${symLabel}`);
+    setPuzzleMode("random");
+    setPhase("playing");
+    sfxClick();
+  }, [gridSize, density, symmetry]);
 
   const handleCellClick = useCallback(
     (r: number, c: number) => {
@@ -406,9 +544,11 @@ export function NonogramGame() {
   const handleValidate = useCallback(() => {
     if (phase !== "playing") return;
 
-    if (checkSolution(board, solution)) {
+    if (checkSolutionByClues(board, clues)) {
       sfxCorrect();
       sfxGameOver();
+      // Save player's actual board for completion display
+      setPlayerBoard(board.map((row) => [...row]));
       const finalScore = calculateScore(gridSize, elapsed, moves);
       setScore(finalScore);
       const key = hsKey(gridSize);
@@ -438,16 +578,16 @@ export function NonogramGame() {
       setWrongCheck(true);
       setTimeout(() => setWrongCheck(false), 1500);
     }
-  }, [phase, board, solution, gridSize, elapsed, moves]);
+  }, [phase, board, clues, gridSize, elapsed, moves]);
 
   const handleReset = useCallback(() => {
     if (phase !== "playing") return;
     sfxClick();
-    setBoard(createEmptyBoard(solution.length));
+    setBoard(createEmptyBoard(gridSize));
     setMoves(0);
     setElapsed(0);
     setWrongCheck(false);
-  }, [phase, solution]);
+  }, [phase, gridSize]);
 
   // ── Compute clue completion status ──
   const rowComplete = clues.rows.map((clue, r) =>
@@ -571,54 +711,99 @@ export function NonogramGame() {
               </div>
             </div>
 
-            {/* Puzzle Selection */}
+            {/* Mode tabs: Preset vs Random */}
             <div className="mb-6">
-              <label
-                className={cx(
-                  eink,
-                  "block text-lg font-bold mb-2 text-center",
-                  "block text-sm font-medium text-gray-400 mb-2 text-center"
-                )}
-              >
-                Puzzle {puzzleIndex + 1} of {puzzles.length}
-              </label>
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex justify-center gap-2 mb-4">
                 <button
-                  onClick={() => {
-                    setPuzzleIndex((i) => (i - 1 + puzzles.length) % puzzles.length);
-                    sfxClick();
-                  }}
-                  className={selBtn(eink, false)}
+                  onClick={() => { setPuzzleMode("preset"); sfxClick(); }}
+                  className={selBtn(eink, puzzleMode === "preset")}
                 >
-                  ← Prev
+                  Preset Puzzles
                 </button>
-                <span className={cx(eink, "text-2xl font-bold", "text-2xl font-bold text-white tabular-nums")}>
-                  #{puzzleIndex + 1}
-                </span>
                 <button
-                  onClick={() => {
-                    setPuzzleIndex((i) => (i + 1) % puzzles.length);
-                    sfxClick();
-                  }}
-                  className={selBtn(eink, false)}
+                  onClick={() => { setPuzzleMode("random"); sfxClick(); }}
+                  className={selBtn(eink, puzzleMode === "random")}
                 >
-                  Next →
+                  Generate Random
                 </button>
               </div>
-              <div className="flex justify-center mt-3">
-                <button
-                  onClick={() => {
-                    setPuzzleIndex(Math.floor(Math.random() * puzzles.length));
-                    sfxClick();
-                  }}
-                  className={cx(eink,
-                    "px-4 py-2 border-2 border-black font-bold text-sm",
-                    "px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/40 transition-colors"
-                  )}
-                >
-                  Random Puzzle
-                </button>
-              </div>
+
+              {puzzleMode === "preset" && (
+                <div>
+                  <label
+                    className={cx(
+                      eink,
+                      "block text-lg font-bold mb-2 text-center",
+                      "block text-sm font-medium text-gray-400 mb-2 text-center"
+                    )}
+                  >
+                    Puzzle {puzzleIndex + 1} of {puzzles.length}
+                  </label>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => {
+                        setPuzzleIndex((i) => (i - 1 + puzzles.length) % puzzles.length);
+                        sfxClick();
+                      }}
+                      className={selBtn(eink, false)}
+                    >
+                      ← Prev
+                    </button>
+                    <span className={cx(eink, "text-2xl font-bold", "text-2xl font-bold text-white tabular-nums")}>
+                      #{puzzleIndex + 1}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setPuzzleIndex((i) => (i + 1) % puzzles.length);
+                        sfxClick();
+                      }}
+                      className={selBtn(eink, false)}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {puzzleMode === "random" && (
+                <div className="space-y-4 max-w-xs mx-auto">
+                  {/* Density slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={cx(eink, "font-bold", "text-sm text-gray-400")}>Density</span>
+                      <span className={cx(eink, "font-bold", "text-sm font-bold text-indigo-400 tabular-nums")}>{density}%</span>
+                    </div>
+                    <input
+                      type="range" min={25} max={70} step={5} value={density}
+                      onChange={(e) => setDensity(Number(e.target.value))}
+                      className={cx(eink, "w-full", "w-full accent-indigo-500")}
+                    />
+                    <div className={cx(eink,
+                      "flex justify-between text-xs font-bold mt-0.5",
+                      "flex justify-between text-[9px] text-slate-600 mt-0.5"
+                    )}>
+                      <span>Sparse</span><span>Dense</span>
+                    </div>
+                  </div>
+
+                  {/* Symmetry selector */}
+                  <div>
+                    <span className={cx(eink, "font-bold block mb-2", "text-sm text-gray-400 block mb-2")}>Symmetry</span>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {SYMMETRY_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setSymmetry(opt.key); sfxClick(); }}
+                          className={selBtn(eink, symmetry === opt.key)}
+                          style={{ fontSize: eink ? 14 : 12, padding: "6px 10px" }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Best Score */}
@@ -677,15 +862,24 @@ export function NonogramGame() {
                   Use X marks to note cells you know are empty
                 </li>
                 <li>
+                  Any arrangement that satisfies all clues is a valid solution!
+                </li>
+                <li>
                   Press &quot;Check&quot; when you think you&apos;ve solved it!
                 </li>
               </ul>
             </div>
 
-            <div className="flex justify-center">
-              <button onClick={() => startGame()} className={actionBtn(eink, true)}>
-                Start Puzzle
-              </button>
+            <div className="flex justify-center gap-3">
+              {puzzleMode === "preset" ? (
+                <button onClick={() => startPresetGame()} className={actionBtn(eink, true)}>
+                  Start Puzzle
+                </button>
+              ) : (
+                <button onClick={startRandomGame} className={actionBtn(eink, true)}>
+                  Generate &amp; Play
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -714,7 +908,7 @@ export function NonogramGame() {
                 </span>
               </div>
               <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
-                Puzzle #{puzzleIndex + 1} ({gridSize}×{gridSize})
+                {puzzleLabel} ({gridSize}×{gridSize})
               </div>
             </div>
 
@@ -956,7 +1150,7 @@ export function NonogramGame() {
                   "text-lg text-gray-400 mb-4"
                 )}
               >
-                You solved Puzzle #{puzzleIndex + 1} ({gridSize}×{gridSize})!
+                You solved {puzzleLabel} ({gridSize}×{gridSize})!
               </p>
 
               <div className={eink ? "mt-4 space-y-2 text-xl" : "mt-4 space-y-2"}>
@@ -1029,61 +1223,66 @@ export function NonogramGame() {
                 )}
               </div>
 
-              {/* Solved board mini-display */}
-              <div className="flex justify-center mt-6">
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${gridSize}, ${gridSize === 5 ? 28 : 16}px)`,
-                    gap: "1px",
-                    ...(eink ? { border: "2px solid black" } : {}),
-                  }}
-                >
-                  {solution.map((row, r) =>
-                    row.map((filled, c) => (
-                      <div
-                        key={`sol-${r}-${c}`}
-                        style={{
-                          width: gridSize === 5 ? 28 : 16,
-                          height: gridSize === 5 ? 28 : 16,
-                        }}
-                        className={
-                          filled
-                            ? cx(
-                                eink,
-                                "bg-black",
-                                "bg-indigo-500"
-                              )
-                            : cx(
-                                eink,
-                                "bg-white border border-gray-300",
-                                "bg-gray-800"
-                              )
-                        }
-                      />
-                    ))
-                  )}
+              {/* Solved board mini-display — shows player's actual solution */}
+              {playerBoard.length > 0 && (
+                <div className="flex justify-center mt-6">
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${gridSize}, ${gridSize === 5 ? 28 : 16}px)`,
+                      gap: "1px",
+                      ...(eink ? { border: "2px solid black" } : {}),
+                    }}
+                  >
+                    {playerBoard.map((row, r) =>
+                      row.map((cell, c) => (
+                        <div
+                          key={`sol-${r}-${c}`}
+                          style={{
+                            width: gridSize === 5 ? 28 : 16,
+                            height: gridSize === 5 ? 28 : 16,
+                          }}
+                          className={
+                            cell === 1
+                              ? cx(eink, "bg-black", "bg-indigo-500")
+                              : cx(eink, "bg-white border border-gray-300", "bg-gray-800")
+                          }
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex justify-center gap-3 flex-wrap">
-              <button
-                onClick={() => {
-                  const nextIdx = (puzzleIndex + 1) % puzzles.length;
-                  setPuzzleIndex(nextIdx);
-                  startGame(nextIdx);
-                }}
-                className={actionBtn(eink, true)}
-              >
-                Next Puzzle
-              </button>
-              <button
-                onClick={() => startGame()}
-                className={actionBtn(eink)}
-              >
-                Replay
-              </button>
+              {puzzleMode === "preset" ? (
+                <>
+                  <button
+                    onClick={() => {
+                      const nextIdx = (puzzleIndex + 1) % puzzles.length;
+                      setPuzzleIndex(nextIdx);
+                      startPresetGame(nextIdx);
+                    }}
+                    className={actionBtn(eink, true)}
+                  >
+                    Next Puzzle
+                  </button>
+                  <button
+                    onClick={() => startPresetGame()}
+                    className={actionBtn(eink)}
+                  >
+                    Replay
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={startRandomGame}
+                  className={actionBtn(eink, true)}
+                >
+                  Generate Another
+                </button>
+              )}
               <button
                 onClick={() => setPhase("menu")}
                 className={actionBtn(eink)}
