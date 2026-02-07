@@ -225,17 +225,17 @@ export const DIFFICULTY_LEVELS = [
   {
     value: "easy",
     label: "Easy",
-    description: "Denominators 2–6",
+    description: "Simpler problems",
   },
   {
     value: "medium",
     label: "Medium",
-    description: "Denominators 2–12",
+    description: "Moderate challenge",
   },
   {
     value: "hard",
     label: "Hard",
-    description: "Denominators 2–20",
+    description: "Advanced problems",
   },
   {
     value: "mixed",
