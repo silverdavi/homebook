@@ -378,6 +378,56 @@ export function LetterRainGame() {
     [phase, sentence, combo, level, spawnSplash, sentenceCategory, includeSpaces]
   );
 
+  // ── Keyboard typing handler ──
+  useEffect(() => {
+    if (phase !== "playing") return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore modifier keys, function keys, etc.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length !== 1) return; // only single characters
+      e.preventDefault();
+
+      const typed = e.key;
+      let expectedIdx = nextCharRef.current;
+      const sent = sentence;
+
+      // Skip spaces if not included
+      if (!includeSpaces) {
+        while (expectedIdx < sent.length && sent[expectedIdx] === " ") expectedIdx++;
+      }
+      if (expectedIdx >= sent.length) return;
+
+      const expectedChar = sent[expectedIdx];
+      const matches = caseSensitive
+        ? typed === expectedChar
+        : typed.toLowerCase() === expectedChar.toLowerCase();
+
+      if (matches) {
+        // Find the letter with this sentenceIndex and catch it
+        setLetters((prev) => {
+          const letter = prev.find(
+            (l) => l.sentenceIndex === expectedIdx && !l.caught && !l.missed
+          );
+          if (!letter) return prev;
+          // Trigger the full catch logic via handleLetterClick
+          // But we need to do it outside this updater to avoid conflicts
+          setTimeout(() => handleLetterClick(letter.id), 0);
+          return prev;
+        });
+      } else {
+        // Wrong key
+        sfxWrong();
+        setCombo(0);
+        setFlash("bad");
+        setTimeout(() => setFlash(null), 200);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phase, sentence, caseSensitive, includeSpaces, handleLetterClick]);
+
   // ── Game loop ──
   useEffect(() => {
     if (phase !== "playing") return;
@@ -618,7 +668,7 @@ export function LetterRainGame() {
                 <div className="text-5xl mb-2">🌧️</div>
                 <h2 className="text-3xl font-bold text-white mb-1 tracking-tight">Letter Rain</h2>
                 <p className="text-slate-500 text-center text-sm mb-5 max-w-xs">
-                  Read the sentence, then catch falling letters in order to rebuild it!
+                  Read the sentence, then type the letters on your keyboard to catch them!
                 </p>
 
                 {/* Speed slider */}
@@ -829,8 +879,8 @@ export function LetterRainGame() {
               <div className="text-[10px] text-slate-500">Read the sentence</div>
             </div>
             <div className="bg-white/[0.02] rounded-xl p-2.5 border border-white/5">
-              <div className="text-lg mb-0.5">💧</div>
-              <div className="text-[10px] text-slate-500">Tap letters in order</div>
+              <div className="text-lg mb-0.5">⌨️</div>
+              <div className="text-[10px] text-slate-500">Type letters in order</div>
             </div>
             <div className="bg-white/[0.02] rounded-xl p-2.5 border border-white/5">
               <div className="text-lg mb-0.5">⚡</div>
