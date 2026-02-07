@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Heart, Star, Trophy, RotateCcw, ArrowLeft, Zap, BarChart3 } from "lucide-react";
 import { pickSentence, CATEGORIES } from "@/lib/games/sentences";
+import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import Link from "next/link";
 
 // ── Types ──
@@ -98,13 +100,7 @@ export function LetterRainGame() {
   const [totalMissed, setTotalMissed] = useState(0);
   const [chosenDifficulty, setChosenDifficulty] = useState<ChosenDifficulty>("auto");
   const [showStats, setShowStats] = useState(false);
-  const [highScore, setHighScore] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("letterRain_highScore");
-      return saved ? parseInt(saved, 10) : 0;
-    }
-    return 0;
-  });
+  const [highScore, setHighScore] = useState(() => getLocalHighScore("letterRain_highScore"));
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
 
   useEffect(() => {
@@ -275,7 +271,7 @@ export function LetterRainGame() {
             const nl = lv - 1;
             if (nl <= 0) setTimeout(() => {
               setPhase("gameOver");
-              setScore((cs) => { setHighScore((ch) => { if (cs > ch) { localStorage.setItem("letterRain_highScore", cs.toString()); return cs; } return ch; }); return cs; });
+              setScore((cs) => { setHighScore((ch) => { if (cs > ch) { setLocalHighScore("letterRain_highScore", cs); return cs; } return ch; }); return cs; });
             }, 300);
             return nl;
           });
@@ -587,10 +583,15 @@ export function LetterRainGame() {
                 </div>
 
                 {score >= highScore && score > 0 && (
-                  <p className="text-yellow-400 text-sm font-medium mb-3 flex items-center gap-1">
+                  <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center gap-1">
                     <Trophy className="w-4 h-4" /> New High Score!
                   </p>
                 )}
+
+                <div className="mb-3">
+                  <ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, bestCombo: bestCombo }} />
+                </div>
+
                 <div className="flex gap-3">
                   <button onClick={startGame} className="px-6 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                     <RotateCcw className="w-4 h-4" /> Play Again

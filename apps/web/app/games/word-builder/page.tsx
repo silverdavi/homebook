@@ -1,4 +1,5 @@
 import { WordBuilderGame } from "@/components/games/WordBuilderGame";
+import { GameErrorBoundary } from "@/components/games/GameErrorBoundary";
 
 export const metadata = {
   title: "Word Builder | Game Arena | teacher.ninja",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function WordBuilderPage() {
-  return <WordBuilderGame />;
+  return (
+    <GameErrorBoundary gameName="Word Builder">
+      <WordBuilderGame />
+    </GameErrorBoundary>
+  );
 }

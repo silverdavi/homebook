@@ -1,4 +1,5 @@
 import { MathBlitzGame } from "@/components/games/MathBlitzGame";
+import { GameErrorBoundary } from "@/components/games/GameErrorBoundary";
 
 export const metadata = {
   title: "Math Blitz | Game Arena | teacher.ninja",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function MathBlitzPage() {
-  return <MathBlitzGame />;
+  return (
+    <GameErrorBoundary gameName="Math Blitz">
+      <MathBlitzGame />
+    </GameErrorBoundary>
+  );
 }

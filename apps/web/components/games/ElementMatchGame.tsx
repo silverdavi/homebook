@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Clock } from "lucide-react";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import Link from "next/link";
 import { getElementsByDifficulty } from "@/lib/games/science-data";
 
@@ -47,10 +48,12 @@ export function ElementMatchGame() {
   const [elapsed, setElapsed] = useState(0);
   const [gridCols, setGridCols] = useState(4);
   const [bestTime, setBestTime] = useState<Record<string, number>>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("elementMatch_best");
-      return saved ? JSON.parse(saved) : {};
-    }
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("elementMatch_best");
+        return saved ? JSON.parse(saved) : {};
+      }
+    } catch { /* ignore */ }
     return {};
   });
 
@@ -228,6 +231,9 @@ export function ElementMatchGame() {
                   <Trophy className="w-4 h-4" /> New Best Time!
                 </p>
               )}
+            </div>
+            <div className="mb-3">
+              <ScoreSubmit game="element-match" score={Math.max(1, 1000 - elapsed * 10 - moves * 5)} level={totalPairs} stats={{ time: formatTime(elapsed), moves }} />
             </div>
             <div className="flex gap-3 justify-center">
               <button

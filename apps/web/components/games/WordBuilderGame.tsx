@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { ArrowLeft, Trophy, Lightbulb, SkipForward, Star } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
 import Link from "next/link";
 import { SCIENCE_WORDS } from "@/lib/games/science-data";
 
@@ -90,18 +91,12 @@ export function WordBuilderGame() {
   const [showHint, setShowHint] = useState(false);
   const [skips, setSkips] = useState(3);
   const [usedWords] = useState<Set<number>>(new Set());
-  const [highScore, setHighScore] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("wordBuilder_highScore");
-      return saved ? parseInt(saved, 10) : 0;
-    }
-    return 0;
-  });
+  const [highScore, setHighScore] = useState(() => getLocalHighScore("wordBuilder_highScore"));
 
   const saveHighScore = useCallback((newScore: number) => {
     if (newScore > highScore) {
       setHighScore(newScore);
-      localStorage.setItem("wordBuilder_highScore", newScore.toString());
+      setLocalHighScore("wordBuilder_highScore", newScore);
     }
   }, [highScore]);
 

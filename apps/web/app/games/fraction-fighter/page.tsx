@@ -1,4 +1,5 @@
 import { FractionFighterGame } from "@/components/games/FractionFighterGame";
+import { GameErrorBoundary } from "@/components/games/GameErrorBoundary";
 
 export const metadata = {
   title: "Fraction Fighter | Game Arena | teacher.ninja",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function FractionFighterPage() {
-  return <FractionFighterGame />;
+  return (
+    <GameErrorBoundary gameName="Fraction Fighter">
+      <FractionFighterGame />
+    </GameErrorBoundary>
+  );
 }

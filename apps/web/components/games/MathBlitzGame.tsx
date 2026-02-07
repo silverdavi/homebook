@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Zap, Timer, Star } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import Link from "next/link";
 
 // ── Types ──
@@ -96,13 +98,7 @@ export function MathBlitzGame() {
   const [solved, setSolved] = useState(0);
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECS);
-  const [highScore, setHighScore] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("mathBlitz_highScore");
-      return saved ? parseInt(saved, 10) : 0;
-    }
-    return 0;
-  });
+  const [highScore, setHighScore] = useState(() => getLocalHighScore("mathBlitz_highScore"));
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef(1);
 
@@ -137,7 +133,7 @@ export function MathBlitzGame() {
             setScore((s) => {
               setHighScore((h) => {
                 if (s > h) {
-                  localStorage.setItem("mathBlitz_highScore", s.toString());
+                  setLocalHighScore("mathBlitz_highScore", s);
                   return s;
                 }
                 return h;
@@ -327,10 +323,13 @@ export function MathBlitzGame() {
               <p>Best streak: x{bestStreak}</p>
             </div>
             {score >= highScore && score > 0 && (
-              <p className="text-yellow-400 text-sm font-medium mb-4 flex items-center justify-center gap-1">
+              <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
+            <div className="mb-3">
+              <ScoreSubmit game="math-blitz" score={score} level={Math.floor(bestStreak / 3) + 1} stats={{ solved, bestStreak }} />
+            </div>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={startGame}

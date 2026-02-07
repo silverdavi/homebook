@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Heart, Zap } from "lucide-react";
+import { getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import Link from "next/link";
 
 type GamePhase = "menu" | "playing" | "result" | "gameOver";
@@ -108,13 +110,7 @@ export function FractionFighterGame() {
   const [pair, setPair] = useState<FractionPair | null>(null);
   const [result, setResult] = useState<"correct" | "wrong" | "timeout" | null>(null);
   const [timeLeft, setTimeLeft] = useState(100);
-  const [highScore, setHighScore] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("fractionFighter_highScore");
-      return saved ? parseInt(saved, 10) : 0;
-    }
-    return 0;
-  });
+  const [highScore, setHighScore] = useState(() => getLocalHighScore("fractionFighter_highScore"));
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
 
@@ -149,7 +145,7 @@ export function FractionFighterGame() {
                 setScore((s) => {
                   setHighScore((h) => {
                     if (s > h) {
-                      localStorage.setItem("fractionFighter_highScore", s.toString());
+                      setLocalHighScore("fractionFighter_highScore", s);
                       return s;
                     }
                     return h;
@@ -193,7 +189,7 @@ export function FractionFighterGame() {
               setScore((s) => {
                 setHighScore((h) => {
                   if (s > h) {
-                    localStorage.setItem("fractionFighter_highScore", s.toString());
+                    setLocalHighScore("fractionFighter_highScore", s);
                     return s;
                   }
                   return h;
@@ -347,10 +343,13 @@ export function FractionFighterGame() {
             <div className="text-5xl font-bold text-red-400 mb-2">{score}</div>
             <p className="text-slate-400 mb-6">Best streak: x{bestStreak}</p>
             {score >= highScore && score > 0 && (
-              <p className="text-yellow-400 text-sm font-medium mb-4 flex items-center justify-center gap-1">
+              <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
+            <div className="mb-3">
+              <ScoreSubmit game="fraction-fighter" score={score} level={level} stats={{ bestStreak }} />
+            </div>
             <div className="flex gap-3 justify-center">
               <button onClick={startGame} className="px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Again
