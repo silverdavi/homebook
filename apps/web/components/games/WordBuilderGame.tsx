@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { ArrowLeft, Trophy, Lightbulb, SkipForward, Star } from "lucide-react";
 import Link from "next/link";
+import { SCIENCE_WORDS } from "@/lib/games/science-data";
 
 type GamePhase = "menu" | "playing" | "correct" | "gameOver";
 
@@ -13,22 +14,8 @@ interface WordData {
 }
 
 const WORDS: WordData[] = [
-  // Science
-  { word: "ATOM", hint: "Smallest unit of matter", category: "Science" },
-  { word: "CELL", hint: "Basic unit of life", category: "Science" },
-  { word: "GENE", hint: "Unit of heredity", category: "Science" },
-  { word: "MASS", hint: "Amount of matter in an object", category: "Science" },
-  { word: "ORBIT", hint: "Path around a star or planet", category: "Science" },
-  { word: "PRISM", hint: "Splits white light into colors", category: "Science" },
-  { word: "FORCE", hint: "Push or pull on an object", category: "Science" },
-  { word: "SOLAR", hint: "Related to the sun", category: "Science" },
-  { word: "VAPOR", hint: "Gas form of a liquid", category: "Science" },
-  { word: "FLORA", hint: "Plant life of a region", category: "Science" },
-  { word: "FAUNA", hint: "Animal life of a region", category: "Science" },
-  { word: "NUCLEUS", hint: "Center of an atom or cell", category: "Science" },
-  { word: "PHOTON", hint: "Particle of light", category: "Science" },
-  { word: "ENZYME", hint: "Protein that speeds up reactions", category: "Science" },
-  { word: "PLASMA", hint: "Fourth state of matter", category: "Science" },
+  // ── Chemistry, Physics, Biology (from science-data) ──
+  ...SCIENCE_WORDS.map((w) => ({ word: w.word, hint: w.hint, category: w.category })),
   // Math
   { word: "RATIO", hint: "Comparison of two quantities", category: "Math" },
   { word: "PRIME", hint: "Divisible only by 1 and itself", category: "Math" },
@@ -84,7 +71,9 @@ function pickWord(used: Set<number>): { data: WordData; index: number } {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Science: "#10b981",
+  Chemistry: "#a855f7",
+  Physics: "#06b6d4",
+  Biology: "#22c55e",
   Math: "#6366f1",
   Geography: "#3b82f6",
   History: "#ef4444",

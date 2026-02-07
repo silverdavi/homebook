@@ -4,9 +4,14 @@ export interface SentenceData {
   difficulty: "easy" | "medium" | "hard";
 }
 
+import { SCIENCE_SENTENCES } from "./science-data";
+
 export const CATEGORIES = [
   { id: "math", label: "Math Facts", color: "#6366f1" },
   { id: "science", label: "Science", color: "#10b981" },
+  { id: "chemistry", label: "Chemistry", color: "#a855f7" },
+  { id: "physics", label: "Physics", color: "#06b6d4" },
+  { id: "biology", label: "Biology", color: "#22c55e" },
   { id: "grammar", label: "Grammar", color: "#f59e0b" },
   { id: "history", label: "History", color: "#ef4444" },
   { id: "geography", label: "Geography", color: "#3b82f6" },
@@ -100,6 +105,13 @@ export const SENTENCES: SentenceData[] = [
   // Hard
   { text: "The Ring of Fire is a horseshoe shaped zone of earthquakes and volcanoes around the Pacific", category: "geography", difficulty: "hard" },
   { text: "Tectonic plates are large slabs of rock that make up the foundation of the earths crust", category: "geography", difficulty: "hard" },
+
+  // ── Chemistry, Physics, Biology (from science-data) ──
+  ...SCIENCE_SENTENCES.map((s) => ({
+    text: s.text,
+    category: s.category,
+    difficulty: s.difficulty,
+  })),
 ];
 
 /** Get sentences filtered by difficulty and optionally category */

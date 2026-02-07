@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Clock } from "lucide-react";
 import Link from "next/link";
+import { getElementsByDifficulty } from "@/lib/games/science-data";
 
 type GamePhase = "menu" | "playing" | "won";
+type Difficulty = "easy" | "medium" | "hard";
 
 interface Card {
   id: number;
@@ -15,33 +17,9 @@ interface Card {
   matched: boolean;
 }
 
-const ELEMENTS = [
-  { symbol: "H", name: "Hydrogen" },
-  { symbol: "He", name: "Helium" },
-  { symbol: "Li", name: "Lithium" },
-  { symbol: "C", name: "Carbon" },
-  { symbol: "N", name: "Nitrogen" },
-  { symbol: "O", name: "Oxygen" },
-  { symbol: "Na", name: "Sodium" },
-  { symbol: "Mg", name: "Magnesium" },
-  { symbol: "Al", name: "Aluminum" },
-  { symbol: "Si", name: "Silicon" },
-  { symbol: "P", name: "Phosphorus" },
-  { symbol: "S", name: "Sulfur" },
-  { symbol: "Cl", name: "Chlorine" },
-  { symbol: "K", name: "Potassium" },
-  { symbol: "Ca", name: "Calcium" },
-  { symbol: "Fe", name: "Iron" },
-  { symbol: "Cu", name: "Copper" },
-  { symbol: "Zn", name: "Zinc" },
-  { symbol: "Ag", name: "Silver" },
-  { symbol: "Au", name: "Gold" },
-];
-
-type GridSize = 8 | 12 | 16;
-
-function createCards(pairCount: number): Card[] {
-  const shuffled = [...ELEMENTS].sort(() => Math.random() - 0.5).slice(0, pairCount);
+function createCards(pairCount: number, difficulty: Difficulty): Card[] {
+  const pool = getElementsByDifficulty(difficulty);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, pairCount);
   const cards: Card[] = [];
 
   shuffled.forEach((el, i) => {
@@ -52,10 +30,11 @@ function createCards(pairCount: number): Card[] {
   return cards.sort(() => Math.random() - 0.5);
 }
 
-const GRID_OPTIONS: { size: GridSize; label: string; pairs: number; cols: number }[] = [
-  { size: 8, label: "4×2", pairs: 4, cols: 4 },
-  { size: 12, label: "4×3", pairs: 6, cols: 4 },
-  { size: 16, label: "4×4", pairs: 8, cols: 4 },
+const GRID_OPTIONS: { label: string; pairs: number; cols: number; difficulty: Difficulty; emoji: string }[] = [
+  { label: "4×2 Easy", pairs: 4, cols: 4, difficulty: "easy", emoji: "🌤️" },
+  { label: "4×3 Medium", pairs: 6, cols: 4, difficulty: "medium", emoji: "🌦️" },
+  { label: "4×4 Hard", pairs: 8, cols: 4, difficulty: "hard", emoji: "⛈️" },
+  { label: "5×4 Expert", pairs: 10, cols: 5, difficulty: "hard", emoji: "💀" },
 ];
 
 export function ElementMatchGame() {
@@ -82,8 +61,8 @@ export function ElementMatchGame() {
     return () => clearInterval(t);
   }, [phase]);
 
-  const startGame = useCallback((pairCount: number, cols: number) => {
-    setCards(createCards(pairCount));
+  const startGame = useCallback((pairCount: number, cols: number, difficulty: Difficulty = "easy") => {
+    setCards(createCards(pairCount, difficulty));
     setFlippedIds([]);
     setMoves(0);
     setMatchedPairs(0);
@@ -176,11 +155,11 @@ export function ElementMatchGame() {
             <div className="space-y-3 max-w-xs mx-auto">
               {GRID_OPTIONS.map((opt) => (
                 <button
-                  key={opt.size}
-                  onClick={() => startGame(opt.pairs, opt.cols)}
+                  key={opt.label}
+                  onClick={() => startGame(opt.pairs, opt.cols, opt.difficulty)}
                   className="w-full py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 hover:border-blue-400/50 text-white font-medium rounded-xl transition-all flex items-center justify-between px-4"
                 >
-                  <span>{opt.label} ({opt.pairs} pairs)</span>
+                  <span>{opt.emoji} {opt.label} ({opt.pairs} pairs)</span>
                   {bestTime[String(opt.pairs)] && (
                     <span className="text-xs text-blue-300">Best: {formatTime(bestTime[String(opt.pairs)])}</span>
                   )}

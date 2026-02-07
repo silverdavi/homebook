@@ -17,28 +17,6 @@ function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
 }
 
-function generatePair(level: number): FractionPair {
-  const maxDenom = Math.min(4 + level * 2, 20);
-  const d1 = Math.floor(Math.random() * (maxDenom - 1)) + 2;
-  const d2 = Math.floor(Math.random() * (maxDenom - 1)) + 2;
-  const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-  const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-
-  const val1 = n1 / d1;
-  const val2 = n2 / d2;
-
-  // Avoid trivially equal
-  if (Math.abs(val1 - val2) < 0.001) {
-    return generatePair(level);
-  }
-
-  return {
-    a: [n1, d1],
-    b: [n2, d2],
-    answer: val1 > val2 ? "left" : val1 < val2 ? "right" : "equal",
-  };
-}
-
 function FractionDisplay({
   n,
   d,
@@ -76,7 +54,49 @@ function FractionDisplay({
 }
 
 const INITIAL_LIVES = 5;
-const TIME_PER_QUESTION = 4000;
+
+/**
+ * Timer per question scales with level:
+ *   Level 1-3: 5000ms (easy, big differences)
+ *   Level 4-7: 4000ms (medium denominators)
+ *   Level 8-12: 3500ms (harder fractions)
+ *   Level 13+: 3000ms (expert, tiny differences)
+ */
+function getTimePerQuestion(level: number): number {
+  if (level <= 3) return 5000;
+  if (level <= 7) return 4000;
+  if (level <= 12) return 3500;
+  return 3000;
+}
+
+/**
+ * Min fraction difference scales with level to avoid trivially easy problems at higher levels
+ * and impossibly close ones at low levels.
+ */
+function generatePairTuned(level: number): FractionPair {
+  const maxDenom = Math.min(4 + level * 2, 20);
+  const minDiff = level <= 3 ? 0.1 : level <= 7 ? 0.05 : 0.02;
+  
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const d1 = Math.floor(Math.random() * (maxDenom - 1)) + 2;
+    const d2 = Math.floor(Math.random() * (maxDenom - 1)) + 2;
+    const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+    const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+    const val1 = n1 / d1;
+    const val2 = n2 / d2;
+    const diff = Math.abs(val1 - val2);
+    
+    if (diff >= minDiff && diff > 0.001) {
+      return {
+        a: [n1, d1],
+        b: [n2, d2],
+        answer: val1 > val2 ? "left" : "right",
+      };
+    }
+  }
+  // Fallback
+  return { a: [1, 2], b: [1, 3], answer: "left" };
+}
 
 export function FractionFighterGame() {
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -100,18 +120,20 @@ export function FractionFighterGame() {
 
   const nextProblem = useCallback(
     (lvl: number) => {
-      const p = generatePair(lvl);
+      const p = generatePairTuned(lvl);
       setPair(p);
       setResult(null);
       setTimeLeft(100);
       startTimeRef.current = Date.now();
       setPhase("playing");
 
+      const questionTime = getTimePerQuestion(lvl);
+
       // Start countdown
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         const elapsed = Date.now() - startTimeRef.current;
-        const pct = Math.max(0, 100 - (elapsed / TIME_PER_QUESTION) * 100);
+        const pct = Math.max(0, 100 - (elapsed / questionTime) * 100);
         setTimeLeft(pct);
         if (pct <= 0) {
           clearInterval(timerRef.current!);

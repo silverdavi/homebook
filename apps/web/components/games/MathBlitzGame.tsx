@@ -17,52 +17,63 @@ type GamePhase = "menu" | "countdown" | "playing" | "gameOver";
 
 // ── Problem Generation (deterministic, no randomness in render) ──
 
+/**
+ * Difficulty tuning table:
+ *   1-3:  +, −  range 1-25
+ *   4-7:  +, −, ×  range 1-40, mult 2-7
+ *   8-12: +, −, ×, ÷  range 1-60, mult 2-10
+ *   13+:  all ops, range 1-100, mult 2-12
+ * Wrong answer spread scales with difficulty for harder guessing.
+ */
 function generateProblem(difficulty: number): Problem {
-  const ops: Operation[] = ["add", "subtract", "multiply", "divide"];
-  const op = ops[Math.floor(Math.random() * (difficulty > 10 ? 4 : difficulty > 5 ? 3 : 2))];
+  const ops: Operation[] =
+    difficulty <= 3 ? ["add", "subtract"] :
+    difficulty <= 7 ? ["add", "subtract", "multiply"] :
+    ["add", "subtract", "multiply", "divide"];
+  const op = ops[Math.floor(Math.random() * ops.length)];
 
   let a: number, b: number, answer: number, question: string;
 
+  const addSubMax = Math.min(10 + difficulty * 7, 100);
+  const multMax = Math.min(2 + Math.floor(difficulty * 0.8), 12);
+
   switch (op) {
     case "add": {
-      const max = Math.min(10 + difficulty * 5, 100);
-      a = Math.floor(Math.random() * max) + 1;
-      b = Math.floor(Math.random() * max) + 1;
+      a = Math.floor(Math.random() * addSubMax) + 1;
+      b = Math.floor(Math.random() * addSubMax) + 1;
       answer = a + b;
       question = `${a} + ${b}`;
       break;
     }
     case "subtract": {
-      const max = Math.min(10 + difficulty * 5, 100);
-      a = Math.floor(Math.random() * max) + 1;
-      b = Math.floor(Math.random() * a) + 1;
+      a = Math.floor(Math.random() * addSubMax) + 2;
+      b = Math.floor(Math.random() * (a - 1)) + 1;
       answer = a - b;
       question = `${a} − ${b}`;
       break;
     }
     case "multiply": {
-      const max = Math.min(3 + difficulty, 12);
-      a = Math.floor(Math.random() * max) + 2;
-      b = Math.floor(Math.random() * max) + 2;
+      a = Math.floor(Math.random() * multMax) + 2;
+      b = Math.floor(Math.random() * multMax) + 2;
       answer = a * b;
       question = `${a} × ${b}`;
       break;
     }
     case "divide": {
-      const max = Math.min(3 + difficulty, 12);
-      b = Math.floor(Math.random() * max) + 2;
-      answer = Math.floor(Math.random() * max) + 1;
+      b = Math.floor(Math.random() * multMax) + 2;
+      answer = Math.floor(Math.random() * multMax) + 1;
       a = b * answer;
       question = `${a} ÷ ${b}`;
       break;
     }
   }
 
-  // Generate 3 wrong choices
+  // Wrong choices — spread increases with difficulty
+  const spread = Math.max(3, Math.min(difficulty * 2, 20));
   const wrongSet = new Set<number>();
   while (wrongSet.size < 3) {
-    const offset = Math.floor(Math.random() * 10) - 5;
-    const wrong = answer + (offset === 0 ? 1 : offset);
+    const offset = Math.floor(Math.random() * spread) - Math.floor(spread / 2);
+    const wrong = answer + (offset === 0 ? (Math.random() > 0.5 ? 1 : -1) : offset);
     if (wrong !== answer && wrong >= 0) wrongSet.add(wrong);
   }
 
