@@ -219,10 +219,7 @@ export function WordSearchGame() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (!einkMode) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useGameMusic();
-  }
+  useGameMusic();
 
   useEffect(() => {
     try {

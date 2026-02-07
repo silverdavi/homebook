@@ -152,10 +152,7 @@ export function SudokuGame() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Audio — only in standard mode
-  if (!einkMode) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useGameMusic();
-  }
+  useGameMusic();
 
   useEffect(() => {
     try {

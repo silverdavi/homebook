@@ -267,10 +267,7 @@ export function CrosswordGame() {
 
   const puzzle = PUZZLES[puzzleIdx];
 
-  if (!eink) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useGameMusic();
-  }
+  useGameMusic();
 
   useEffect(() => {
     setHighScore(getLocalHighScore("crossword"));
