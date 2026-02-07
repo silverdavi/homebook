@@ -7,11 +7,11 @@ import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 import { getElementsByDifficulty } from "@/lib/games/science-data";
 
-type GamePhase = "menu" | "playing" | "won";
+type GamePhase = "menu" | "countdown" | "playing" | "won";
 type Difficulty = "easy" | "medium" | "hard";
 
 interface Card {
@@ -49,11 +49,11 @@ const CHEMISTRY_TIPS = [
   "Chlorine (Cl) is used to purify drinking water.",
 ];
 
-const GRID_OPTIONS: { label: string; pairs: number; cols: number; difficulty: Difficulty; emoji: string }[] = [
-  { label: "8 cards · 4 pairs", pairs: 4, cols: 4, difficulty: "easy", emoji: "🧪" },
-  { label: "12 cards · 6 pairs", pairs: 6, cols: 4, difficulty: "medium", emoji: "⚗️" },
-  { label: "16 cards · 8 pairs", pairs: 8, cols: 4, difficulty: "hard", emoji: "🔬" },
-  { label: "20 cards · 10 pairs", pairs: 10, cols: 5, difficulty: "hard", emoji: "🧬" },
+const GRID_OPTIONS: { label: string; pairs: number; cols: number; difficulty: Difficulty }[] = [
+  { label: "4 pairs (8 cards)", pairs: 4, cols: 4, difficulty: "easy" },
+  { label: "6 pairs (12 cards)", pairs: 6, cols: 4, difficulty: "medium" },
+  { label: "8 pairs (16 cards)", pairs: 8, cols: 4, difficulty: "hard" },
+  { label: "10 pairs (20 cards)", pairs: 10, cols: 5, difficulty: "hard" },
 ];
 
 export function ElementMatchGame() {
@@ -78,6 +78,8 @@ export function ElementMatchGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [chemTipIdx, setChemTipIdx] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [pendingStart, setPendingStart] = useState<{ pairs: number; cols: number; difficulty: Difficulty } | null>(null);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -98,6 +100,34 @@ export function ElementMatchGame() {
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on won
 
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          if (pendingStart) {
+            setCards(createCards(pendingStart.pairs, pendingStart.difficulty));
+            setFlippedIds([]);
+            setMoves(0);
+            setMatchedPairs(0);
+            setTotalPairs(pendingStart.pairs);
+            setElapsed(0);
+            setGridCols(pendingStart.cols);
+            setAchievementQueue([]);
+            setShowAchievementIndex(0);
+            setPendingStart(null);
+          }
+          setPhase("playing");
+          sfxCountdownGo();
+          return 3;
+        }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown, pendingStart]);
+
   // Timer
   useEffect(() => {
     if (phase !== "playing") return;
@@ -106,16 +136,9 @@ export function ElementMatchGame() {
   }, [phase]);
 
   const startGame = useCallback((pairCount: number, cols: number, difficulty: Difficulty = "easy") => {
-    setCards(createCards(pairCount, difficulty));
-    setFlippedIds([]);
-    setMoves(0);
-    setMatchedPairs(0);
-    setTotalPairs(pairCount);
-    setElapsed(0);
-    setGridCols(cols);
-    setAchievementQueue([]);
-    setShowAchievementIndex(0);
-    setPhase("playing");
+    setPendingStart({ pairs: pairCount, cols, difficulty });
+    setCountdown(3);
+    setPhase("countdown");
   }, []);
 
   const handleCardClick = useCallback(
@@ -209,13 +232,23 @@ export function ElementMatchGame() {
                   onClick={() => startGame(opt.pairs, opt.cols, opt.difficulty)}
                   className="w-full py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 hover:border-blue-400/50 text-white font-medium rounded-xl transition-all flex items-center justify-between px-4"
                 >
-                  <span>{opt.emoji} {opt.label} ({opt.pairs} pairs)</span>
+                  <span>{opt.label}</span>
                   {bestTime[String(opt.pairs)] && (
                     <span className="text-xs text-blue-300">Best: {formatTime(bestTime[String(opt.pairs)])}</span>
                   )}
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* COUNTDOWN */}
+        {phase === "countdown" && (
+          <div className="text-center py-20">
+            <div className="text-8xl font-bold text-blue-400 animate-pulse">
+              {countdown || "GO!"}
+            </div>
+            <p className="mt-4 text-slate-400">Get ready...</p>
           </div>
         )}
 

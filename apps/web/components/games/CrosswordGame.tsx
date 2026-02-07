@@ -21,6 +21,7 @@ import {
   sfxClick,
   sfxLevelUp,
   sfxGameOver,
+  sfxCountdownGo,
 } from "@/lib/games/audio";
 
 // ── E-ink utilities (inline fallback if Agent 5 hasn't created eink-utils) ──
@@ -53,7 +54,7 @@ function isEinkDevice() {
 
 // ── Types ──
 
-type GamePhase = "menu" | "playing" | "complete";
+type GamePhase = "menu" | "countdown" | "playing" | "complete";
 
 interface Clue {
   direction: "across" | "down";
@@ -263,6 +264,7 @@ export function CrosswordGame() {
   const [elapsed, setElapsed] = useState(0);
   const [achievements, setAchievements] = useState<NewAchievement[]>([]);
   const [highScore, setHighScore] = useState(0);
+  const [countdown, setCountdown] = useState(3);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const puzzle = PUZZLES[puzzleIdx];
@@ -284,6 +286,23 @@ export function CrosswordGame() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [phase, startTime]);
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          setPhase("playing");
+          setStartTime(Date.now());
+          if (!eink) sfxCountdownGo();
+          return 3;
+        }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown, eink]);
 
   const initGrid = useCallback(
     (p: CrosswordPuzzle) => {
@@ -307,8 +326,8 @@ export function CrosswordGame() {
     (idx: number) => {
       setPuzzleIdx(idx);
       initGrid(PUZZLES[idx]);
-      setPhase("playing");
-      setStartTime(Date.now());
+      setCountdown(3);
+      setPhase("countdown");
       setElapsed(0);
       setScore(0);
       if (!eink) sfxClick();
@@ -580,6 +599,20 @@ export function CrosswordGame() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Countdown ──
+  if (phase === "countdown") {
+    return (
+      <div className={`min-h-screen ${bg} flex flex-col items-center justify-center px-4 py-8`}>
+        <div className="text-center py-20">
+          <div className="text-8xl font-bold text-emerald-400 animate-pulse">
+            {countdown || "GO!"}
+          </div>
+          <p className={`mt-4 ${muted}`}>Get ready...</p>
         </div>
       </div>
     );

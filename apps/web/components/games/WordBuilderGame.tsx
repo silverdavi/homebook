@@ -6,11 +6,11 @@ import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } fro
 import { checkAchievements } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxAchievement } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxAchievement, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 import { SCIENCE_WORDS } from "@/lib/games/science-data";
 
-type GamePhase = "menu" | "playing" | "correct" | "gameOver";
+type GamePhase = "menu" | "countdown" | "playing" | "correct" | "gameOver";
 
 interface WordData {
   word: string;
@@ -100,6 +100,7 @@ export function WordBuilderGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const hasTrackedSessionRef = useRef(false);
+  const [countdown, setCountdown] = useState(3);
 
   // ── Settings ──
   const [autoHint, setAutoHint] = useState(false);
@@ -126,6 +127,22 @@ export function WordBuilderGame() {
       setLocalHighScore("wordBuilder_highScore", newScore);
     }
   }, [highScore]);
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          setPhase("playing");
+          sfxCountdownGo();
+          return 3;
+        }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
 
   const loadWord = useCallback(() => {
     const { data, index } = pickWord(usedWords);
@@ -185,7 +202,15 @@ export function WordBuilderGame() {
     setShowAchievementIndex(0);
     hasTrackedSessionRef.current = false;
     usedWords.clear();
-    loadWord();
+    // Load the first word data but show countdown first
+    const { data, index } = pickWord(usedWords);
+    usedWords.add(index);
+    setWordData(data);
+    setScrambled(scramble(data.word).split(""));
+    setSelected([]);
+    setShowHint(autoHint);
+    setCountdown(3);
+    setPhase("countdown");
   };
 
   const builtWord = selected.map((i) => scrambled[i]).join("");
@@ -228,6 +253,16 @@ export function WordBuilderGame() {
                 <Trophy className="w-4 h-4" /> Best: {highScore}
               </div>
             )}
+          </div>
+        )}
+
+        {/* COUNTDOWN */}
+        {phase === "countdown" && (
+          <div className="text-center py-20">
+            <div className="text-8xl font-bold text-amber-400 animate-pulse">
+              {countdown || "GO!"}
+            </div>
+            <p className="mt-4 text-slate-400">Get ready...</p>
           </div>
         )}
 

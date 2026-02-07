@@ -38,7 +38,7 @@ function useEinkMode(): [boolean, () => void] {
 
 // ─── Types & Constants ───────────────────────────────────────────────
 
-type Phase = "menu" | "playing" | "complete";
+type Phase = "menu" | "countdown" | "playing" | "complete";
 type PuzzleMode = "numbers" | "math";
 type GridSize = 3 | 4 | 5;
 
@@ -145,6 +145,21 @@ function getAdjacentToEmpty(tiles: number[], size: number): number[] {
 function formatTime(s: number) { return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`; }
 function hsKey(size: GridSize, mode: PuzzleMode) { return `number-puzzle-best-${size}-${mode}`; }
 
+// ─── Tips ───────────────────────────────────────────────────────────
+
+const TIPS = [
+  "Work from the outside in — solve edges first",
+  "Try to solve one row at a time, starting from the top",
+  "The empty space needs strategic positioning",
+  "Plan several moves ahead, like in chess",
+  "The 15-puzzle was one of the first viral puzzles in the 1880s",
+  "Counting inversions can tell you if a puzzle is solvable",
+  "Move tiles in small cycles to avoid disrupting solved areas",
+  "In math mode, calculate each expression before sliding",
+  "Patience and planning beat random moves every time",
+  "The minimum moves for a 3×3 puzzle is usually under 30",
+];
+
 // ─── Component ──────────────────────────────────────────────────────
 
 export function NumberPuzzleGame() {
@@ -158,6 +173,8 @@ export function NumberPuzzleGame() {
   const [elapsed, setElapsed] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [newAchievements, setNewAchievements] = useState<NewAchievement[]>([]);
+  const [countdown, setCountdown] = useState(3);
+  const [tipIndex, setTipIndex] = useState(0);
 
   useGameMusic();
 
@@ -166,6 +183,25 @@ export function NumberPuzzleGame() {
     if (phase !== "playing") return;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
+  }, [phase]);
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) { setPhase("playing"); return 3; }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
   }, [phase]);
 
   // Load best score
@@ -177,7 +213,8 @@ export function NumberPuzzleGame() {
     setMoves(0);
     setElapsed(0);
     setNewAchievements([]);
-    setPhase("playing");
+    setCountdown(3);
+    setPhase("countdown");
     sfxClick();
   }, [gridSize, puzzleMode]);
 
@@ -213,7 +250,7 @@ export function NumberPuzzleGame() {
     return String(value);
   }, [puzzleMode, mathTiles]);
 
-  const tileSize = eink ? Math.max(60, Math.floor(300 / gridSize)) : Math.floor(360 / gridSize);
+  const tileSize = eink ? Math.max(60, Math.floor(300 / gridSize)) : Math.max(36, Math.floor(360 / gridSize));
   const fontSize = eink ? Math.max(24, Math.floor(48 / (gridSize - 1)))
     : puzzleMode === "math" ? Math.max(14, Math.floor(36 / (gridSize - 1)))
     : Math.max(18, Math.floor(48 / (gridSize - 1)));
@@ -300,6 +337,21 @@ export function NumberPuzzleGame() {
           </div>
         )}
 
+        {/* ── Countdown Phase ── */}
+        {phase === "countdown" && (
+          <div className="mt-16 text-center">
+            <div
+              className={cx(
+                eink,
+                "text-7xl font-bold text-black",
+                "text-7xl font-bold text-yellow-400 animate-pulse"
+              )}
+            >
+              {countdown}
+            </div>
+          </div>
+        )}
+
         {/* ── Playing Phase ── */}
         {phase === "playing" && (
           <div>
@@ -358,6 +410,16 @@ export function NumberPuzzleGame() {
                 <ArrowLeft className="w-4 h-4" /> Menu
               </button>
             </div>
+
+            {eink ? (
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                {TIPS[tipIndex]}
+              </div>
+            ) : (
+              <div className="text-center mt-3">
+                <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
+              </div>
+            )}
           </div>
         )}
 

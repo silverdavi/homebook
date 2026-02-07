@@ -14,7 +14,7 @@ import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
 // ─── Types ───────────────────────────────────────────────────────────
 
 type Difficulty = "easy" | "medium" | "hard";
-type Phase = "menu" | "playing" | "complete";
+type Phase = "menu" | "countdown" | "playing" | "complete";
 
 interface Puzzle {
   puzzle: string; // 81 chars, '0' = empty
@@ -126,6 +126,21 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+// ─── Tips ─────────────────────────────────────────────────────────────
+
+const TIPS = [
+  "Look for rows or columns with only 2 empty cells first",
+  "Each 3×3 box must contain digits 1–9",
+  "Cross-hatching: scan rows and columns to eliminate possibilities",
+  "Naked pairs: two cells with the same two candidates eliminate those elsewhere",
+  "If a number can only go in one place in a row, column, or box — it goes there!",
+  "Start with the most constrained areas — they have fewer possibilities",
+  "Pencil marks help track possible values for each cell",
+  "Hidden singles: a digit that can only go in one cell within a unit",
+  "Practice improves pattern recognition over time",
+  "Sudoku is pure logic — no math or guessing needed",
+];
+
 // ─── Component ───────────────────────────────────────────────────────
 
 export function SudokuGame() {
@@ -143,6 +158,8 @@ export function SudokuGame() {
   const [elapsed, setElapsed] = useState(0);
   const [moveCount, setMoveCount] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [tipIndex, setTipIndex] = useState(0);
 
   // Achievement
   const [achievementQueue, setAchievementQueue] = useState<
@@ -171,6 +188,25 @@ export function SudokuGame() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, [phase, showTimer]);
 
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) { setPhase("playing"); return 3; }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
+
   const startGame = useCallback(
     (diff: Difficulty) => {
       const puzzles = PUZZLES[diff];
@@ -184,7 +220,8 @@ export function SudokuGame() {
       setSelectedCell(null);
       setElapsed(0);
       setMoveCount(0);
-      setPhase("playing");
+      setCountdown(3);
+      setPhase("countdown");
       if (!einkMode && isSfxEnabled()) sfxClick();
     },
     [einkMode],
@@ -388,6 +425,15 @@ export function SudokuGame() {
             </div>
           )}
 
+          {/* Countdown */}
+          {phase === "countdown" && (
+            <div style={{ padding: "40px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 72, fontWeight: "bold", color: "#000" }}>
+                {countdown}
+              </div>
+            </div>
+          )}
+
           {/* Playing */}
           {phase === "playing" && (
             <div style={{ padding: "8px 0" }}>
@@ -492,6 +538,10 @@ export function SudokuGame() {
                     {d === 0 ? "✕" : d}
                   </button>
                 ))}
+              </div>
+
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                {TIPS[tipIndex]}
               </div>
 
               <button
@@ -635,6 +685,15 @@ export function SudokuGame() {
           </div>
         )}
 
+        {/* Countdown */}
+        {phase === "countdown" && (
+          <div className="text-center py-16">
+            <div className="text-7xl font-bold text-blue-400 animate-pulse">
+              {countdown}
+            </div>
+          </div>
+        )}
+
         {/* Playing */}
         {phase === "playing" && (
           <div>
@@ -654,7 +713,7 @@ export function SudokuGame() {
             <div
               className="grid border-2 border-blue-400 mx-auto"
               style={{
-                gridTemplateColumns: "repeat(9, 1fr)",
+                gridTemplateColumns: `repeat(9, minmax(36px, 1fr))`,
                 maxWidth: 450,
               }}
             >
@@ -708,6 +767,10 @@ export function SudokuGame() {
                   {d === 0 ? "✕" : d}
                 </button>
               ))}
+            </div>
+
+            <div className="text-center mt-3">
+              <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
             </div>
 
             <button

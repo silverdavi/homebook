@@ -27,7 +27,7 @@ import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type Phase = "menu" | "playing" | "complete";
+type Phase = "menu" | "countdown" | "playing" | "complete";
 type Category = "science" | "math" | "history" | "geography" | "mixed";
 type GridSize = 10 | 12 | 15;
 
@@ -192,6 +192,21 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+// ─── Tips ─────────────────────────────────────────────────────────────
+
+const TIPS = [
+  "Scan systematically — row by row, then column by column",
+  "Diagonal words are often the hardest to spot",
+  "Look for uncommon letter combinations to find word starts",
+  "Start with the longest words — they're easier to find",
+  "Check all four directions: right, down, and both diagonals",
+  "Focus on the first and last letters of each word",
+  "Uncommon letters like Q, X, Z narrow down possibilities fast",
+  "Cross-referencing found letters can reveal nearby words",
+  "Take breaks if you're stuck — fresh eyes find words faster",
+  "Building vocabulary improves word recognition speed",
+];
+
 // ─── Component ───────────────────────────────────────────────────────
 
 export function WordSearchGame() {
@@ -212,6 +227,8 @@ export function WordSearchGame() {
   const [elapsed, setElapsed] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [score, setScore] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [tipIndex, setTipIndex] = useState(0);
 
   const [achievementQueue, setAchievementQueue] = useState<
     { name: string; tier: MedalTier }[]
@@ -237,6 +254,25 @@ export function WordSearchGame() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, [phase]);
 
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) { setPhase("playing"); return 3; }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
+
   const startGame = useCallback(() => {
     const result = generateGrid(gridSize, category, wordCount);
     setGrid(result.grid);
@@ -245,7 +281,8 @@ export function WordSearchGame() {
     setFoundCells(new Set());
     setElapsed(0);
     setScore(0);
-    setPhase("playing");
+    setCountdown(3);
+    setPhase("countdown");
     if (!einkMode && isSfxEnabled()) sfxClick();
   }, [gridSize, category, wordCount, einkMode]);
 
@@ -476,6 +513,14 @@ export function WordSearchGame() {
             </div>
           )}
 
+          {phase === "countdown" && (
+            <div style={{ padding: "40px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 72, fontWeight: "bold", color: "#000" }}>
+                {countdown}
+              </div>
+            </div>
+          )}
+
           {phase === "playing" && (
             <div style={{ padding: "8px 0" }}>
               <div
@@ -571,6 +616,10 @@ export function WordSearchGame() {
                     {pw.word}
                   </div>
                 ))}
+              </div>
+
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                {TIPS[tipIndex]}
               </div>
 
               <button
@@ -728,6 +777,14 @@ export function WordSearchGame() {
           </div>
         )}
 
+        {phase === "countdown" && (
+          <div className="text-center py-16">
+            <div className="text-7xl font-bold text-emerald-400 animate-pulse">
+              {countdown}
+            </div>
+          </div>
+        )}
+
         {phase === "playing" && (
           <div>
             <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2">
@@ -751,7 +808,7 @@ export function WordSearchGame() {
               className="border-2 border-emerald-500/50 rounded-lg overflow-hidden mx-auto"
               style={{
                 display: "grid",
-                gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+                gridTemplateColumns: `repeat(${gridSize}, minmax(36px, 1fr))`,
                 maxWidth: gridSize <= 10 ? 500 : gridSize <= 12 ? 600 : 700,
               }}
             >
@@ -799,6 +856,10 @@ export function WordSearchGame() {
                   {pw.found ? "✓" : "○"} {pw.word}
                 </div>
               ))}
+            </div>
+
+            <div className="text-center mt-3">
+              <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
             </div>
 
             <button

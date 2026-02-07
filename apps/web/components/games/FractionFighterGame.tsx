@@ -8,10 +8,10 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, HeartRecovery } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
-type GamePhase = "menu" | "playing" | "result" | "gameOver";
+type GamePhase = "menu" | "countdown" | "playing" | "result" | "gameOver";
 
 interface FractionPair {
   a: [number, number]; // [numerator, denominator]
@@ -136,6 +136,7 @@ export function FractionFighterGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
+  const [countdown, setCountdown] = useState(3);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
 
@@ -160,7 +161,7 @@ export function FractionFighterGame() {
       const timerMult = 2.0 - (timerSpeed - 1) * 0.18; // speed 1 => 2.0x, speed 10 => 0.38x
       const questionTime = Math.round(baseTime * Math.max(0.3, timerMult));
 
-      // Start countdown
+      // Start question timer
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         const elapsed = Date.now() - startTimeRef.current;
@@ -194,8 +195,24 @@ export function FractionFighterGame() {
         }
       }, 50);
     },
-    []
+    [timerSpeed]
   );
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          sfxCountdownGo();
+          nextProblem(1);
+          return 3;
+        }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown, nextProblem]);
 
   const handleChoice = useCallback(
     (choice: "left" | "right") => {
@@ -273,7 +290,8 @@ export function FractionFighterGame() {
     setShowHeartRecovery(false);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
-    nextProblem(1);
+    setCountdown(3);
+    setPhase("countdown");
   };
 
   useEffect(() => {
@@ -348,6 +366,16 @@ export function FractionFighterGame() {
                 <Trophy className="w-4 h-4" /> Best: {highScore}
               </div>
             )}
+          </div>
+        )}
+
+        {/* COUNTDOWN */}
+        {phase === "countdown" && (
+          <div className="text-center py-20">
+            <div className="text-8xl font-bold text-red-400 animate-pulse">
+              {countdown || "GO!"}
+            </div>
+            <p className="mt-4 text-slate-400">Get ready...</p>
           </div>
         )}
 

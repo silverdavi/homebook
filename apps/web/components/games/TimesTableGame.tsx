@@ -290,6 +290,22 @@ export function TimesTableGame() {
     setPhase("countdown");
   }, [tables, usedPairs]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame(mode);
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, mode, startGame]);
+
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const accuracy = solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100;
 
@@ -535,9 +551,9 @@ export function TimesTableGame() {
               <button onClick={() => startGame(mode)} className="px-6 py-3 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Again
               </button>
-              <button onClick={() => setPhase("menu")} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all">
-                Menu
-              </button>
+              <Link href="/games" className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all">
+                Back
+              </Link>
             </div>
           </div>
         )}

@@ -45,7 +45,7 @@ function useEinkMode(): [boolean, () => void] {
 
 // ── Types ───────────────────────────────────────────────────────────
 
-type GamePhase = "menu" | "playing" | "complete";
+type GamePhase = "menu" | "countdown" | "playing" | "complete";
 type GridSize = 5 | 10;
 
 /** Cell state: 0 = empty, 1 = filled, 2 = marked-X */
@@ -447,6 +447,21 @@ function isColComplete(
   return groups.every((g, i) => g === expectedClue[i]);
 }
 
+// ── Tips ────────────────────────────────────────────────────────────
+
+const TIPS = [
+  "Start with the largest clue numbers — they constrain the most",
+  "Mark X on cells you know are empty",
+  "Look for overlapping ranges — cells that must be filled regardless of positioning",
+  "If a clue equals the grid size, fill the entire row or column",
+  "Complete rows/columns get crossed out — use them to guide your next moves",
+  "Work from both ends of a row or column to find overlaps",
+  "A clue of 0 means the entire row or column is empty",
+  "Count total filled cells from clues and compare to row length",
+  "Edge cells are often easier to determine first",
+  "Nonograms are also called picross or griddlers",
+];
+
 // ── Component ───────────────────────────────────────────────────────
 
 export function NonogramGame() {
@@ -470,6 +485,8 @@ export function NonogramGame() {
   const [score, setScore] = useState(0);
   const [wrongCheck, setWrongCheck] = useState(false);
   const [newAchievements, setNewAchievements] = useState<NewAchievement[]>([]);
+  const [countdown, setCountdown] = useState(3);
+  const [tipIndex, setTipIndex] = useState(0);
 
   useGameMusic();
 
@@ -478,6 +495,25 @@ export function NonogramGame() {
     if (phase !== "playing") return;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
+  }, [phase]);
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) { setPhase("playing"); return 3; }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
   }, [phase]);
 
   // Load best score when size changes
@@ -503,7 +539,8 @@ export function NonogramGame() {
       setPuzzleIndex(pi % puzzles.length);
       setPuzzleLabel(`Puzzle #${(pi % puzzles.length) + 1}`);
       setPuzzleMode("preset");
-      setPhase("playing");
+      setCountdown(3);
+      setPhase("countdown");
       sfxClick();
     },
     [gridSize, puzzleIndex]
@@ -522,7 +559,8 @@ export function NonogramGame() {
     const symLabel = symmetry === "none" ? "" : ` (${SYMMETRY_OPTIONS.find(s => s.key === symmetry)?.label ?? ""})`;
     setPuzzleLabel(`Random ${density}%${symLabel}`);
     setPuzzleMode("random");
-    setPhase("playing");
+    setCountdown(3);
+    setPhase("countdown");
     sfxClick();
   }, [gridSize, density, symmetry]);
 
@@ -607,7 +645,7 @@ export function NonogramGame() {
     0
   );
 
-  const cellSize = gridSize === 5 ? (eink ? 52 : 48) : eink ? 34 : 32;
+  const cellSize = gridSize === 5 ? (eink ? 52 : 48) : Math.max(36, eink ? 34 : 32);
   const clueFs = gridSize === 5 ? 16 : 12;
   const puzzles = getPuzzlesForSize(gridSize);
 
@@ -884,6 +922,21 @@ export function NonogramGame() {
           </div>
         )}
 
+        {/* ── Countdown Phase ── */}
+        {phase === "countdown" && (
+          <div className="mt-16 text-center">
+            <div
+              className={cx(
+                eink,
+                "text-7xl font-bold text-black",
+                "text-7xl font-bold text-indigo-400 animate-pulse"
+              )}
+            >
+              {countdown}
+            </div>
+          </div>
+        )}
+
         {/* ── Playing Phase ── */}
         {phase === "playing" && (
           <div>
@@ -1114,6 +1167,16 @@ export function NonogramGame() {
                 <ArrowLeft className="w-4 h-4" /> Menu
               </button>
             </div>
+
+            {eink ? (
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                {TIPS[tipIndex]}
+              </div>
+            ) : (
+              <div className="text-center mt-3">
+                <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
+              </div>
+            )}
           </div>
         )}
 

@@ -16,9 +16,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "teacher.ninja — Worksheet Generator",
+  title: "teacher.ninja — Worksheet Generator & Game Arena",
   description:
-    "Generate beautiful, personalized math worksheets in seconds. Fractions, multiplication, division, and more.",
+    "Generate beautiful worksheets and play 25+ educational games. Math, science, history, and more — for students of all ages.",
+  openGraph: {
+    title: "teacher.ninja — Worksheets & Educational Games",
+    description:
+      "Generate beautiful worksheets and play 25+ educational games. Math, science, history, and more.",
+    siteName: "teacher.ninja",
+    type: "website",
+    url: "https://teacher.ninja",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "teacher.ninja — Worksheets & Educational Games",
+    description:
+      "Generate beautiful worksheets and play 25+ educational games.",
+  },
 };
 
 export default function RootLayout({

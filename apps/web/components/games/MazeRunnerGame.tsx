@@ -583,6 +583,22 @@ export function MazeRunnerGame() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [phase, playerPos, movePlayer]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, startGame]);
+
   // Pointer/touch controls on canvas
   const handleCanvasPointer = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (phase !== "playing" || !maze) return;

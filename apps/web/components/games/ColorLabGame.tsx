@@ -429,6 +429,22 @@ export function ColorLabGame() {
     return () => clearInterval(t);
   }, [phase]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Check completion
   useEffect(() => {
     if (phase !== "playing") return;

@@ -196,6 +196,22 @@ export function TimelineDashGame() {
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const startNewRound = useCallback(() => {
     const picked = pickRound(eventsPerRound, selectedCategories, usedEvents);
     picked.forEach((e) => usedEvents.add(e.event));

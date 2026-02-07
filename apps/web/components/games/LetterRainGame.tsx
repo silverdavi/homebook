@@ -83,6 +83,21 @@ const STARS = Array.from({ length: 50 }).map((_, i) => ({
   duration: 2 + (((i * 17 + 1) % 10) / 10) * 4,
 }));
 
+// ── Tips ──
+
+const TIPS = [
+  "Reading speed improves with practice",
+  "Context clues help predict the next word",
+  "Active reading means engaging with the text",
+  "Focus on the highlighted next letter in the sentence tracker",
+  "Build combos by catching letters without mistakes",
+  "Memorize the sentence during the intro — it helps with order",
+  "Watch for the glowing letter — that's the one you need next",
+  "Higher combos give score multipliers",
+  "Adjust the speed slider to match your comfort level",
+  "Regular practice improves both reading speed and accuracy",
+];
+
 // ── Component ──
 
 export function LetterRainGame() {
@@ -121,6 +136,7 @@ export function LetterRainGame() {
   const [showPerfectToast, setShowPerfectToast] = useState(false);
   const [achievementQueue, setAchievementQueue] = useState<Array<{ medalId: string; name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
 
   // ── Settings (toggles) ──
   const [speed, setSpeed] = useState(4); // 1-10
@@ -129,6 +145,13 @@ export function LetterRainGame() {
 
   // Keep nextCharRef in sync
   useEffect(() => { nextCharRef.current = nextCharIndex; }, [nextCharIndex]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
 
   useEffect(() => {
     function handleResize() {
@@ -509,6 +532,15 @@ export function LetterRainGame() {
                 </span>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Tip */}
+      {phase === "playing" && (
+        <div className="w-full max-w-[850px] px-4 mb-1">
+          <div className="text-center">
+            <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
           </div>
         </div>
       )}

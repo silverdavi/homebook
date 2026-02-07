@@ -28,7 +28,7 @@ import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type Phase = "menu" | "playing" | "feedback" | "complete";
+type Phase = "menu" | "countdown" | "playing" | "feedback" | "complete";
 type QuizCategory =
   | "math"
   | "science"
@@ -209,6 +209,21 @@ const ALL_CATEGORIES: { key: QuizCategory; label: string }[] = [
   { key: "biology", label: "Biology" },
 ];
 
+// ─── Tips ─────────────────────────────────────────────────────────────
+
+const TIPS = [
+  "Read all options before answering",
+  "Eliminate obviously wrong answers first",
+  "Look for keywords in the question",
+  "Context clues in the question often hint at the answer",
+  "If two answers seem similar, one is likely correct",
+  "Don't overthink — your first instinct is often right",
+  "Pay attention to absolute words like 'always' or 'never'",
+  "Reviewing explanations helps you learn for next time",
+  "Cross-subject knowledge helps with tricky questions",
+  "Regular practice builds a stronger knowledge base",
+];
+
 // ─── Component ───────────────────────────────────────────────────────
 
 export function TriviaQuizGame() {
@@ -227,6 +242,8 @@ export function TriviaQuizGame() {
   const [correctCount, setCorrectCount] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [tipIndex, setTipIndex] = useState(0);
 
   const [achievementQueue, setAchievementQueue] = useState<
     { name: string; tier: MedalTier }[]
@@ -252,6 +269,25 @@ export function TriviaQuizGame() {
     if (timerRef.current) clearInterval(timerRef.current);
   }, [phase]);
 
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) { setPhase("playing"); return 3; }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing" && phase !== "feedback") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
+
   const toggleCategory = useCallback((cat: QuizCategory) => {
     setSelectedCategories((prev) => {
       const next = new Set(prev);
@@ -273,7 +309,8 @@ export function TriviaQuizGame() {
     setSelectedAnswer(null);
     setCorrectCount(0);
     setElapsed(0);
-    setPhase("playing");
+    setCountdown(3);
+    setPhase("countdown");
     if (!einkMode && isSfxEnabled()) sfxClick();
   }, [selectedCategories, questionCount, einkMode]);
 
@@ -486,6 +523,14 @@ export function TriviaQuizGame() {
             </div>
           )}
 
+          {phase === "countdown" && (
+            <div style={{ padding: "40px 0", textAlign: "center" }}>
+              <div style={{ fontSize: 72, fontWeight: "bold", color: "#000" }}>
+                {countdown}
+              </div>
+            </div>
+          )}
+
           {(phase === "playing" || phase === "feedback") && currentQ && (
             <div style={{ padding: "12px 0" }}>
               {/* Progress */}
@@ -632,6 +677,10 @@ export function TriviaQuizGame() {
                   ← Quit
                 </button>
               )}
+
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                {TIPS[tipIndex]}
+              </div>
             </div>
           )}
 
@@ -770,6 +819,14 @@ export function TriviaQuizGame() {
           </div>
         )}
 
+        {phase === "countdown" && (
+          <div className="text-center py-16">
+            <div className="text-7xl font-bold text-amber-400 animate-pulse">
+              {countdown}
+            </div>
+          </div>
+        )}
+
         {(phase === "playing" || phase === "feedback") && currentQ && (
           <div>
             {/* Progress bar */}
@@ -870,6 +927,10 @@ export function TriviaQuizGame() {
                 ← Quit
               </button>
             )}
+
+            <div className="text-center mt-3">
+              <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
+            </div>
           </div>
         )}
 

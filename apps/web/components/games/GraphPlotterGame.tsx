@@ -461,6 +461,22 @@ export function GraphPlotterGame() {
     return () => window.removeEventListener("resize", handler);
   }, [drawCanvas]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Handle canvas click (for plot and line modes)
   const handleCanvasPointer = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {

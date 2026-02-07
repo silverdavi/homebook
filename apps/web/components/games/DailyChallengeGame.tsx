@@ -29,6 +29,19 @@ type GamePhase = "menu" | "countdown" | "playing" | "results";
 
 const COUNTDOWN_SECS = 3;
 
+const TIPS = [
+  "Consistency beats intensity — play every day!",
+  "Review wrong answers to learn from mistakes",
+  "Each subject strengthens different thinking skills",
+  "Daily practice builds long-term retention",
+  "Challenge yourself with harder difficulty over time",
+  "Share your results to motivate friends and family",
+  "Streaks reward dedication — keep yours going!",
+  "Focus on accuracy before speed",
+  "Learning from explanations is just as valuable as getting it right",
+  "Every challenge completed makes you a little smarter",
+];
+
 export function DailyChallengeGame() {
   useGameMusic();
 
@@ -46,6 +59,7 @@ export function DailyChallengeGame() {
   const [copied, setCopied] = useState(false);
   const [completedDates, setCompletedDates] = useState<string[]>([]);
   const [answerFeedback, setAnswerFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [tipIndex, setTipIndex] = useState(0);
 
   // Timeline-specific state
   const [timelineOrder, setTimelineOrder] = useState<number[]>([]);
@@ -98,6 +112,13 @@ export function DailyChallengeGame() {
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [phase, countdown]);
+
+  // Tip rotation
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const t = setInterval(() => setTipIndex(i => (i + 1) % TIPS.length), 8000);
+    return () => clearInterval(t);
+  }, [phase]);
 
   // On results
   useEffect(() => {
@@ -587,6 +608,10 @@ export function DailyChallengeGame() {
               </div>
             )}
             {renderChallenge()}
+
+            <div className="text-center mt-3">
+              <span className="text-[10px] text-slate-500 italic">{TIPS[tipIndex]}</span>
+            </div>
           </div>
         )}
 

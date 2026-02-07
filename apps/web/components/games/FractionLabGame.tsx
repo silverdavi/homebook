@@ -7,10 +7,10 @@ import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
-type GamePhase = "menu" | "playing" | "feedback" | "complete";
+type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
 type ChallengeType = "identify" | "compare" | "add" | "equivalent";
 
 interface Challenge {
@@ -282,6 +282,8 @@ export function FractionLabGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [pendingStart, setPendingStart] = useState<{ types: ChallengeType[]; idx: number } | null>(null);
 
   useEffect(() => {
     if (challenge) setTipIdx(Math.floor(Math.random() * 100));
@@ -298,6 +300,37 @@ export function FractionLabGame() {
     );
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on complete
+
+  // Countdown
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    const t = setTimeout(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          if (pendingStart) {
+            setChallengeTypes(pendingStart.types);
+            setSetIdx(pendingStart.idx);
+            setScore(0);
+            setLives(LIVES);
+            setSolved(0);
+            setWrong(0);
+            setLevel(1);
+            setAchievementQueue([]);
+            setShowAchievementIndex(0);
+            setChallenge(generateChallenge(1, pendingStart.types));
+            setFeedback(null);
+            setSelectedAnswer(null);
+            setPendingStart(null);
+          }
+          setPhase("playing");
+          sfxCountdownGo();
+          return 3;
+        }
+        return c - 1;
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [phase, countdown, pendingStart]);
 
   const nextChallenge = useCallback(() => {
     const lvl = Math.floor(solved / 3) + 1;
@@ -343,19 +376,9 @@ export function FractionLabGame() {
   );
 
   const startGame = (types: ChallengeType[], idx: number) => {
-    setChallengeTypes(types);
-    setSetIdx(idx);
-    setScore(0);
-    setLives(LIVES);
-    setSolved(0);
-    setWrong(0);
-    setLevel(1);
-    setAchievementQueue([]);
-    setShowAchievementIndex(0);
-    setChallenge(generateChallenge(1, types));
-    setFeedback(null);
-    setSelectedAnswer(null);
-    setPhase("playing");
+    setPendingStart({ types, idx });
+    setCountdown(3);
+    setPhase("countdown");
   };
 
   const accuracy = solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100;
@@ -418,6 +441,16 @@ export function FractionLabGame() {
                 <Trophy className="w-3 h-3" /> Best: {highScore}
               </div>
             )}
+          </div>
+        )}
+
+        {/* COUNTDOWN */}
+        {phase === "countdown" && (
+          <div className="text-center py-20">
+            <div className="text-8xl font-bold text-orange-400 animate-pulse">
+              {countdown || "GO!"}
+            </div>
+            <p className="mt-4 text-slate-400">Get ready...</p>
           </div>
         )}
 

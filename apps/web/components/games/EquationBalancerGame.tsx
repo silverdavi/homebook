@@ -276,6 +276,22 @@ export function EquationBalancerGame() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadNextEquation = useCallback(() => {
     const { eq, idx } = pickEquation(difficulty, usedEquationsRef.current);
     usedEquationsRef.current.add(idx);
