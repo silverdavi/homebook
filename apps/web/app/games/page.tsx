@@ -13,19 +13,41 @@ interface GameCardProps {
 }
 
 const GAMES: GameCardProps[] = [
+  // ── Featured ──
+  {
+    title: "Daily Challenge",
+    description:
+      "A new challenge every day across all subjects. Build your streak!",
+    emoji: "🔥",
+    href: "/games/daily-challenge",
+    color: "#f97316",
+    available: true,
+    badge: "DAILY",
+  },
+  // ── Language & Reading ──
   {
     title: "Letter Rain",
     description:
-      "Catch falling letters in the right order to rebuild educational sentences. Test your reading speed and memory!",
+      "Catch falling letters in the right order to rebuild educational sentences.",
     emoji: "🌧️",
     href: "/games/letter-rain",
     color: "#6366f1",
     available: true,
   },
   {
+    title: "Word Builder",
+    description:
+      "Unscramble letters to build vocabulary words from science, math, and more.",
+    emoji: "🔤",
+    href: "/games/word-builder",
+    color: "#f59e0b",
+    available: true,
+  },
+  // ── Math ──
+  {
     title: "Math Blitz",
     description:
-      "Solve arithmetic problems before the timer runs out. 60 seconds of quick mental math under pressure!",
+      "Solve arithmetic problems before the timer runs out. Quick mental math!",
     emoji: "⚡",
     href: "/games/math-blitz",
     color: "#10b981",
@@ -34,19 +56,10 @@ const GAMES: GameCardProps[] = [
   {
     title: "Fraction Fighter",
     description:
-      "Compare fractions in a fast-paced battle. Tap the bigger fraction before time expires!",
+      "Compare fractions in a fast-paced battle. Tap the bigger fraction!",
     emoji: "⚔️",
     href: "/games/fraction-fighter",
     color: "#ef4444",
-    available: true,
-  },
-  {
-    title: "Word Builder",
-    description:
-      "Unscramble letters to build vocabulary words from science, math, geography, and more.",
-    emoji: "🔤",
-    href: "/games/word-builder",
-    color: "#f59e0b",
     available: true,
   },
   {
@@ -57,7 +70,6 @@ const GAMES: GameCardProps[] = [
     href: "/games/times-table",
     color: "#8b5cf6",
     available: true,
-    badge: "NEW",
   },
   {
     title: "Fraction Lab",
@@ -67,17 +79,68 @@ const GAMES: GameCardProps[] = [
     href: "/games/fraction-lab",
     color: "#f97316",
     available: true,
+  },
+  {
+    title: "Decimal Dash",
+    description:
+      "Number line placement, operations, comparisons, and fraction-decimal conversions.",
+    emoji: "🔢",
+    href: "/games/decimal-dash",
+    color: "#14b8a6",
+    available: true,
     badge: "NEW",
   },
   {
+    title: "Graph Plotter",
+    description:
+      "Plot points, find slopes, and draw lines on coordinate grids. Touch-enabled!",
+    emoji: "📈",
+    href: "/games/graph-plotter",
+    color: "#6366f1",
+    available: true,
+    badge: "NEW",
+  },
+  // ── Science ──
+  {
     title: "Element Match",
     description:
-      "Match chemical element symbols to their names. A memory game with a science twist!",
+      "Match chemical element symbols to their names. Memory meets chemistry!",
     emoji: "🧪",
     href: "/games/element-match",
     color: "#3b82f6",
     available: true,
   },
+  {
+    title: "Equation Balancer",
+    description:
+      "Balance chemical equations by adjusting coefficients. Conservation of mass!",
+    emoji: "⚖️",
+    href: "/games/equation-balancer",
+    color: "#8b5cf6",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Genetics Lab",
+    description:
+      "Build Punnett squares, predict offspring ratios, and explore Mendelian genetics.",
+    emoji: "🧬",
+    href: "/games/genetics-lab",
+    color: "#22c55e",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Unit Converter",
+    description:
+      "Race to convert between units of length, mass, volume, temperature, and time.",
+    emoji: "📏",
+    href: "/games/unit-converter",
+    color: "#0ea5e9",
+    available: true,
+    badge: "NEW",
+  },
+  // ── History ──
   {
     title: "Timeline Dash",
     description:
@@ -85,6 +148,56 @@ const GAMES: GameCardProps[] = [
     emoji: "🕰️",
     href: "/games/timeline-dash",
     color: "#8b5cf6",
+    available: true,
+  },
+  // ── Touch / Canvas Games ──
+  {
+    title: "Maze Runner",
+    description:
+      "Navigate mazes by touch or mouse. Solve questions at forks to find the right path!",
+    emoji: "🏃",
+    href: "/games/maze-runner",
+    color: "#06b6d4",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Trace & Learn",
+    description:
+      "Trace letters, numbers, and shapes with finger or stylus. Score by accuracy!",
+    emoji: "✏️",
+    href: "/games/trace-learn",
+    color: "#a855f7",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Color Lab",
+    description:
+      "Color educational diagrams — cells, maps, periodic table groups. Learn by coloring!",
+    emoji: "🎨",
+    href: "/games/color-lab",
+    color: "#ec4899",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Connect the Dots",
+    description:
+      "Connect numbered dots in sequence to reveal shapes. Count by 2s, 3s, primes!",
+    emoji: "🔵",
+    href: "/games/connect-dots",
+    color: "#3b82f6",
+    available: true,
+    badge: "NEW",
+  },
+  {
+    title: "Scratch & Reveal",
+    description:
+      "Scratch off cards to reveal answers. Test your knowledge across all subjects!",
+    emoji: "🎫",
+    href: "/games/scratch-reveal",
+    color: "#eab308",
     available: true,
     badge: "NEW",
   },
@@ -154,9 +267,15 @@ export default function GamesPage() {
           Game Arena
         </h1>
         <p className="mt-3 text-slate-400 max-w-md mx-auto">
-          Learn while you play. Educational games that make studying fun for
+          Learn while you play. {GAMES.length} educational games that make studying fun for
           students of all ages.
         </p>
+        <Link
+          href="/games/progress"
+          className="mt-4 inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+        >
+          📊 View Progress Dashboard &rarr;
+        </Link>
       </section>
 
       {/* Games grid */}
