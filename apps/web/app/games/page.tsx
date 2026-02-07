@@ -20,25 +20,15 @@ const GAMES: GameCardProps[] = [
     href: "/games/letter-rain",
     color: "#6366f1",
     available: true,
-    badge: "NEW",
   },
   {
     title: "Math Blitz",
     description:
-      "Solve arithmetic problems before the timer runs out. Quick mental math under pressure!",
+      "Solve arithmetic problems before the timer runs out. 60 seconds of quick mental math under pressure!",
     emoji: "⚡",
     href: "/games/math-blitz",
     color: "#10b981",
-    available: false,
-  },
-  {
-    title: "Word Builder",
-    description:
-      "Form words from scrambled letters. Discover vocabulary from science, history, and more.",
-    emoji: "🔤",
-    href: "/games/word-builder",
-    color: "#f59e0b",
-    available: false,
+    available: true,
   },
   {
     title: "Fraction Fighter",
@@ -47,7 +37,25 @@ const GAMES: GameCardProps[] = [
     emoji: "⚔️",
     href: "/games/fraction-fighter",
     color: "#ef4444",
-    available: false,
+    available: true,
+  },
+  {
+    title: "Word Builder",
+    description:
+      "Unscramble letters to build vocabulary words from science, math, geography, and more.",
+    emoji: "🔤",
+    href: "/games/word-builder",
+    color: "#f59e0b",
+    available: true,
+  },
+  {
+    title: "Element Match",
+    description:
+      "Match chemical element symbols to their names. A memory game with a science twist!",
+    emoji: "🧪",
+    href: "/games/element-match",
+    color: "#3b82f6",
+    available: true,
   },
   {
     title: "Timeline Dash",
@@ -56,15 +64,6 @@ const GAMES: GameCardProps[] = [
     emoji: "🕰️",
     href: "/games/timeline-dash",
     color: "#8b5cf6",
-    available: false,
-  },
-  {
-    title: "Element Match",
-    description:
-      "Match chemical elements to their symbols. A memory game with a science twist!",
-    emoji: "🧪",
-    href: "/games/element-match",
-    color: "#3b82f6",
     available: false,
   },
 ];
