@@ -5,7 +5,7 @@ import { ArrowLeft, Trophy, RotateCcw, Heart } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
-import { StreakBadge, HeartRecovery } from "@/components/games/RewardEffects";
+import { StreakBadge, HeartRecovery, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo, sfxCountdownGo } from "@/lib/games/audio";
@@ -133,6 +133,7 @@ export function FractionFighterGame() {
   const [timeLeft, setTimeLeft] = useState(100);
   const [highScore, setHighScore] = useState(() => getLocalHighScore("fractionFighter_highScore"));
   const [showHeartRecovery, setShowHeartRecovery] = useState(false);
+  const [showFlawlessToast, setShowFlawlessToast] = useState(false);
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
@@ -221,9 +222,17 @@ export function FractionFighterGame() {
 
       if (choice === pair.answer) {
         const speed = timeLeft / 100;
-        const points = Math.round(10 + speed * 20);
         const newStreak = streak + 1;
-        setScore((s) => s + points + (newStreak > 0 && newStreak % 5 === 0 ? 50 : 0));
+        const { mult } = getMultiplierFromStreak(newStreak);
+        const basePoints = Math.round(10 + speed * 20);
+        const points = Math.round(basePoints * mult);
+        const comboBonus = newStreak > 0 && newStreak % 5 === 0 ? 50 : 0;
+        const flawlessBonus = newStreak === 5 ? 50 : 0; // Flawless Round: 5 correct in a row
+        if (flawlessBonus > 0) {
+          setShowFlawlessToast(true);
+          setTimeout(() => setShowFlawlessToast(false), 2000);
+        }
+        setScore((s) => s + points + comboBonus + flawlessBonus);
         setStreak((s) => {
           const ns = s + 1;
           setBestStreak((b) => Math.max(b, ns));
@@ -288,6 +297,7 @@ export function FractionFighterGame() {
     setStreak(0);
     setBestStreak(0);
     setShowHeartRecovery(false);
+    setShowFlawlessToast(false);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     setCountdown(3);
@@ -393,6 +403,7 @@ export function FractionFighterGame() {
               <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
             </div>
             <HeartRecovery show={showHeartRecovery} />
+            <BonusToast show={showFlawlessToast} text="Flawless Round!" points={50} />
 
             {/* Timer bar */}
             <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">

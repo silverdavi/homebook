@@ -27,10 +27,11 @@ export function StreakBadge({ streak, className = "" }: StreakBadgeProps) {
     high: "bg-orange-400/25 text-orange-300 border-orange-400/50 shadow-lg shadow-orange-500/20",
     max: "bg-red-500/30 text-red-200 border-red-400/60 shadow-lg shadow-red-500/30 animate-pulse",
   };
-
+  const style = intense === "max" ? { animation: "screenShake 0.4s ease-in-out" } : undefined;
   return (
     <div
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-bold text-xs transition-all duration-300 ${styles[intense]} ${className}`}
+      style={style}
       role="status"
       aria-label={`Streak ${streak}, ${label} multiplier`}
     >

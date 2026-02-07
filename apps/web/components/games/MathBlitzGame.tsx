@@ -5,7 +5,7 @@ import { ArrowLeft, Trophy, RotateCcw, Timer, Star } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
-import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
+import { StreakBadge, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
@@ -119,6 +119,7 @@ export function MathBlitzGame() {
   const [highScore, setHighScore] = useState(() => getLocalHighScore("mathBlitz_highScore"));
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [showSpeedBonus, setShowSpeedBonus] = useState(false);
   const [mathTipIdx, setMathTipIdx] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef(1);
@@ -236,7 +237,12 @@ export function MathBlitzGame() {
         const newStreak = streak + 1;
         const { mult } = getMultiplierFromStreak(newStreak);
         let points = Math.round(10 * mult);
-        if (answeredAt - problemStartedAt < 1000) points += 5;
+        const speedBonus = answeredAt - problemStartedAt < 1000 ? 5 : 0;
+        if (speedBonus > 0) {
+          points += speedBonus;
+          setShowSpeedBonus(true);
+          setTimeout(() => setShowSpeedBonus(false), 2000);
+        }
         setScore((s) => s + points);
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
@@ -262,6 +268,7 @@ export function MathBlitzGame() {
     setStreak(0);
     setBestStreak(0);
     setSolved(0);
+    setShowSpeedBonus(false);
     setTimeLeft(gameDuration);
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
@@ -352,7 +359,8 @@ export function MathBlitzGame() {
 
         {/* PLAYING */}
         {phase === "playing" && problem && (
-          <div className="w-full space-y-6">
+          <div className="w-full space-y-6 relative">
+            <BonusToast show={showSpeedBonus} text="Speed Bonus!" points={5} />
             {/* Timer bar */}
             <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
               <div

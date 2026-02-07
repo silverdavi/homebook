@@ -5,9 +5,10 @@ import { ArrowLeft, Trophy, RotateCcw, Check, X, Heart } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
+import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
@@ -273,6 +274,9 @@ export function FractionLabGame() {
   const [lives, setLives] = useState(LIVES);
   const [solved, setSolved] = useState(0);
   const [wrong, setWrong] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [showHeartRecovery, setShowHeartRecovery] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [challengeTypes, setChallengeTypes] = useState<ChallengeType[]>(["identify"]);
@@ -294,7 +298,7 @@ export function FractionLabGame() {
     trackGamePlayed("fraction-lab", score);
     const profile = getProfile();
     const newOnes = checkAchievements(
-      { gameId: "fraction-lab", score, level, solved, accuracy: solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100 },
+      { gameId: "fraction-lab", score, level, solved, bestStreak, accuracy: solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100 },
       profile.totalGamesPlayed,
       profile.gamesPlayedByGameId
     );
@@ -314,6 +318,9 @@ export function FractionLabGame() {
             setLives(LIVES);
             setSolved(0);
             setWrong(0);
+            setStreak(0);
+            setBestStreak(0);
+            setShowHeartRecovery(false);
             setLevel(1);
             setAchievementQueue([]);
             setShowAchievementIndex(0);
@@ -348,12 +355,24 @@ export function FractionLabGame() {
 
       if (choice === challenge.answer) {
         sfxCorrect();
-        setScore((s) => s + 10);
+        const newStreak = streak + 1;
+        const { mult } = getMultiplierFromStreak(newStreak);
+        const points = Math.round(10 * mult);
+        setScore((s) => s + points);
+        setStreak(newStreak);
+        setBestStreak((b) => Math.max(b, newStreak));
         setSolved((s) => s + 1);
+        if (newStreak >= 10 && newStreak % 10 === 0 && lives < LIVES) {
+          sfxHeart();
+          setShowHeartRecovery(true);
+          setTimeout(() => setShowHeartRecovery(false), 1500);
+          setLives((l) => Math.min(LIVES, l + 1));
+        }
         setFeedback("correct");
         setTimeout(() => nextChallenge(), 1200);
       } else {
         sfxWrong();
+        setStreak(0);
         setWrong((w) => w + 1);
         setFeedback("wrong");
         const nl = lives - 1;
@@ -372,7 +391,7 @@ export function FractionLabGame() {
         }
       }
     },
-    [phase, challenge, lives, highScore, nextChallenge]
+    [phase, challenge, lives, highScore, streak, nextChallenge]
   );
 
   const startGame = (types: ChallengeType[], idx: number) => {
@@ -459,14 +478,18 @@ export function FractionLabGame() {
           <div className="w-full space-y-5">
             {/* HUD */}
             <div className="flex items-center justify-between text-sm">
-              <div className="flex gap-0.5">
-                {Array.from({ length: LIVES }).map((_, i) => (
-                  <Heart key={i} className={`w-4 h-4 transition-all ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: LIVES }).map((_, i) => (
+                    <Heart key={i} className={`w-4 h-4 transition-all ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
+                  ))}
+                </div>
+                <StreakBadge streak={streak} />
               </div>
-              <div className="text-xs text-slate-500">Lvl {level} · {solved} solved</div>
               <div className="text-white font-bold tabular-nums">{score}</div>
             </div>
+            <HeartRecovery show={showHeartRecovery} />
+            <div className="text-xs text-slate-500 text-center -mt-2">Lvl {level} · {solved} solved</div>
 
             {/* Educational tip */}
             {!feedback && (

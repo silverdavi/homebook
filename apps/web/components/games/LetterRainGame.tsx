@@ -364,10 +364,12 @@ export function LetterRainGame() {
           // Mark letter as caught with timestamp (for burst animation)
           return prev.map((l) => (l.id === letterId ? { ...l, caught: true, catchTime: now } : l));
         } else {
-          // ── Wrong letter ──
+          // ── Wrong letter — penalty: lose points + break combo ──
           setTimeout(() => {
             sfxWrong();
             setCombo(0);
+            setScore((s) => Math.max(0, s - 5));
+            setTotalMissed((m) => m + 1);
             setFlash("bad");
             setTimeout(() => setFlash(null), 200);
           }, 0);
@@ -416,9 +418,11 @@ export function LetterRainGame() {
           return prev;
         });
       } else {
-        // Wrong key
+        // Wrong key — penalty: lose points + break combo
         sfxWrong();
         setCombo(0);
+        setScore((s) => Math.max(0, s - 5));
+        setTotalMissed((m) => m + 1);
         setFlash("bad");
         setTimeout(() => setFlash(null), 200);
       }

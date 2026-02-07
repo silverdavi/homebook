@@ -5,10 +5,10 @@ import { ArrowLeft, Trophy, RotateCcw, Star, Check, X } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
-import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
+import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
@@ -154,10 +154,12 @@ export function TimesTableGame() {
   const [highScore, setHighScore] = useState(() => getLocalHighScore("timesTable_highScore"));
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
+  const [showHeartRecovery, setShowHeartRecovery] = useState(false);
   const [multTipIdx, setMultTipIdx] = useState(0);
   const startRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [countdownVal, setCountdownVal] = useState(COUNTDOWN_SECS);
+  const SURVIVAL_LIVES = 3;
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -236,6 +238,12 @@ export function TimesTableGame() {
         setFeedback("correct");
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
         else sfxCorrect();
+        if (mode === "survival" && newStreak >= 10 && newStreak % 10 === 0 && lives < SURVIVAL_LIVES) {
+          sfxHeart();
+          setShowHeartRecovery(true);
+          setTimeout(() => setShowHeartRecovery(false), 1500);
+          setLives((l) => Math.min(SURVIVAL_LIVES, l + 1));
+        }
 
         setTimeout(() => {
           const nextSolved = solved + 1;
@@ -278,7 +286,8 @@ export function TimesTableGame() {
     setBestStreak(0);
     setSolved(0);
     setWrong(0);
-    setLives(3);
+    setLives(SURVIVAL_LIVES);
+    setShowHeartRecovery(false);
     setElapsed(0);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
@@ -413,10 +422,13 @@ export function TimesTableGame() {
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-3">
                 {mode === "survival" && (
-                  <div className="flex gap-0.5">
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} className={`text-lg transition-all ${i < lives ? "" : "opacity-20"}`}>❤️</span>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: SURVIVAL_LIVES }).map((_, i) => (
+                        <span key={i} className={`text-lg transition-all ${i < lives ? "" : "opacity-20"}`}>❤️</span>
+                      ))}
+                    </div>
+                    <HeartRecovery show={showHeartRecovery} />
                   </div>
                 )}
                 {mode === "sprint" && (
