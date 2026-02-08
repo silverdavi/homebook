@@ -474,6 +474,94 @@ export function CrosswordGame() {
     [eink]
   );
 
+  // Physical keyboard support
+  useEffect(() => {
+    if (phase !== "playing") return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      // Letter input
+      if (/^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        handleLetterInput(e.key.toUpperCase());
+        return;
+      }
+
+      // Backspace / Delete
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        handleClear();
+        return;
+      }
+
+      // Arrow keys for navigation
+      if (!selectedCell) return;
+      const { row, col } = selectedCell;
+
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        for (let c = col + 1; c < puzzle.size; c++) {
+          if (puzzle.cells[row][c] !== null) {
+            setSelectedCell({ row, col: c });
+            const clues = getCluesForCell(puzzle, row, c);
+            const pref = clues.find((cl) => cl.direction === "across");
+            setActiveClue(pref || clues[0] || null);
+            setDirection("across");
+            break;
+          }
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        for (let c = col - 1; c >= 0; c--) {
+          if (puzzle.cells[row][c] !== null) {
+            setSelectedCell({ row, col: c });
+            const clues = getCluesForCell(puzzle, row, c);
+            const pref = clues.find((cl) => cl.direction === "across");
+            setActiveClue(pref || clues[0] || null);
+            setDirection("across");
+            break;
+          }
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        for (let r = row + 1; r < puzzle.size; r++) {
+          if (puzzle.cells[r][col] !== null) {
+            setSelectedCell({ row: r, col });
+            const clues = getCluesForCell(puzzle, r, col);
+            const pref = clues.find((cl) => cl.direction === "down");
+            setActiveClue(pref || clues[0] || null);
+            setDirection("down");
+            break;
+          }
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        for (let r = row - 1; r >= 0; r--) {
+          if (puzzle.cells[r][col] !== null) {
+            setSelectedCell({ row: r, col });
+            const clues = getCluesForCell(puzzle, r, col);
+            const pref = clues.find((cl) => cl.direction === "down");
+            setActiveClue(pref || clues[0] || null);
+            setDirection("down");
+            break;
+          }
+        }
+      } else if (e.key === "Tab") {
+        // Tab to toggle direction
+        e.preventDefault();
+        const newDir = direction === "across" ? "down" : "across";
+        setDirection(newDir);
+        const clues = getCluesForCell(puzzle, row, col);
+        const pref = clues.find((cl) => cl.direction === newDir);
+        setActiveClue(pref || clues[0] || null);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase, selectedCell, direction, puzzle, handleLetterInput, handleClear]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
