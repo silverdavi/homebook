@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Lock, Sparkles, BarChart3 } from "lucide-react";
 import { GamesArenaHeader } from "./GamesArenaHeader";
+import { GameIcon } from "@/components/games/GameIcon";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -8,6 +9,7 @@ interface GameCardProps {
   title: string;
   description: string;
   emoji: string;
+  iconId: string;          // matches /icons/games/256/{iconId}.png
   href: string;
   color: string;
   available: boolean;
@@ -20,6 +22,7 @@ interface Section {
   title: string;
   subtitle: string;
   emoji: string;
+  iconId: string;          // section icon ID
   gradient: string;       // gradient for section header text
   borderAccent: string;   // border accent for section
   games: GameCardProps[];
@@ -33,27 +36,12 @@ const SECTIONS: Section[] = [
     title: "Language & Reading",
     subtitle: "Build vocabulary, spelling, and reading speed",
     emoji: "📖",
+    iconId: "cat-language",
     gradient: "from-amber-400 to-orange-400",
     borderAccent: "border-amber-500/20",
     games: [
-      {
-        title: "Letter Rain",
-        description: "Catch falling letters to rebuild educational sentences.",
-        emoji: "🌧️",
-        href: "/games/letter-rain",
-        color: "#6366f1",
-        available: true,
-        grade: "K-3",
-      },
-      {
-        title: "Word Builder",
-        description: "Unscramble letters to build vocabulary words.",
-        emoji: "🔤",
-        href: "/games/word-builder",
-        color: "#f59e0b",
-        available: true,
-        grade: "2-6",
-      },
+      { title: "Letter Rain", description: "Catch falling letters to rebuild educational sentences.", emoji: "🌧️", iconId: "letter-rain", href: "/games/letter-rain", color: "#6366f1", available: true, grade: "K-3" },
+      { title: "Word Builder", description: "Unscramble letters to build vocabulary words.", emoji: "🔤", iconId: "word-builder", href: "/games/word-builder", color: "#f59e0b", available: true, grade: "2-6" },
     ],
   },
   {
@@ -61,65 +49,16 @@ const SECTIONS: Section[] = [
     title: "Math",
     subtitle: "Arithmetic, fractions, decimals, graphing, and more",
     emoji: "🧮",
+    iconId: "cat-math",
     gradient: "from-emerald-400 to-cyan-400",
     borderAccent: "border-emerald-500/20",
     games: [
-      {
-        title: "Math Blitz",
-        description: "Solve arithmetic before the timer runs out!",
-        emoji: "⚡",
-        href: "/games/math-blitz",
-        color: "#10b981",
-        available: true,
-        grade: "1-5",
-      },
-      {
-        title: "Fraction Fighter",
-        description: "Compare fractions — tap the bigger one!",
-        emoji: "⚔️",
-        href: "/games/fraction-fighter",
-        color: "#ef4444",
-        available: true,
-        grade: "3-6",
-      },
-      {
-        title: "Times Tables",
-        description: "Master multiplication with sprint and survival modes.",
-        emoji: "✖️",
-        href: "/games/times-table",
-        color: "#8b5cf6",
-        available: true,
-        grade: "2-5",
-      },
-      {
-        title: "Fraction Lab",
-        description: "See, compare, add fractions with visual bars and pies.",
-        emoji: "🥧",
-        href: "/games/fraction-lab",
-        color: "#f97316",
-        available: true,
-        grade: "3-7",
-      },
-      {
-        title: "Decimal Dash",
-        description: "Number lines, operations, and fraction-decimal conversions.",
-        emoji: "🔢",
-        href: "/games/decimal-dash",
-        color: "#14b8a6",
-        available: true,
-        badge: "NEW",
-        grade: "4-7",
-      },
-      {
-        title: "Graph Plotter",
-        description: "Plot points, find slopes, and draw lines on coordinate grids.",
-        emoji: "📈",
-        href: "/games/graph-plotter",
-        color: "#6366f1",
-        available: true,
-        badge: "NEW",
-        grade: "6-9",
-      },
+      { title: "Math Blitz", description: "Solve arithmetic before the timer runs out!", emoji: "⚡", iconId: "math-blitz", href: "/games/math-blitz", color: "#10b981", available: true, grade: "1-5" },
+      { title: "Fraction Fighter", description: "Compare fractions — tap the bigger one!", emoji: "⚔️", iconId: "fraction-fighter", href: "/games/fraction-fighter", color: "#ef4444", available: true, grade: "3-6" },
+      { title: "Times Tables", description: "Master multiplication with sprint and survival modes.", emoji: "✖️", iconId: "times-table", href: "/games/times-table", color: "#8b5cf6", available: true, grade: "2-5" },
+      { title: "Fraction Lab", description: "See, compare, add fractions with visual bars and pies.", emoji: "🥧", iconId: "fraction-lab", href: "/games/fraction-lab", color: "#f97316", available: true, grade: "3-7" },
+      { title: "Decimal Dash", description: "Number lines, operations, and fraction-decimal conversions.", emoji: "🔢", iconId: "decimal-dash", href: "/games/decimal-dash", color: "#14b8a6", available: true, badge: "NEW", grade: "4-7" },
+      { title: "Graph Plotter", description: "Plot points, find slopes, and draw lines on coordinate grids.", emoji: "📈", iconId: "graph-plotter", href: "/games/graph-plotter", color: "#6366f1", available: true, badge: "NEW", grade: "6-9" },
     ],
   },
   {
@@ -127,48 +66,14 @@ const SECTIONS: Section[] = [
     title: "Science",
     subtitle: "Chemistry, biology, physics, and measurement",
     emoji: "🔬",
+    iconId: "cat-science",
     gradient: "from-blue-400 to-violet-400",
     borderAccent: "border-blue-500/20",
     games: [
-      {
-        title: "Element Match",
-        description: "Match element symbols to names. Memory meets chemistry!",
-        emoji: "🧪",
-        href: "/games/element-match",
-        color: "#3b82f6",
-        available: true,
-        grade: "5-9",
-      },
-      {
-        title: "Equation Balancer",
-        description: "Balance chemical equations. Conservation of mass!",
-        emoji: "⚖️",
-        href: "/games/equation-balancer",
-        color: "#8b5cf6",
-        available: true,
-        badge: "NEW",
-        grade: "7-12",
-      },
-      {
-        title: "Genetics Lab",
-        description: "Punnett squares, offspring ratios, Mendelian genetics.",
-        emoji: "🧬",
-        href: "/games/genetics-lab",
-        color: "#22c55e",
-        available: true,
-        badge: "NEW",
-        grade: "7-12",
-      },
-      {
-        title: "Unit Converter",
-        description: "Race to convert between units of length, mass, and more.",
-        emoji: "📏",
-        href: "/games/unit-converter",
-        color: "#0ea5e9",
-        available: true,
-        badge: "NEW",
-        grade: "4-8",
-      },
+      { title: "Element Match", description: "Match element symbols to names. Memory meets chemistry!", emoji: "🧪", iconId: "element-match", href: "/games/element-match", color: "#3b82f6", available: true, grade: "5-9" },
+      { title: "Equation Balancer", description: "Balance chemical equations. Conservation of mass!", emoji: "⚖️", iconId: "equation-balancer", href: "/games/equation-balancer", color: "#8b5cf6", available: true, badge: "NEW", grade: "7-12" },
+      { title: "Genetics Lab", description: "Punnett squares, offspring ratios, Mendelian genetics.", emoji: "🧬", iconId: "genetics-lab", href: "/games/genetics-lab", color: "#22c55e", available: true, badge: "NEW", grade: "7-12" },
+      { title: "Unit Converter", description: "Race to convert between units of length, mass, and more.", emoji: "📏", iconId: "unit-converter", href: "/games/unit-converter", color: "#0ea5e9", available: true, badge: "NEW", grade: "4-8" },
     ],
   },
   {
@@ -176,18 +81,11 @@ const SECTIONS: Section[] = [
     title: "History & Geography",
     subtitle: "Timeline skills and historical knowledge",
     emoji: "🌍",
+    iconId: "cat-history",
     gradient: "from-purple-400 to-pink-400",
     borderAccent: "border-purple-500/20",
     games: [
-      {
-        title: "Timeline Dash",
-        description: "Place historical events in the right order on a timeline.",
-        emoji: "🕰️",
-        href: "/games/timeline-dash",
-        color: "#8b5cf6",
-        available: true,
-        grade: "4-9",
-      },
+      { title: "Timeline Dash", description: "Place historical events in the right order on a timeline.", emoji: "🕰️", iconId: "timeline-dash", href: "/games/timeline-dash", color: "#8b5cf6", available: true, grade: "4-9" },
     ],
   },
   {
@@ -195,59 +93,15 @@ const SECTIONS: Section[] = [
     title: "Touch & Canvas",
     subtitle: "Draw, trace, and interact — works with finger, mouse, or stylus",
     emoji: "✍️",
+    iconId: "cat-touch",
     gradient: "from-pink-400 to-rose-400",
     borderAccent: "border-pink-500/20",
     games: [
-      {
-        title: "Maze Runner",
-        description: "Navigate mazes and solve questions at forks.",
-        emoji: "🏃",
-        href: "/games/maze-runner",
-        color: "#06b6d4",
-        available: true,
-        badge: "NEW",
-        grade: "K-5",
-      },
-      {
-        title: "Trace & Learn",
-        description: "Trace letters, numbers, and shapes. Score by accuracy!",
-        emoji: "✏️",
-        href: "/games/trace-learn",
-        color: "#a855f7",
-        available: true,
-        badge: "NEW",
-        grade: "Pre-K-2",
-      },
-      {
-        title: "Color Lab",
-        description: "Color educational diagrams — cells, maps, periodic table.",
-        emoji: "🎨",
-        href: "/games/color-lab",
-        color: "#ec4899",
-        available: true,
-        badge: "NEW",
-        grade: "3-8",
-      },
-      {
-        title: "Connect the Dots",
-        description: "Connect numbered dots to reveal shapes. Count by 2s, primes!",
-        emoji: "🔵",
-        href: "/games/connect-dots",
-        color: "#3b82f6",
-        available: true,
-        badge: "NEW",
-        grade: "K-3",
-      },
-      {
-        title: "Scratch & Reveal",
-        description: "Scratch off cards to reveal answers across all subjects.",
-        emoji: "🎫",
-        href: "/games/scratch-reveal",
-        color: "#eab308",
-        available: true,
-        badge: "NEW",
-        grade: "2-8",
-      },
+      { title: "Maze Runner", description: "Navigate mazes and solve questions at forks.", emoji: "🏃", iconId: "maze-runner", href: "/games/maze-runner", color: "#06b6d4", available: true, badge: "NEW", grade: "K-5" },
+      { title: "Trace & Learn", description: "Trace letters, numbers, and shapes. Score by accuracy!", emoji: "✏️", iconId: "trace-learn", href: "/games/trace-learn", color: "#a855f7", available: true, badge: "NEW", grade: "Pre-K-2" },
+      { title: "Color Lab", description: "Color educational diagrams — cells, maps, periodic table.", emoji: "🎨", iconId: "color-lab", href: "/games/color-lab", color: "#ec4899", available: true, badge: "NEW", grade: "3-8" },
+      { title: "Connect the Dots", description: "Connect numbered dots to reveal shapes. Count by 2s, primes!", emoji: "🔵", iconId: "connect-dots", href: "/games/connect-dots", color: "#3b82f6", available: true, badge: "NEW", grade: "K-3" },
+      { title: "Scratch & Reveal", description: "Scratch off cards to reveal answers across all subjects.", emoji: "🎫", iconId: "scratch-reveal", href: "/games/scratch-reveal", color: "#eab308", available: true, badge: "NEW", grade: "2-8" },
     ],
   },
   {
@@ -255,69 +109,16 @@ const SECTIONS: Section[] = [
     title: "E-Reader Friendly",
     subtitle: "Works on Kindle, Kobo, Boox — tap only, high contrast, no animations",
     emoji: "📱",
+    iconId: "cat-ereader",
     gradient: "from-slate-300 to-slate-400",
     borderAccent: "border-slate-500/20",
     games: [
-      {
-        title: "Sudoku",
-        description: "Classic 9x9 number puzzles. Tap-only, no dragging needed.",
-        emoji: "🔢",
-        href: "/games/sudoku",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "3-12",
-      },
-      {
-        title: "Crossword",
-        description: "Educational crosswords with on-screen keyboard.",
-        emoji: "📝",
-        href: "/games/crossword",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "4-9",
-      },
-      {
-        title: "Word Search",
-        description: "Find hidden words — tap start and end letters.",
-        emoji: "🔍",
-        href: "/games/word-search",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "2-6",
-      },
-      {
-        title: "Trivia Quiz",
-        description: "Multiple-choice trivia with large, e-reader-friendly buttons.",
-        emoji: "❓",
-        href: "/games/trivia-quiz",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "3-9",
-      },
-      {
-        title: "Nonogram",
-        description: "Fill cells using number clues to reveal a hidden picture.",
-        emoji: "🧩",
-        href: "/games/nonogram",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "3-9",
-      },
-      {
-        title: "Number Puzzle",
-        description: "Slide tiles into order. Classic 15-puzzle with math mode!",
-        emoji: "🎲",
-        href: "/games/number-puzzle",
-        color: "#64748b",
-        available: true,
-        badge: "E-INK",
-        grade: "K-5",
-      },
+      { title: "Sudoku", description: "Classic 9x9 number puzzles. Tap-only, no dragging needed.", emoji: "🔢", iconId: "sudoku", href: "/games/sudoku", color: "#64748b", available: true, badge: "E-INK", grade: "3-12" },
+      { title: "Crossword", description: "Educational crosswords with on-screen keyboard.", emoji: "📝", iconId: "crossword", href: "/games/crossword", color: "#64748b", available: true, badge: "E-INK", grade: "4-9" },
+      { title: "Word Search", description: "Find hidden words — tap start and end letters.", emoji: "🔍", iconId: "word-search", href: "/games/word-search", color: "#64748b", available: true, badge: "E-INK", grade: "2-6" },
+      { title: "Trivia Quiz", description: "Multiple-choice trivia with large, e-reader-friendly buttons.", emoji: "❓", iconId: "trivia-quiz", href: "/games/trivia-quiz", color: "#64748b", available: true, badge: "E-INK", grade: "3-9" },
+      { title: "Nonogram", description: "Fill cells using number clues to reveal a hidden picture.", emoji: "🧩", iconId: "nonogram", href: "/games/nonogram", color: "#64748b", available: true, badge: "E-INK", grade: "3-9" },
+      { title: "Number Puzzle", description: "Slide tiles into order. Classic 15-puzzle with math mode!", emoji: "🎲", iconId: "number-puzzle", href: "/games/number-puzzle", color: "#64748b", available: true, badge: "E-INK", grade: "K-5" },
     ],
   },
 ];
@@ -348,6 +149,7 @@ function GameCard({
   title,
   description,
   emoji,
+  iconId,
   href,
   color,
   available,
@@ -369,13 +171,13 @@ function GameCard({
         </span>
       )}
 
-      {/* Emoji with color glow */}
+      {/* Game icon with color glow */}
       <div className="relative w-14 h-14 mb-3 flex items-center justify-center">
         <div
           className="absolute inset-0 rounded-xl opacity-20 group-hover:opacity-35 transition-opacity blur-sm"
           style={{ backgroundColor: color }}
         />
-        <span className="text-3xl relative z-10">{emoji}</span>
+        <GameIcon id={iconId} size={48} fallback={emoji} className="relative z-10" />
       </div>
 
       <h3 className="text-[15px] font-bold text-white mb-1 tracking-tight flex items-center gap-2">
@@ -417,7 +219,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <span className="text-2xl">{section.emoji}</span>
+      <GameIcon id={section.iconId} size={32} fallback={section.emoji} />
       <div>
         <h2
           className={`text-lg font-bold bg-gradient-to-r ${section.gradient} bg-clip-text text-transparent`}
@@ -464,7 +266,7 @@ export default function GamesPage() {
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
 
             <div className="relative flex items-center gap-5">
-              <div className="text-5xl sm:text-6xl">🔥</div>
+              <GameIcon id="daily-challenge" size={64} fallback="🔥" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-extrabold tracking-widest text-orange-400 bg-orange-500/15 px-2.5 py-0.5 rounded-full">
@@ -497,9 +299,10 @@ export default function GamesPage() {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all"
+              className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all inline-flex items-center gap-1.5"
             >
-              {s.emoji} {s.title}
+              <GameIcon id={s.iconId} size={16} fallback={s.emoji} className="rounded-sm" />
+              {s.title}
             </a>
           ))}
           </div>

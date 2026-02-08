@@ -5,6 +5,7 @@ import { ArrowLeft, Trophy, Target, Gamepad2, Star, Flame, Award } from "lucide-
 import { getProfile, getLocalHighScore, type PlayerProfile } from "@/lib/games/use-scores";
 import { getAchievements, MEDALS, type MedalTier } from "@/lib/games/achievements";
 import { getDailyChallengeStreak, getLongestStreak, getCompletedDates } from "@/lib/games/daily-challenge";
+import { GameIcon } from "@/components/games/GameIcon";
 import Link from "next/link";
 
 // ── Game metadata ──
@@ -164,7 +165,7 @@ export function ProgressDashboard() {
         {/* Favorite Game */}
         {favoriteGameMeta && (
           <div className="bg-white/[0.04] border border-white/10 rounded-xl p-4 flex items-center gap-3">
-            <span className="text-3xl">{favoriteGameMeta.emoji}</span>
+            <GameIcon id={favoriteGameMeta.id} size={40} fallback={favoriteGameMeta.emoji} />
             <div>
               <div className="text-xs text-slate-400">Favorite Game</div>
               <div className="text-white font-bold">{favoriteGameMeta.name}</div>
@@ -227,7 +228,7 @@ export function ProgressDashboard() {
                   key={game.id}
                   className="bg-white/[0.04] border border-white/10 rounded-xl p-4 flex items-center gap-3 hover:bg-white/[0.06] transition-all"
                 >
-                  <span className="text-2xl">{game.emoji}</span>
+                  <GameIcon id={game.id} size={32} fallback={game.emoji} />
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-medium text-sm truncate">{game.name}</div>
                     <div className="text-xs text-slate-400">{plays} plays</div>
