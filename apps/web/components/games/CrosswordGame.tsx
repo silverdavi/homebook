@@ -103,11 +103,6 @@ const PUZZLES: CrosswordPuzzle[] = [
       "PROTON".split("").forEach((c, i) => (g[8][0 + i] = c));
       // 7-across: GENE (10,1)
       "GENE".split("").forEach((c, i) => (g[10][1 + i] = c));
-      // DOWN words
-      // 1-down: ANODE (0,0) — A already at (0,0)
-      "ANODE".split("").forEach((c, i) => (g[0 + i * 2][0] = c));
-      // 8-down: FORCE (2,3) — uses existing letters
-      "FORCE".split("").forEach((c, i) => (g[2 + i * 2][3] = c));
       return g;
     })(),
     clues: [
@@ -340,16 +335,20 @@ export function CrosswordGame() {
       if (phase !== "playing") return;
       if (puzzle.cells[row][col] === null) return;
 
+      // Track the effective direction for clue lookup
+      let effectiveDirection = direction;
+
       // If clicking same cell, toggle direction
       if (selectedCell?.row === row && selectedCell?.col === col) {
-        setDirection((d) => (d === "across" ? "down" : "across"));
+        effectiveDirection = direction === "across" ? "down" : "across";
+        setDirection(effectiveDirection);
       } else {
         setSelectedCell({ row, col });
       }
 
-      // Find an active clue for this cell
+      // Find an active clue for this cell using the effective direction
       const clues = getCluesForCell(puzzle, row, col);
-      const preferred = clues.find((c) => c.direction === direction);
+      const preferred = clues.find((c) => c.direction === effectiveDirection);
       setActiveClue(preferred || clues[0] || null);
 
       if (!eink) sfxClick();

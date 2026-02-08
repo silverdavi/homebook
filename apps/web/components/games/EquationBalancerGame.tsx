@@ -68,7 +68,7 @@ const EQUATIONS: Equation[] = [
   { reactants: [makeCompound("P4"), makeCompound("O2")], products: [makeCompound("P2O5")], solution: [1, 5, 2], difficulty: "medium" },
   { reactants: [makeCompound("Na"), makeCompound("H2O")], products: [makeCompound("NaOH"), makeCompound("H2")], solution: [2, 2, 2, 1], difficulty: "medium" },
   { reactants: [makeCompound("Fe"), makeCompound("Cl2")], products: [makeCompound("FeCl3")], solution: [2, 3, 2], difficulty: "medium" },
-  { reactants: [makeCompound("CaO"), makeCompound("H2O")], products: [makeCompound("CaOH2")], solution: [1, 1, 1], difficulty: "medium" },
+  { reactants: [makeCompound("CaO"), makeCompound("H2O")], products: [makeCompound("CaO2H2")], solution: [1, 1, 1], difficulty: "medium" },
   // Hard
   { reactants: [makeCompound("C3H8"), makeCompound("O2")], products: [makeCompound("CO2"), makeCompound("H2O")], solution: [1, 5, 3, 4], difficulty: "hard" },
   { reactants: [makeCompound("Fe2O3"), makeCompound("C")], products: [makeCompound("Fe"), makeCompound("CO2")], solution: [2, 3, 4, 3], difficulty: "hard" },
@@ -77,8 +77,8 @@ const EQUATIONS: Equation[] = [
   { reactants: [makeCompound("C2H5OH"), makeCompound("O2")], products: [makeCompound("CO2"), makeCompound("H2O")], solution: [1, 3, 2, 3], difficulty: "hard" },
   { reactants: [makeCompound("Fe2O3"), makeCompound("CO")], products: [makeCompound("Fe"), makeCompound("CO2")], solution: [1, 3, 2, 3], difficulty: "hard" },
   { reactants: [makeCompound("KClO3")], products: [makeCompound("KCl"), makeCompound("O2")], solution: [2, 2, 3], difficulty: "hard" },
-  { reactants: [makeCompound("Ca"), makeCompound("H2O")], products: [makeCompound("CaOH2"), makeCompound("H2")], solution: [1, 2, 1, 1], difficulty: "hard" },
-  { reactants: [makeCompound("SiO2"), makeCompound("C")], products: [makeCompound("Si"), makeCompound("CO2")], solution: [1, 2, 1, 2], difficulty: "hard" },
+  { reactants: [makeCompound("Ca"), makeCompound("H2O")], products: [makeCompound("CaO2H2"), makeCompound("H2")], solution: [1, 2, 1, 1], difficulty: "hard" },
+  { reactants: [makeCompound("SiO2"), makeCompound("C")], products: [makeCompound("Si"), makeCompound("CO")], solution: [1, 2, 1, 2], difficulty: "hard" },
 ];
 
 function getEquationsByDifficulty(difficulty: number): Equation[] {

@@ -206,19 +206,8 @@ export function GraphPlotterGame() {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current!);
-          setTimeout(() => {
-            setPhase("complete");
-            setScore((s) => {
-              setHighScore((h) => {
-                if (s > h) {
-                  setLocalHighScore("graphPlotter_highScore", s);
-                  return s;
-                }
-                return h;
-              });
-              return s;
-            });
-          }, 0);
+          // Transition to complete phase on next tick
+          setTimeout(() => setPhase("complete"), 0);
           return 0;
         }
         return t - 1;
@@ -231,6 +220,10 @@ export function GraphPlotterGame() {
   useEffect(() => {
     if (phase !== "complete") return;
     sfxGameOver();
+    if (score > highScore) {
+      setLocalHighScore("graphPlotter_highScore", score);
+      setHighScore(score);
+    }
     trackGamePlayed("graph-plotter", score);
     const profile = getProfile();
     const accuracy = totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0;
@@ -240,7 +233,8 @@ export function GraphPlotterGame() {
       profile.gamesPlayedByGameId
     );
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
-  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Canvas drawing
   const drawCanvas = useCallback(() => {
@@ -477,6 +471,40 @@ export function GraphPlotterGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleProblemResult = useCallback((correct: boolean) => {
+    setTotalProblems((t) => t + 1);
+    if (correct) {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      setBestStreak((b) => Math.max(b, newStreak));
+      setSolved((s) => s + 1);
+      const { mult } = getMultiplierFromStreak(newStreak);
+      const timeBonus = Math.max(0, 5 - Math.floor((Date.now() - problemStartRef.current) / 1000));
+      const points = Math.round((15 + timeBonus) * mult);
+      setScore((s) => s + points);
+      setShowResult("correct");
+      setFlash("correct");
+      if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+      else sfxCorrect();
+    } else {
+      sfxWrong();
+      setStreak(0);
+      setShowResult("wrong");
+      setFlash("wrong");
+    }
+    setTimeout(() => setFlash(null), 200);
+    setTimeout(() => {
+      setShowResult(null);
+      setPlacedPoints([]);
+      setSlopeAnswer("");
+      const p = generateProblem(mode, gridRange);
+      setProblem(p);
+      setProblemNumber((n) => n + 1);
+      setTipIdx(Math.floor(Math.random() * TIPS[mode].length));
+      problemStartRef.current = Date.now();
+    }, 800);
+  }, [streak, mode, gridRange]);
+
   // Handle canvas click (for plot and line modes)
   const handleCanvasPointer = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -525,42 +553,8 @@ export function GraphPlotterGame() {
         }
       }
     },
-    [phase, problem, gridRange, placedPoints] // eslint-disable-line react-hooks/exhaustive-deps
+    [phase, problem, gridRange, placedPoints, handleProblemResult, showResult]
   );
-
-  const handleProblemResult = useCallback((correct: boolean) => {
-    setTotalProblems((t) => t + 1);
-    if (correct) {
-      const newStreak = streak + 1;
-      setStreak(newStreak);
-      setBestStreak((b) => Math.max(b, newStreak));
-      setSolved((s) => s + 1);
-      const { mult } = getMultiplierFromStreak(newStreak);
-      const timeBonus = Math.max(0, 5 - Math.floor((Date.now() - problemStartRef.current) / 1000));
-      const points = Math.round((15 + timeBonus) * mult);
-      setScore((s) => s + points);
-      setShowResult("correct");
-      setFlash("correct");
-      if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
-      else sfxCorrect();
-    } else {
-      sfxWrong();
-      setStreak(0);
-      setShowResult("wrong");
-      setFlash("wrong");
-    }
-    setTimeout(() => setFlash(null), 200);
-    setTimeout(() => {
-      setShowResult(null);
-      setPlacedPoints([]);
-      setSlopeAnswer("");
-      const p = generateProblem(mode, gridRange);
-      setProblem(p);
-      setProblemNumber((n) => n + 1);
-      setTipIdx(Math.floor(Math.random() * TIPS[mode].length));
-      problemStartRef.current = Date.now();
-    }, 800);
-  }, [streak, mode, gridRange]);
 
   const handleSlopeSubmit = useCallback(() => {
     if (!problem || problem.mode !== "slope") return;

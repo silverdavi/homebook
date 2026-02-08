@@ -339,14 +339,14 @@ export function FractionLabGame() {
     return () => clearTimeout(t);
   }, [phase, countdown, pendingStart]);
 
-  const nextChallenge = useCallback(() => {
-    const lvl = Math.floor(solved / 3) + 1;
+  const nextChallenge = useCallback((currentSolved: number) => {
+    const lvl = Math.floor(currentSolved / 3) + 1;
     setLevel(lvl);
     setChallenge(generateChallenge(lvl, challengeTypes));
     setFeedback(null);
     setSelectedAnswer(null);
     setPhase("playing");
-  }, [solved, challengeTypes]);
+  }, [challengeTypes]);
 
   const handleAnswer = useCallback(
     (choice: string) => {
@@ -361,7 +361,8 @@ export function FractionLabGame() {
         setScore((s) => s + points);
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
-        setSolved((s) => s + 1);
+        const newSolved = solved + 1;
+        setSolved(newSolved);
         if (newStreak >= 10 && newStreak % 10 === 0 && lives < LIVES) {
           sfxHeart();
           setShowHeartRecovery(true);
@@ -369,7 +370,7 @@ export function FractionLabGame() {
           setLives((l) => Math.min(LIVES, l + 1));
         }
         setFeedback("correct");
-        setTimeout(() => nextChallenge(), 1200);
+        setTimeout(() => nextChallenge(newSolved), 1200);
       } else {
         sfxWrong();
         setStreak(0);
@@ -391,7 +392,7 @@ export function FractionLabGame() {
         }
       }
     },
-    [phase, challenge, lives, highScore, streak, nextChallenge]
+    [phase, challenge, lives, highScore, streak, solved, nextChallenge]
   );
 
   const startGame = (types: ChallengeType[], idx: number) => {

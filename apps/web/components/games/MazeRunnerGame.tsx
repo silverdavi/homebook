@@ -377,8 +377,8 @@ export function MazeRunnerGame() {
       setScore((s) => s + earned);
       setLevel((l) => l + 1);
 
-      // Generate next maze (slightly bigger or same size)
-      const nextSize = Math.min(mazeSize + (level % 2 === 0 ? 2 : 0), 15);
+      // Generate next maze (progressively bigger every 2 levels)
+      const nextSize = Math.min(mazeSize + Math.floor(level / 2) * 2, 15);
       const newMaze = generateMaze(nextSize, nextSize);
       setMaze(newMaze);
       setPlayerPos([0, 0]);
@@ -421,7 +421,7 @@ export function MazeRunnerGame() {
           const earned = Math.round(levelPoints * mult);
           setScore((s) => s + earned);
           setLevel((l) => l + 1);
-          const nextSize = Math.min(mazeSize + (level % 2 === 0 ? 2 : 0), 15);
+          const nextSize = Math.min(mazeSize + Math.floor(level / 2) * 2, 15);
           const newMaze = generateMaze(nextSize, nextSize);
           setMaze(newMaze);
           setPlayerPos([0, 0]);
@@ -791,7 +791,7 @@ export function MazeRunnerGame() {
                   {lives > 0 ? "Maze Conquered!" : "Game Over"}
                 </h3>
                 <div className="text-4xl font-bold text-indigo-400 mb-3">{score.toLocaleString()}</div>
-                {score > highScore - score && score > 0 && (
+                {score >= highScore && score > 0 && (
                   <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1">
                     <Trophy className="w-3 h-3" /> New High Score!
                   </div>

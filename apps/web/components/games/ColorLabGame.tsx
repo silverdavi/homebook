@@ -479,11 +479,13 @@ export function ColorLabGame() {
     const region = diagram.regions.find((r) => r.id === regionId);
     if (!region) return;
 
-    setRegionStates((prev) => {
-      const existing = prev.find((r) => r.regionId === regionId);
-      if (existing && existing.filledColor === selectedColor) return prev; // already same color
-      return prev.map((r) => r.regionId === regionId ? { ...r, filledColor: selectedColor } : r);
-    });
+    // Don't re-score if already filled with the same color
+    const existing = regionStates.find((r) => r.regionId === regionId);
+    if (existing && existing.filledColor === selectedColor) return;
+
+    setRegionStates((prev) =>
+      prev.map((r) => r.regionId === regionId ? { ...r, filledColor: selectedColor } : r)
+    );
 
     const isCorrect = region.correctColor === selectedColor;
     if (isCorrect) {
@@ -495,7 +497,7 @@ export function ColorLabGame() {
       sfxWrong();
     }
     setTotalFilled((t) => t + 1);
-  }, [phase, selectedColor, diagram]);
+  }, [phase, selectedColor, diagram, regionStates]);
 
   // Finish game
   const finishGame = useCallback(() => {

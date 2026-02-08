@@ -121,8 +121,12 @@ function shuffleTiles(size: GridSize): number[] {
   }
   const solved = Array.from({ length: total }, (_, i) => (i + 1) % total);
   if (tiles.every((t, i) => t === solved[i])) {
-    const i1 = tiles.indexOf(1), i2 = tiles.indexOf(2);
-    [tiles[i1], tiles[i2]] = [tiles[i2], tiles[i1]];
+    // Use a 3-cycle (even permutation) to unshuffle without breaking solvability.
+    // A simple swap (odd permutation) would flip parity and make it unsolvable.
+    const i1 = tiles.indexOf(1), i2 = tiles.indexOf(2), i3 = tiles.indexOf(3);
+    tiles[i1] = 3;
+    tiles[i2] = 1;
+    tiles[i3] = 2;
   }
   return tiles;
 }

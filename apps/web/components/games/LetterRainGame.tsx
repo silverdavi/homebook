@@ -110,6 +110,8 @@ export function LetterRainGame() {
   const levelStartMissedRef = useRef<number>(0);
   const totalMissedRef = useRef<number>(0);
   const nextCharRef = useRef(0); // always-current nextCharIndex for use in updaters
+  const comboRef = useRef(0); // always-current combo for keyboard handler
+  const levelRef = useRef(1); // always-current level
   const [scale, setScale] = useState(1);
 
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -143,8 +145,10 @@ export function LetterRainGame() {
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [includeSpaces, setIncludeSpaces] = useState(false);
 
-  // Keep nextCharRef in sync
+  // Keep refs in sync with state
   useEffect(() => { nextCharRef.current = nextCharIndex; }, [nextCharIndex]);
+  useEffect(() => { comboRef.current = combo; }, [combo]);
+  useEffect(() => { levelRef.current = level; }, [level]);
 
   // Tip rotation
   useEffect(() => {
@@ -365,6 +369,7 @@ export function LetterRainGame() {
           return prev.map((l) => (l.id === letterId ? { ...l, caught: true, catchTime: now } : l));
         } else {
           // ── Wrong letter — penalty: lose points + break combo ──
+          comboRef.current = 0;
           setTimeout(() => {
             sfxWrong();
             setCombo(0);
@@ -381,6 +386,9 @@ export function LetterRainGame() {
   );
 
   // ── Keyboard typing handler ──
+  // Self-contained: uses refs for all mutable values to avoid stale closures.
+  // Does NOT delegate to handleLetterClick (which uses setTimeout and causes
+  // race conditions when typing fast).
   useEffect(() => {
     if (phase !== "playing") return;
 
@@ -406,19 +414,85 @@ export function LetterRainGame() {
         : typed.toLowerCase() === expectedChar.toLowerCase();
 
       if (matches) {
-        // Find the letter with this sentenceIndex and catch it
+        // ── IMMEDIATELY advance refs so next keypress sees correct state ──
+        const newNextChar = expectedIdx + 1;
+        nextCharRef.current = newNextChar;
+        const newCombo = comboRef.current + 1;
+        comboRef.current = newCombo;
+        const curLevel = levelRef.current;
+        const now = performance.now();
+
+        // Mark letter as caught in state
         setLetters((prev) => {
           const letter = prev.find(
             (l) => l.sentenceIndex === expectedIdx && !l.caught && !l.missed
           );
           if (!letter) return prev;
-          // Trigger the full catch logic via handleLetterClick
-          // But we need to do it outside this updater to avoid conflicts
-          setTimeout(() => handleLetterClick(letter.id), 0);
-          return prev;
+
+          // Spawn splash at letter position (use center if not yet spawned)
+          const lx = letter.spawned ? letter.x : GAME_WIDTH / 2 - LETTER_SIZE / 2;
+          const ly = letter.spawned ? letter.y : GAME_HEIGHT / 3;
+          spawnSplash(lx + LETTER_SIZE / 2, ly + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letter.char);
+
+          return prev.map((l) =>
+            l.id === letter.id ? { ...l, caught: true, catchTime: now } : l
+          );
         });
+
+        // Update React state
+        setNextCharIndex(newNextChar);
+
+        // Scoring (using newCombo which is already computed from ref)
+        const { mult } = getMultiplierFromStreak(newCombo);
+        const points = Math.round(10 * mult);
+        setScore((s) => s + points);
+        setCombo(newCombo);
+        setBestCombo((bc) => Math.max(bc, newCombo));
+        setTotalCaught((c) => c + 1);
+
+        // SFX
+        if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
+        else sfxCorrect();
+
+        // Heart recovery every 10-streak
+        if (newCombo >= 10 && newCombo % 10 === 0) {
+          sfxHeart();
+          setLives((lv) => {
+            if (lv < INITIAL_LIVES) {
+              setShowHeartRecovery(true);
+              setTimeout(() => setShowHeartRecovery(false), 1500);
+              return Math.min(INITIAL_LIVES, lv + 1);
+            }
+            return lv;
+          });
+        }
+
+        // Flash
+        setFlash("good");
+        setTimeout(() => setFlash(null), 150);
+
+        // Check if sentence complete
+        const remaining = sent.slice(newNextChar);
+        const done = includeSpaces
+          ? remaining.length === 0
+          : !remaining.split("").some((c) => c !== " ");
+        if (done) {
+          sfxLevelUp();
+          setScore((s) => s + 50 * curLevel);
+          setTimeout(() => {
+            const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
+            if (missesThisLevel === 0) {
+              setScore((s) => s + 100);
+              setPerfectLevels((p) => p + 1);
+              setShowPerfectToast(true);
+              setTimeout(() => setShowPerfectToast(false), 2000);
+            }
+            setPhase("levelComplete");
+          }, 300);
+        }
       } else {
         // Wrong key — penalty: lose points + break combo
+        comboRef.current = 0;
         sfxWrong();
         setCombo(0);
         setScore((s) => Math.max(0, s - 5));
@@ -430,7 +504,7 @@ export function LetterRainGame() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [phase, sentence, caseSensitive, includeSpaces, handleLetterClick]);
+  }, [phase, sentence, caseSensitive, includeSpaces, spawnSplash, sentenceCategory]);
 
   // ── Game loop ──
   useEffect(() => {
@@ -483,6 +557,7 @@ export function LetterRainGame() {
             }, 300);
             return nl;
           });
+          comboRef.current = 0;
           setCombo(0);
           setFlash("bad");
           setTimeout(() => setFlash(null), 200);
@@ -510,10 +585,11 @@ export function LetterRainGame() {
     setScore(0); setLives(INITIAL_LIVES); setLevel(1); setCombo(0); setBestCombo(0);
     setTotalCaught(0); setTotalMissed(0); setElapsedSecs(0); setPerfectLevels(0);
     setShowHeartRecovery(false); setShowPerfectToast(false); setAchievementQueue([]); setShowAchievementIndex(0);
+    comboRef.current = 0; levelRef.current = 1;
     usedSentences.clear();
     startLevel(1);
   };
-  const nextLevel = () => { const n = level + 1; setLevel(n); startLevel(n); };
+  const nextLevel = () => { const n = level + 1; setLevel(n); levelRef.current = n; startLevel(n); };
 
   const catColor = getCategoryColor(sentenceCategory);
   const accuracy = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;

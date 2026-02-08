@@ -66,6 +66,7 @@ export function ElementMatchGame() {
   const [totalPairs, setTotalPairs] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [gridCols, setGridCols] = useState(4);
+  const [currentDifficulty, setCurrentDifficulty] = useState<Difficulty>("easy");
   const [bestTime, setBestTime] = useState<Record<string, number>>(() => {
     try {
       if (typeof window !== "undefined") {
@@ -137,6 +138,7 @@ export function ElementMatchGame() {
 
   const startGame = useCallback((pairCount: number, cols: number, difficulty: Difficulty = "easy") => {
     setPendingStart({ pairs: pairCount, cols, difficulty });
+    setCurrentDifficulty(difficulty);
     setCountdown(3);
     setPhase("countdown");
   }, []);
@@ -275,7 +277,7 @@ export function ElementMatchGame() {
             {/* Grid */}
             <div
               className="grid gap-1.5 sm:gap-2"
-              style={{ gridTemplateColumns: `repeat(${Math.min(gridCols, 4)}, 1fr)` }}
+              style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
             >
               {cards.map((card) => (
                 <button
@@ -332,7 +334,7 @@ export function ElementMatchGame() {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => startGame(totalPairs, gridCols)}
+                onClick={() => startGame(totalPairs, gridCols, currentDifficulty)}
                 className="px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" /> Again

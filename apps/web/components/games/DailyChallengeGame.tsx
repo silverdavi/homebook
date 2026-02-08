@@ -126,6 +126,7 @@ export function DailyChallengeGame() {
     sfxGameOver();
     setDailyChallengeCompleted(today, score);
     setAlreadyCompleted(true);
+    setPreviousScore(score);
     setCompletedDates(getCompletedDates());
     setStreak(getDailyChallengeStreak());
     trackGamePlayed("daily-challenge", score);
@@ -327,6 +328,7 @@ export function DailyChallengeGame() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            if (answerFeedback !== null) return; // Prevent double-submission during feedback
             const guess = vocabInput.trim().toUpperCase();
             if (guess === word.answer) {
               handleCorrect();
@@ -361,6 +363,11 @@ export function DailyChallengeGame() {
     // Initialize order on first render
     if (timelineOrder.length === 0 && phase === "playing") {
       const initial = challenge.events.map((_, i) => i);
+      // Fisher-Yates shuffle so the user must actually reorder
+      for (let i = initial.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [initial[i], initial[j]] = [initial[j], initial[i]];
+      }
       setTimelineOrder(initial);
       return null;
     }

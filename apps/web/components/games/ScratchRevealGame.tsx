@@ -331,16 +331,16 @@ export function ScratchRevealGame() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     const x = (clientX - rect.left);
     const y = (clientY - rect.top);
 
     // Erase with destination-out compositing
+    // ctx already has scale(dpr, dpr) from initScratchLayer, so use logical coords
     ctx.save();
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x * dpr, y * dpr, 22 * dpr, 0, Math.PI * 2);
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 

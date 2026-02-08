@@ -116,7 +116,7 @@ const TABLE_GROUPS = [
   { label: "Tables 2-5", tables: [2, 3, 4, 5], color: "#22c55e" },
   { label: "Tables 2-9", tables: [2, 3, 4, 5, 6, 7, 8, 9], color: "#f59e0b" },
   { label: "Tables 2-12", tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], color: "#ef4444" },
-  { label: "Tables 6-12", tables: [6, 7, 8, 9, 11, 12], color: "#a855f7" },
+  { label: "Tables 6-12", tables: [6, 7, 8, 9, 10, 11, 12], color: "#a855f7" },
 ];
 
 const MULT_TIPS = [
@@ -276,7 +276,7 @@ export function TimesTableGame() {
         }, 800);
       }
     },
-    [phase, problem, streak, solved, score, mode, lives, nextProblem, finishGame]
+    [phase, problem, streak, solved, score, mode, lives, sprintCount, nextProblem, finishGame]
   );
 
   const startGame = useCallback((m: GameMode) => {

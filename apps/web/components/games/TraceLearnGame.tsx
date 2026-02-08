@@ -623,8 +623,19 @@ export function TraceLearnGame() {
     (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
     isDrawingRef.current = true;
     const pos = getPointerPos(canvas, e);
-    userPointsRef.current = [pos];
-  }, [phase]);
+
+    // For multi-stroke characters, add a pen-up sentinel before the new stroke
+    // instead of clearing previous strokes
+    if (userPointsRef.current.length > 0) {
+      userPointsRef.current.push({ x: -1, y: -1, pressure: 0 }, pos);
+    } else {
+      userPointsRef.current = [pos];
+    }
+
+    // Redraw immediately to show visual feedback
+    const ctx = canvas.getContext("2d");
+    if (ctx) drawCanvas(ctx, guidePath, userPointsRef.current);
+  }, [phase, guidePath, drawCanvas]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || phase !== "playing") return;

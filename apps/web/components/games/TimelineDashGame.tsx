@@ -35,7 +35,7 @@ const EVENTS: HistoricalEvent[] = [
   { year: 2012, event: "Higgs boson discovered at CERN", category: "science" },
 
   // History
-  { year: 776, event: "First Olympic Games in ancient Greece", category: "history" },
+  { year: 1896, event: "First modern Olympic Games in Athens", category: "history" },
   { year: 1215, event: "Magna Carta signed in England", category: "history" },
   { year: 1492, event: "Columbus reaches the Americas", category: "history" },
   { year: 1776, event: "American Declaration of Independence", category: "history" },

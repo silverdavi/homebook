@@ -189,8 +189,7 @@ const CONSTELLATION_SETS: DotSet[] = [
       { x: 0.5, y: 0.6, label: "3" },
       { x: 0.5, y: 0.85, label: "4" },
       { x: 0.28, y: 0.45, label: "5" },
-      { x: 0.5, y: 0.35, label: "6" },
-      { x: 0.72, y: 0.45, label: "7" },
+      { x: 0.72, y: 0.45, label: "6" },
     ],
   },
 ];
@@ -447,22 +446,6 @@ export function ConnectDotsGame() {
     return () => window.removeEventListener("resize", handler);
   }, [drawCanvas]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && phase === "menu") {
-        e.preventDefault();
-        startGame();
-      }
-      if (e.key === "Escape" && phase !== "menu") {
-        e.preventDefault();
-        setPhase("menu");
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const loadNextSet = useCallback(() => {
     if (setsQueueRef.current.length === 0) return;
     const next = setsQueueRef.current.shift()!;
@@ -470,6 +453,9 @@ export function ConnectDotsGame() {
     setConnectedCount(0);
     setShapeRevealed(false);
     setTipIdx(Math.floor(Math.random() * TIPS.length));
+    // Reset per-round timer so time bonus is calculated per round
+    roundStartRef.current = Date.now();
+    setTimeElapsed(0);
   }, []);
 
   const handleCanvasPointer = useCallback(
@@ -484,53 +470,59 @@ export function ConnectDotsGame() {
       const nextIdx = connectedCount;
       if (nextIdx >= currentSet.dots.length) return;
 
-      // Check if click is near any dot
+      // Check the next expected dot first (prioritize it when dots overlap)
+      const nextDot = currentSet.dots[nextIdx];
+      const nextDist = Math.sqrt((px - nextDot.x) ** 2 + (py - nextDot.y) ** 2);
+
+      if (nextDist < 0.06) {
+        // Correct dot tapped
+        const newCount = connectedCount + 1;
+        setConnectedCount(newCount);
+        const newStreak = streak + 1;
+        setStreak(newStreak);
+        setBestStreak((b) => Math.max(b, newStreak));
+
+        if (newCount >= currentSet.dots.length) {
+          // Set complete — reveal shape
+          setShapeRevealed(true);
+          sfxLevelUp();
+          const { mult } = getMultiplierFromStreak(newStreak);
+          const roundScore = Math.round((currentSet.dots.length * 15 + Math.max(0, 30 - timeElapsed)) * mult);
+          setScore((s) => s + roundScore);
+          setFlash("correct");
+          setTimeout(() => setFlash(null), 300);
+
+          // Move to next round after delay
+          setTimeout(() => {
+            const nextRound = roundIndex + 1;
+            setRoundIndex(nextRound);
+            if (nextRound >= totalRounds) {
+              setPhase("complete");
+            } else {
+              loadNextSet();
+            }
+          }, 1500);
+        } else {
+          if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+          else sfxCorrect();
+          setFlash("correct");
+          setTimeout(() => setFlash(null), 200);
+        }
+        return;
+      }
+
+      // Check if any other dot was tapped (wrong order)
       for (let i = 0; i < currentSet.dots.length; i++) {
+        if (i === nextIdx) continue;
         const dot = currentSet.dots[i];
         const dist = Math.sqrt((px - dot.x) ** 2 + (py - dot.y) ** 2);
         if (dist < 0.06) {
-          if (i === nextIdx) {
-            // Correct dot
-            const newCount = connectedCount + 1;
-            setConnectedCount(newCount);
-            const newStreak = streak + 1;
-            setStreak(newStreak);
-            setBestStreak((b) => Math.max(b, newStreak));
-
-            if (newCount >= currentSet.dots.length) {
-              // Set complete — reveal shape
-              setShapeRevealed(true);
-              sfxLevelUp();
-              const { mult } = getMultiplierFromStreak(newStreak);
-              const roundScore = Math.round((currentSet.dots.length * 15 + Math.max(0, 30 - timeElapsed)) * mult);
-              setScore((s) => s + roundScore);
-              setFlash("correct");
-              setTimeout(() => setFlash(null), 300);
-
-              // Move to next round after delay
-              setTimeout(() => {
-                const nextRound = roundIndex + 1;
-                setRoundIndex(nextRound);
-                if (nextRound >= totalRounds) {
-                  setPhase("complete");
-                } else {
-                  loadNextSet();
-                }
-              }, 1500);
-            } else {
-              if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
-              else sfxCorrect();
-              setFlash("correct");
-              setTimeout(() => setFlash(null), 200);
-            }
-          } else {
-            // Wrong dot
-            sfxWrong();
-            setStreak(0);
-            setMistakes((m) => m + 1);
-            setFlash("wrong");
-            setTimeout(() => setFlash(null), 200);
-          }
+          // Wrong dot
+          sfxWrong();
+          setStreak(0);
+          setMistakes((m) => m + 1);
+          setFlash("wrong");
+          setTimeout(() => setFlash(null), 200);
           return;
         }
       }
@@ -538,7 +530,7 @@ export function ConnectDotsGame() {
     [phase, currentSet, connectedCount, streak, shapeRevealed, timeElapsed, roundIndex, totalRounds, loadNextSet]
   );
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     const sets = getSetsForCategory(category);
     // Shuffle and pick roundCount sets (with repeats if needed)
     const shuffled = [...sets].sort(() => Math.random() - 0.5);
@@ -559,7 +551,23 @@ export function ConnectDotsGame() {
     setCountdown(COUNTDOWN_SECS);
     loadNextSet();
     setPhase("countdown");
-  };
+  }, [category, roundCount, loadNextSet]);
+
+  // Keyboard shortcuts (must be after startGame definition)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && phase === "menu") {
+        e.preventDefault();
+        startGame();
+      }
+      if (e.key === "Escape" && phase !== "menu") {
+        e.preventDefault();
+        setPhase("menu");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, startGame]);
 
   const categoryLabels: Record<Category, string> = {
     counting: "Math Sequences",

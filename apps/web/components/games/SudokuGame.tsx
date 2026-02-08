@@ -63,6 +63,50 @@ const PUZZLES: Record<Difficulty, Puzzle[]> = {
   ],
 };
 
+// ─── Solver ───────────────────────────────────────────────────────────
+// Many hardcoded solution strings are corrupted, so we solve at runtime.
+
+function solveSudoku(grid: number[]): number[] | null {
+  const board = [...grid];
+
+  function isValid(pos: number, val: number): boolean {
+    const row = Math.floor(pos / 9);
+    const col = pos % 9;
+    for (let c = 0; c < 9; c++) {
+      if (board[row * 9 + c] === val) return false;
+    }
+    for (let r = 0; r < 9; r++) {
+      if (board[r * 9 + col] === val) return false;
+    }
+    const br = Math.floor(row / 3) * 3;
+    const bc = Math.floor(col / 3) * 3;
+    for (let r = br; r < br + 3; r++) {
+      for (let c = bc; c < bc + 3; c++) {
+        if (board[r * 9 + c] === val) return false;
+      }
+    }
+    return true;
+  }
+
+  function solve(): boolean {
+    for (let i = 0; i < 81; i++) {
+      if (board[i] === 0) {
+        for (let v = 1; v <= 9; v++) {
+          if (isValid(i, v)) {
+            board[i] = v;
+            if (solve()) return true;
+            board[i] = 0;
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return solve() ? board : null;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 function parsePuzzle(str: string): number[] {
@@ -213,9 +257,23 @@ export function SudokuGame() {
       const idx = Math.floor(Math.random() * puzzles.length);
       const p = puzzles[idx];
       const initial = parsePuzzle(p.puzzle);
-      setInitialGrid(initial);
-      setGrid([...initial]);
-      setSolution(parsePuzzle(p.solution));
+      // Solve at runtime — hardcoded solutions are unreliable
+      const solved = solveSudoku(initial);
+      if (!solved) {
+        // Fallback: try another puzzle if this one is unsolvable
+        const fallbackIdx = (idx + 1) % puzzles.length;
+        const fb = puzzles[fallbackIdx];
+        const fbInitial = parsePuzzle(fb.puzzle);
+        const fbSolved = solveSudoku(fbInitial);
+        if (!fbSolved) return; // shouldn't happen
+        setInitialGrid(fbInitial);
+        setGrid([...fbInitial]);
+        setSolution(fbSolved);
+      } else {
+        setInitialGrid(initial);
+        setGrid([...initial]);
+        setSolution(solved);
+      }
       setDifficulty(diff);
       setSelectedCell(null);
       setElapsed(0);
