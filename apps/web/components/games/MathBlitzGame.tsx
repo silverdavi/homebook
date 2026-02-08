@@ -124,6 +124,16 @@ export function MathBlitzGame() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef(1);
   const problemStartTimeRef = useRef(0);
+  const streakRef = useRef(0);
+  const scoreRef = useRef(0);
+  const highScoreRef = useRef(0);
+  const timeLeftRef = useRef(GAME_DURATION);
+
+  // Keep refs in sync with state
+  useEffect(() => { streakRef.current = streak; }, [streak]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
+  useEffect(() => { timeLeftRef.current = timeLeft; }, [timeLeft]);
 
   // ── Settings ──
   const [gameDuration, setGameDuration] = useState(60);
@@ -147,18 +157,15 @@ export function MathBlitzGame() {
   useEffect(() => {
     if (phase !== "countdown") return;
     const t = setTimeout(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          sfxCountdownGo();
-          setTimeout(() => {
-            setPhase("playing");
-            setProblem(generateProblem(1, enabledOps));
-          }, 0);
-          return 0;
-        }
+      if (countdown <= 1) {
+        sfxCountdownGo();
+        setCountdown(0);
+        setPhase("playing");
+        setProblem(generateProblem(1, enabledOps));
+      } else {
         sfxCountdown();
-        return c - 1;
-      });
+        setCountdown(countdown - 1);
+      }
     }, 1000);
     return () => clearTimeout(t);
   }, [phase, countdown, enabledOps]);
@@ -185,26 +192,20 @@ export function MathBlitzGame() {
   useEffect(() => {
     if (phase !== "playing") return;
     timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current!);
-          setTimeout(() => {
-            setPhase("gameOver");
-            setScore((s) => {
-              setHighScore((h) => {
-                if (s > h) {
-                  setLocalHighScore("mathBlitz_highScore", s);
-                  return s;
-                }
-                return h;
-              });
-              return s;
-            });
-          }, 0);
-          return 0;
-        }
-        return t - 1;
-      });
+      setTimeLeft((t) => Math.max(0, t - 1));
+      const newTime = timeLeftRef.current - 1;
+      timeLeftRef.current = newTime;
+      if (newTime <= 0) {
+        clearInterval(timerRef.current!);
+        setTimeout(() => {
+          setPhase("gameOver");
+          const currentScore = scoreRef.current;
+          if (currentScore > highScoreRef.current) {
+            setLocalHighScore("mathBlitz_highScore", currentScore);
+            setHighScore(currentScore);
+          }
+        }, 0);
+      }
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -234,7 +235,8 @@ export function MathBlitzGame() {
       const problemStartedAt = problemStartTimeRef.current;
 
       if (choice === problem.answer) {
-        const newStreak = streak + 1;
+        const newStreak = streakRef.current + 1;
+        streakRef.current = newStreak;
         const { mult } = getMultiplierFromStreak(newStreak);
         let points = Math.round(10 * mult);
         const speedBonus = answeredAt - problemStartedAt < 1000 ? 5 : 0;
@@ -253,6 +255,7 @@ export function MathBlitzGame() {
         else sfxCorrect();
       } else {
         sfxWrong();
+        streakRef.current = 0;
         setStreak(0);
         setFlash("wrong");
       }
@@ -260,11 +263,14 @@ export function MathBlitzGame() {
       setTimeout(() => setFlash(null), 200);
       setProblem(generateProblem(difficultyRef.current, enabledOps));
     },
-    [phase, problem, streak, enabledOps]
+    [phase, problem, enabledOps]
   );
 
   const startGame = () => {
     setScore(0);
+    streakRef.current = 0;
+    scoreRef.current = 0;
+    timeLeftRef.current = gameDuration;
     setStreak(0);
     setBestStreak(0);
     setSolved(0);

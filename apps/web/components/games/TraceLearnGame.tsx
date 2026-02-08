@@ -565,7 +565,14 @@ export function TraceLearnGame() {
 
     if (acc >= 90) {
       setShowBonus(true);
-      setTimeout(() => setShowBonus(false), 1500);
+      setTimeout(() => {
+        // Guard: only proceed if still playing
+        setPhase(currentPhase => {
+          if (currentPhase !== "playing") return currentPhase;
+          setShowBonus(false);
+          return currentPhase;
+        });
+      }, 1500);
     }
 
     setRoundAccuracies((prev) => [...prev, acc]);

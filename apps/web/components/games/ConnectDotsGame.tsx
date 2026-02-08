@@ -494,13 +494,18 @@ export function ConnectDotsGame() {
 
           // Move to next round after delay
           setTimeout(() => {
-            const nextRound = roundIndex + 1;
-            setRoundIndex(nextRound);
-            if (nextRound >= totalRounds) {
-              setPhase("complete");
-            } else {
-              loadNextSet();
-            }
+            // Guard: only proceed if still playing
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              const nextRound = roundIndex + 1;
+              setRoundIndex(nextRound);
+              if (nextRound >= totalRounds) {
+                return "complete";
+              } else {
+                loadNextSet();
+                return currentPhase;
+              }
+            });
           }, 1500);
         } else {
           if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);

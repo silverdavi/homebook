@@ -164,41 +164,51 @@ export function ElementMatchGame() {
           // Match!
           sfxCorrect();
           setTimeout(() => {
-            setCards((prev) =>
-              prev.map((c) =>
-                c.pairId === first.pairId ? { ...c, matched: true, flipped: true } : c
-              )
-            );
-            setFlippedIds([]);
-            setMatchedPairs((m) => {
-              const nm = m + 1;
-              if (nm === totalPairs) {
-                sfxLevelUp();
-                setPhase("won");
-                // Save best time
-                const key = `${totalPairs}`;
-                setBestTime((prev) => {
-                  const newBest = { ...prev };
-                  if (!newBest[key] || elapsed < newBest[key]) {
-                    newBest[key] = elapsed;
-                    localStorage.setItem("elementMatch_best", JSON.stringify(newBest));
-                  }
-                  return newBest;
-                });
-              }
-              return nm;
+            // Guard: only proceed if still playing
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              setCards((prev) =>
+                prev.map((c) =>
+                  c.pairId === first.pairId ? { ...c, matched: true, flipped: true } : c
+                )
+              );
+              setFlippedIds([]);
+              setMatchedPairs((m) => {
+                const nm = m + 1;
+                if (nm === totalPairs) {
+                  sfxLevelUp();
+                  setPhase("won");
+                  // Save best time
+                  const key = `${totalPairs}`;
+                  setBestTime((prev) => {
+                    const newBest = { ...prev };
+                    if (!newBest[key] || elapsed < newBest[key]) {
+                      newBest[key] = elapsed;
+                      localStorage.setItem("elementMatch_best", JSON.stringify(newBest));
+                    }
+                    return newBest;
+                  });
+                }
+                return nm;
+              });
+              return currentPhase;
             });
           }, 400);
         } else {
           // No match
           sfxWrong();
           setTimeout(() => {
-            setCards((prev) =>
-              prev.map((c) =>
-                newFlipped.includes(c.id) ? { ...c, flipped: false } : c
-              )
-            );
-            setFlippedIds([]);
+            // Guard: only proceed if still playing
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              setCards((prev) =>
+                prev.map((c) =>
+                  newFlipped.includes(c.id) ? { ...c, flipped: false } : c
+                )
+              );
+              setFlippedIds([]);
+              return currentPhase;
+            });
           }, 800);
         }
       }

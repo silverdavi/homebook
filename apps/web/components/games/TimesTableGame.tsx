@@ -158,8 +158,22 @@ export function TimesTableGame() {
   const [multTipIdx, setMultTipIdx] = useState(0);
   const startRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const streakRef = useRef(0);
+  const solvedRef = useRef(0);
+  const scoreRef = useRef(0);
+  const elapsedRef = useRef(0);
+  const wrongRef = useRef(0);
+  const highScoreRef = useRef(0);
   const [countdownVal, setCountdownVal] = useState(COUNTDOWN_SECS);
   const SURVIVAL_LIVES = 3;
+
+  // Keep refs in sync with state
+  useEffect(() => { streakRef.current = streak; }, [streak]);
+  useEffect(() => { solvedRef.current = solved; }, [solved]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
+  useEffect(() => { wrongRef.current = wrong; }, [wrong]);
+  useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -214,13 +228,15 @@ export function TimesTableGame() {
     if (timerRef.current) clearInterval(timerRef.current);
     sfxLevelUp();
     setPhase("complete");
-    const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsed * 5 - wrong * 50) : score;
+    const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsedRef.current * 5 - wrongRef.current * 50) : scoreRef.current;
+    scoreRef.current = finalScore;
     setScore(finalScore);
-    if (finalScore > highScore) {
+    if (finalScore > highScoreRef.current) {
+      highScoreRef.current = finalScore;
       setHighScore(finalScore);
       setLocalHighScore("timesTable_highScore", finalScore);
     }
-  }, [mode, elapsed, wrong, score, highScore]);
+  }, [mode]);
 
   const handleAnswer = useCallback(
     (choice: number) => {
@@ -228,12 +244,15 @@ export function TimesTableGame() {
       setSelectedAnswer(choice);
 
       if (choice === problem.answer) {
-        const newStreak = streak + 1;
+        const newStreak = streakRef.current + 1;
+        streakRef.current = newStreak;
         const { mult } = getMultiplierFromStreak(newStreak);
         const points = Math.round(10 * mult);
+        scoreRef.current += points;
         setScore((s) => s + points);
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
+        solvedRef.current += 1;
         setSolved((s) => s + 1);
         setFeedback("correct");
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
@@ -246,10 +265,9 @@ export function TimesTableGame() {
         }
 
         setTimeout(() => {
-          const nextSolved = solved + 1;
-          if (mode === "sprint" && nextSolved >= sprintCount) {
+          if (mode === "sprint" && solvedRef.current >= sprintCount) {
             finishGame();
-          } else if (mode === "target" && score + points >= TARGET_SCORE) {
+          } else if (mode === "target" && scoreRef.current >= TARGET_SCORE) {
             finishGame();
           } else {
             nextProblem();
@@ -257,7 +275,9 @@ export function TimesTableGame() {
         }, 600);
       } else {
         sfxWrong();
+        streakRef.current = 0;
         setStreak(0);
+        wrongRef.current += 1;
         setWrong((w) => w + 1);
         setFeedback("wrong");
 
@@ -276,18 +296,23 @@ export function TimesTableGame() {
         }, 800);
       }
     },
-    [phase, problem, streak, solved, score, mode, lives, sprintCount, nextProblem, finishGame]
+    [phase, problem, mode, lives, sprintCount, nextProblem, finishGame]
   );
 
   const startGame = useCallback((m: GameMode) => {
     setMode(m);
+    scoreRef.current = 0;
     setScore(0);
+    streakRef.current = 0;
     setStreak(0);
     setBestStreak(0);
+    solvedRef.current = 0;
     setSolved(0);
+    wrongRef.current = 0;
     setWrong(0);
     setLives(SURVIVAL_LIVES);
     setShowHeartRecovery(false);
+    elapsedRef.current = 0;
     setElapsed(0);
     setAchievementQueue([]);
     setShowAchievementIndex(0);

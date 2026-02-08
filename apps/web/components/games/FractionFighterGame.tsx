@@ -140,6 +140,14 @@ export function FractionFighterGame() {
   const [countdown, setCountdown] = useState(3);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
+  const livesRef = useRef(INITIAL_LIVES);
+  const scoreRef = useRef(0);
+  const highScoreRef = useRef(0);
+
+  // Keep refs in sync with state
+  useEffect(() => { livesRef.current = lives; }, [lives]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
 
   useEffect(() => {
     if (pair) setTipIdx(Math.floor(Math.random() * 100));
@@ -174,25 +182,19 @@ export function FractionFighterGame() {
           setResult("timeout");
           setPhase("result");
           setStreak(0);
-          setLives((l) => {
-            const nl = l - 1;
-            if (nl <= 0) {
-              setTimeout(() => {
-                setPhase("gameOver");
-                setScore((s) => {
-                  setHighScore((h) => {
-                    if (s > h) {
-                      setLocalHighScore("fractionFighter_highScore", s);
-                      return s;
-                    }
-                    return h;
-                  });
-                  return s;
-                });
-              }, 1500);
-            }
-            return nl;
-          });
+          setLives((l) => l - 1);
+          const newLives = livesRef.current - 1;
+          livesRef.current = newLives;
+          if (newLives <= 0) {
+            setTimeout(() => {
+              setPhase("gameOver");
+              const currentScore = scoreRef.current;
+              if (currentScore > highScoreRef.current) {
+                setLocalHighScore("fractionFighter_highScore", currentScore);
+                setHighScore(currentScore);
+              }
+            }, 1500);
+          }
         }
       }, 50);
     },
@@ -203,14 +205,13 @@ export function FractionFighterGame() {
   useEffect(() => {
     if (phase !== "countdown") return;
     const t = setTimeout(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          sfxCountdownGo();
-          nextProblem(1);
-          return 3;
-        }
-        return c - 1;
-      });
+      if (countdown <= 1) {
+        sfxCountdownGo();
+        setCountdown(3);
+        nextProblem(1);
+      } else {
+        setCountdown(countdown - 1);
+      }
     }, 800);
     return () => clearTimeout(t);
   }, [phase, countdown, nextProblem]);
@@ -242,14 +243,12 @@ export function FractionFighterGame() {
         else sfxCorrect();
         if (newStreak >= 10 && newStreak % 10 === 0) {
           sfxHeart();
-          setLives((l) => {
-            if (l < INITIAL_LIVES) {
-              setShowHeartRecovery(true);
-              setTimeout(() => setShowHeartRecovery(false), 1500);
-              return Math.min(INITIAL_LIVES, l + 1);
-            }
-            return l;
-          });
+          if (livesRef.current < INITIAL_LIVES) {
+            setLives((l) => Math.min(INITIAL_LIVES, l + 1));
+            livesRef.current = Math.min(INITIAL_LIVES, livesRef.current + 1);
+            setShowHeartRecovery(true);
+            setTimeout(() => setShowHeartRecovery(false), 1500);
+          }
         }
         setResult("correct");
         setLevel((l) => l + (streak > 0 && streak % 5 === 4 ? 1 : 0));
@@ -257,25 +256,19 @@ export function FractionFighterGame() {
         sfxWrong();
         setStreak(0);
         setResult("wrong");
-        setLives((l) => {
-          const nl = l - 1;
-          if (nl <= 0) {
-            setTimeout(() => {
-              setPhase("gameOver");
-              setScore((s) => {
-                setHighScore((h) => {
-                  if (s > h) {
-                    setLocalHighScore("fractionFighter_highScore", s);
-                    return s;
-                  }
-                  return h;
-                });
-                return s;
-              });
-            }, 1500);
-          }
-          return nl;
-        });
+        setLives((l) => l - 1);
+        const newLives = livesRef.current - 1;
+        livesRef.current = newLives;
+        if (newLives <= 0) {
+          setTimeout(() => {
+            setPhase("gameOver");
+            const currentScore = scoreRef.current;
+            if (currentScore > highScoreRef.current) {
+              setLocalHighScore("fractionFighter_highScore", currentScore);
+              setHighScore(currentScore);
+            }
+          }, 1500);
+        }
       }
       setPhase("result");
     },
@@ -301,6 +294,8 @@ export function FractionFighterGame() {
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     setCountdown(3);
+    livesRef.current = INITIAL_LIVES;
+    scoreRef.current = 0;
     setPhase("countdown");
   };
 

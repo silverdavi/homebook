@@ -134,7 +134,7 @@ function generateProblem(categories: UnitCategory[]): Problem {
   while (wrongSet.size < 3) {
     const offset = roundSmart((Math.random() - 0.5) * spread * 2);
     const wrong = roundSmart(answer + (offset === 0 ? (answer > 0 ? 1 : -1) : offset));
-    if (wrong !== answer) wrongSet.add(wrong);
+    if (Math.abs(wrong - answer) > 0.01) wrongSet.add(wrong);
   }
 
   return {
@@ -298,7 +298,7 @@ export function UnitConverterGame() {
       if (phase !== "playing" || !problem) return;
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
-      if (choice === problem.answer) {
+      if (Math.abs(choice - problem.answer) < 0.01) {
         const newStreak = streak + 1;
         const { mult } = getMultiplierFromStreak(newStreak);
         const elapsed = (Date.now() - problemStartRef.current) / 1000;

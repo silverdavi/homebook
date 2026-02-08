@@ -112,6 +112,9 @@ export function LetterRainGame() {
   const nextCharRef = useRef(0); // always-current nextCharIndex for use in updaters
   const comboRef = useRef(0); // always-current combo for keyboard handler
   const levelRef = useRef(1); // always-current level
+  const livesRef = useRef(INITIAL_LIVES);
+  const scoreRef = useRef(0);
+  const highScoreRef = useRef(0);
   const [scale, setScale] = useState(1);
 
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -149,6 +152,9 @@ export function LetterRainGame() {
   useEffect(() => { nextCharRef.current = nextCharIndex; }, [nextCharIndex]);
   useEffect(() => { comboRef.current = combo; }, [combo]);
   useEffect(() => { levelRef.current = level; }, [level]);
+  useEffect(() => { livesRef.current = lives; }, [lives]);
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
 
   // Tip rotation
   useEffect(() => {
@@ -290,99 +296,97 @@ export function LetterRainGame() {
     (letterId: string) => {
       if (phase !== "playing") return;
 
-      // Read current letters synchronously
+      // eslint-disable-next-line prefer-const -- mutated inside setLetters callback
+      let hitLetter: FallingLetter | null = null as FallingLetter | null;
+      let wasWrong = false;
+
+      // Pure updater: only computes new state, no side effects
       setLetters((prev) => {
         const letter = prev.find((l) => l.id === letterId);
         if (!letter || letter.caught || letter.missed) return prev;
 
         // Use ref for always-current nextCharIndex
         let expectedIndex = nextCharRef.current;
-        const sent = sentence;
         if (!includeSpaces) {
-          while (expectedIndex < sent.length && sent[expectedIndex] === " ") expectedIndex++;
+          while (expectedIndex < sentence.length && sentence[expectedIndex] === " ") expectedIndex++;
         }
 
         if (letter.sentenceIndex === expectedIndex) {
-          // ── Correct letter ──
+          hitLetter = letter;
           const now = performance.now();
-
-          // Advance nextCharIndex
-          const newNextChar = letter.sentenceIndex + 1;
-          nextCharRef.current = newNextChar;
-          // Schedule React state update
-          setTimeout(() => setNextCharIndex(newNextChar), 0);
-
-          // Score, combo, etc. — scheduled outside the updater
-          setTimeout(() => {
-            const newCombo = combo + 1;
-            const { mult } = getMultiplierFromStreak(newCombo);
-            const points = Math.round(10 * mult);
-            setScore((s) => s + points);
-            setCombo(newCombo);
-            setBestCombo((bc) => Math.max(bc, newCombo));
-            setTotalCaught((c) => c + 1);
-
-            // SFX
-            if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
-            else sfxCorrect();
-
-            // Heart recovery every 10-streak
-            if (newCombo >= 10 && newCombo % 10 === 0) {
-              sfxHeart();
-              setLives((lv) => {
-                if (lv < INITIAL_LIVES) {
-                  setShowHeartRecovery(true);
-                  setTimeout(() => setShowHeartRecovery(false), 1500);
-                  return Math.min(INITIAL_LIVES, lv + 1);
-                }
-                return lv;
-              });
-            }
-
-            // Splash particles
-            spawnSplash(letter.x + LETTER_SIZE / 2, letter.y + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letter.char);
-            setFlash("good");
-            setTimeout(() => setFlash(null), 150);
-
-            // Check if sentence complete
-            const remaining = sent.slice(newNextChar);
-            const done = includeSpaces
-              ? remaining.length === 0
-              : !remaining.split("").some((c) => c !== " ");
-            if (done) {
-              sfxLevelUp();
-              setScore((s) => s + 50 * level);
-              setTimeout(() => {
-                const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
-                if (missesThisLevel === 0) {
-                  setScore((s) => s + 100);
-                  setPerfectLevels((p) => p + 1);
-                  setShowPerfectToast(true);
-                  setTimeout(() => setShowPerfectToast(false), 2000);
-                }
-                setPhase("levelComplete");
-              }, 300);
-            }
-          }, 0);
-
-          // Mark letter as caught with timestamp (for burst animation)
           return prev.map((l) => (l.id === letterId ? { ...l, caught: true, catchTime: now } : l));
         } else {
-          // ── Wrong letter — penalty: lose points + break combo ──
-          comboRef.current = 0;
-          setTimeout(() => {
-            sfxWrong();
-            setCombo(0);
-            setScore((s) => Math.max(0, s - 5));
-            setTotalMissed((m) => m + 1);
-            setFlash("bad");
-            setTimeout(() => setFlash(null), 200);
-          }, 0);
+          wasWrong = true;
           return prev;
         }
       });
+
+      // ── Side effects OUTSIDE the updater ──
+      if (hitLetter) {
+        const letter = hitLetter;
+        const newNextChar = letter.sentenceIndex + 1;
+        nextCharRef.current = newNextChar;
+        setNextCharIndex(newNextChar);
+
+        const newCombo = comboRef.current + 1;
+        comboRef.current = newCombo;
+        const { mult } = getMultiplierFromStreak(newCombo);
+        const points = Math.round(10 * mult);
+        setScore((s) => s + points);
+        setCombo(newCombo);
+        setBestCombo((bc) => Math.max(bc, newCombo));
+        setTotalCaught((c) => c + 1);
+
+        // SFX
+        if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
+        else sfxCorrect();
+
+        // Heart recovery every 10-streak
+        if (newCombo >= 10 && newCombo % 10 === 0) {
+          sfxHeart();
+          if (livesRef.current < INITIAL_LIVES) {
+            setLives((lv) => Math.min(INITIAL_LIVES, lv + 1));
+            livesRef.current = Math.min(INITIAL_LIVES, livesRef.current + 1);
+            setShowHeartRecovery(true);
+            setTimeout(() => setShowHeartRecovery(false), 1500);
+          }
+        }
+
+        // Splash particles
+        spawnSplash(letter.x + LETTER_SIZE / 2, letter.y + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letter.char);
+        setFlash("good");
+        setTimeout(() => setFlash(null), 150);
+
+        // Check if sentence complete
+        const remaining = sentence.slice(newNextChar);
+        const done = includeSpaces
+          ? remaining.length === 0
+          : !remaining.split("").some((c) => c !== " ");
+        if (done) {
+          sfxLevelUp();
+          setScore((s) => s + 50 * levelRef.current);
+          setTimeout(() => {
+            const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
+            if (missesThisLevel === 0) {
+              setScore((s) => s + 100);
+              setPerfectLevels((p) => p + 1);
+              setShowPerfectToast(true);
+              setTimeout(() => setShowPerfectToast(false), 2000);
+            }
+            setPhase("levelComplete");
+          }, 300);
+        }
+      } else if (wasWrong) {
+        comboRef.current = 0;
+        sfxWrong();
+        setCombo(0);
+        setScore((s) => Math.max(0, s - 5));
+        setTotalMissed((m) => m + 1);
+        setFlash("bad");
+        setTimeout(() => setFlash(null), 200);
+      }
     },
-    [phase, sentence, combo, level, spawnSplash, sentenceCategory, includeSpaces]
+    [phase, sentence, spawnSplash, sentenceCategory, includeSpaces]
   );
 
   // ── Keyboard typing handler ──
@@ -457,14 +461,12 @@ export function LetterRainGame() {
         // Heart recovery every 10-streak
         if (newCombo >= 10 && newCombo % 10 === 0) {
           sfxHeart();
-          setLives((lv) => {
-            if (lv < INITIAL_LIVES) {
-              setShowHeartRecovery(true);
-              setTimeout(() => setShowHeartRecovery(false), 1500);
-              return Math.min(INITIAL_LIVES, lv + 1);
-            }
-            return lv;
-          });
+          if (livesRef.current < INITIAL_LIVES) {
+            setLives((lv) => Math.min(INITIAL_LIVES, lv + 1));
+            livesRef.current = Math.min(INITIAL_LIVES, livesRef.current + 1);
+            setShowHeartRecovery(true);
+            setTimeout(() => setShowHeartRecovery(false), 1500);
+          }
         }
 
         // Flash
@@ -532,9 +534,10 @@ export function LetterRainGame() {
 
       const now = performance.now();
 
+      let lostLife = false;
+      let missX = 0;
+
       setLetters((prev) => {
-        let lostLife = false;
-        let missX = 0;
         const updated = prev.map((l) => {
           // Remove fully-animated caught letters
           if (l.caught && l.catchTime > 0 && now - l.catchTime > CATCH_ANIM_MS) {
@@ -546,24 +549,30 @@ export function LetterRainGame() {
           if (newY >= GROUND_Y) { lostLife = true; missX = l.x + LETTER_SIZE / 2; return { ...l, y: GROUND_Y, missed: true }; }
           return { ...l, y: newY, wobble: newWobble };
         });
-        if (lostLife) {
-          spawnRipple(missX);
-          setTotalMissed((m) => m + 1);
-          setLives((lv) => {
-            const nl = lv - 1;
-            if (nl <= 0) setTimeout(() => {
-              setPhase("gameOver");
-              setScore((cs) => { setHighScore((ch) => { if (cs > ch) { setLocalHighScore("letterRain_highScore", cs); return cs; } return ch; }); return cs; });
-            }, 300);
-            return nl;
-          });
-          comboRef.current = 0;
-          setCombo(0);
-          setFlash("bad");
-          setTimeout(() => setFlash(null), 200);
-        }
         return updated;
       });
+
+      if (lostLife) {
+        spawnRipple(missX);
+        setTotalMissed((m) => m + 1);
+        setLives((lv) => lv - 1);
+        const newLives = livesRef.current - 1;
+        livesRef.current = newLives;
+        if (newLives <= 0) {
+          setTimeout(() => {
+            setPhase("gameOver");
+            const currentScore = scoreRef.current;
+            if (currentScore > highScoreRef.current) {
+              setLocalHighScore("letterRain_highScore", currentScore);
+              setHighScore(currentScore);
+            }
+          }, 300);
+        }
+        comboRef.current = 0;
+        setCombo(0);
+        setFlash("bad");
+        setTimeout(() => setFlash(null), 200);
+      }
 
       setParticles((prev) =>
         prev.map((p) => ({
@@ -586,6 +595,7 @@ export function LetterRainGame() {
     setTotalCaught(0); setTotalMissed(0); setElapsedSecs(0); setPerfectLevels(0);
     setShowHeartRecovery(false); setShowPerfectToast(false); setAchievementQueue([]); setShowAchievementIndex(0);
     comboRef.current = 0; levelRef.current = 1;
+    livesRef.current = INITIAL_LIVES; scoreRef.current = 0;
     usedSentences.clear();
     startLevel(1);
   };

@@ -366,11 +366,23 @@ export function FractionLabGame() {
         if (newStreak >= 10 && newStreak % 10 === 0 && lives < LIVES) {
           sfxHeart();
           setShowHeartRecovery(true);
-          setTimeout(() => setShowHeartRecovery(false), 1500);
+          setTimeout(() => {
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              setShowHeartRecovery(false);
+              return currentPhase;
+            });
+          }, 1500);
           setLives((l) => Math.min(LIVES, l + 1));
         }
         setFeedback("correct");
-        setTimeout(() => nextChallenge(newSolved), 1200);
+        setTimeout(() => {
+          setPhase(currentPhase => {
+            if (currentPhase !== "playing") return currentPhase;
+            nextChallenge(newSolved);
+            return currentPhase;
+          });
+        }, 1200);
       } else {
         sfxWrong();
         setStreak(0);
@@ -381,14 +393,24 @@ export function FractionLabGame() {
         if (nl <= 0) {
           sfxGameOver();
           setTimeout(() => {
-            setPhase("complete");
-            setScore((s) => {
-              if (s > highScore) { setHighScore(s); setLocalHighScore("fractionLab_highScore", s); }
-              return s;
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              setScore((s) => {
+                if (s > highScore) { setHighScore(s); setLocalHighScore("fractionLab_highScore", s); }
+                return s;
+              });
+              return "complete";
             });
           }, 1500);
         } else {
-          setTimeout(() => { setFeedback(null); setSelectedAnswer(null); }, 1000);
+          setTimeout(() => {
+            setPhase(currentPhase => {
+              if (currentPhase !== "playing") return currentPhase;
+              setFeedback(null);
+              setSelectedAnswer(null);
+              return currentPhase;
+            });
+          }, 1000);
         }
       }
     },

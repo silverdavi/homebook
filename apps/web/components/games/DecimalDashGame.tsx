@@ -109,7 +109,7 @@ function generateOperationsProblem(places: number): Problem {
     const spread = Math.max(0.5, answer * 0.3);
     const offset = roundDec((Math.random() - 0.5) * spread * 2, places);
     const wrong = roundDec(answer + (offset === 0 ? 0.1 : offset), places);
-    if (wrong !== answer && wrong >= 0) wrongSet.add(wrong);
+    if (Math.abs(wrong - answer) > 0.0001 && wrong >= 0) wrongSet.add(wrong);
   }
 
   return {
@@ -123,7 +123,7 @@ function generateOperationsProblem(places: number): Problem {
 function generateCompareProblem(places: number): Problem {
   let a = randomDecimal(places, 10);
   let b = randomDecimal(places, 10);
-  while (a === b) b = randomDecimal(places, 10);
+  while (Math.abs(a - b) < 0.0001) b = randomDecimal(places, 10);
 
   return {
     question: `Which is larger?`,
@@ -343,7 +343,10 @@ export function DecimalDashGame() {
     (choice: number | string) => {
       if (phase !== "playing" || !problem) return;
 
-      const isCorrect = String(choice) === String(problem.answer);
+      const isCorrect =
+        typeof choice === "number" && typeof problem.answer === "number"
+          ? Math.abs(choice - problem.answer) < 0.0001
+          : String(choice) === String(problem.answer);
 
       if (isCorrect) {
         const newStreak = streak + 1;
