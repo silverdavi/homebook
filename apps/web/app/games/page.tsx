@@ -12,6 +12,7 @@ interface GameCardProps {
   color: string;
   available: boolean;
   badge?: string;
+  grade?: string;
 }
 
 interface Section {
@@ -42,6 +43,7 @@ const SECTIONS: Section[] = [
         href: "/games/letter-rain",
         color: "#6366f1",
         available: true,
+        grade: "K-3",
       },
       {
         title: "Word Builder",
@@ -50,6 +52,7 @@ const SECTIONS: Section[] = [
         href: "/games/word-builder",
         color: "#f59e0b",
         available: true,
+        grade: "2-6",
       },
     ],
   },
@@ -68,6 +71,7 @@ const SECTIONS: Section[] = [
         href: "/games/math-blitz",
         color: "#10b981",
         available: true,
+        grade: "1-5",
       },
       {
         title: "Fraction Fighter",
@@ -76,6 +80,7 @@ const SECTIONS: Section[] = [
         href: "/games/fraction-fighter",
         color: "#ef4444",
         available: true,
+        grade: "3-6",
       },
       {
         title: "Times Tables",
@@ -84,6 +89,7 @@ const SECTIONS: Section[] = [
         href: "/games/times-table",
         color: "#8b5cf6",
         available: true,
+        grade: "2-5",
       },
       {
         title: "Fraction Lab",
@@ -92,6 +98,7 @@ const SECTIONS: Section[] = [
         href: "/games/fraction-lab",
         color: "#f97316",
         available: true,
+        grade: "3-7",
       },
       {
         title: "Decimal Dash",
@@ -101,6 +108,7 @@ const SECTIONS: Section[] = [
         color: "#14b8a6",
         available: true,
         badge: "NEW",
+        grade: "4-7",
       },
       {
         title: "Graph Plotter",
@@ -110,6 +118,7 @@ const SECTIONS: Section[] = [
         color: "#6366f1",
         available: true,
         badge: "NEW",
+        grade: "6-9",
       },
     ],
   },
@@ -128,6 +137,7 @@ const SECTIONS: Section[] = [
         href: "/games/element-match",
         color: "#3b82f6",
         available: true,
+        grade: "5-9",
       },
       {
         title: "Equation Balancer",
@@ -137,6 +147,7 @@ const SECTIONS: Section[] = [
         color: "#8b5cf6",
         available: true,
         badge: "NEW",
+        grade: "7-12",
       },
       {
         title: "Genetics Lab",
@@ -146,6 +157,7 @@ const SECTIONS: Section[] = [
         color: "#22c55e",
         available: true,
         badge: "NEW",
+        grade: "7-12",
       },
       {
         title: "Unit Converter",
@@ -155,6 +167,7 @@ const SECTIONS: Section[] = [
         color: "#0ea5e9",
         available: true,
         badge: "NEW",
+        grade: "4-8",
       },
     ],
   },
@@ -173,6 +186,7 @@ const SECTIONS: Section[] = [
         href: "/games/timeline-dash",
         color: "#8b5cf6",
         available: true,
+        grade: "4-9",
       },
     ],
   },
@@ -192,6 +206,7 @@ const SECTIONS: Section[] = [
         color: "#06b6d4",
         available: true,
         badge: "NEW",
+        grade: "K-5",
       },
       {
         title: "Trace & Learn",
@@ -201,6 +216,7 @@ const SECTIONS: Section[] = [
         color: "#a855f7",
         available: true,
         badge: "NEW",
+        grade: "Pre-K-2",
       },
       {
         title: "Color Lab",
@@ -210,6 +226,7 @@ const SECTIONS: Section[] = [
         color: "#ec4899",
         available: true,
         badge: "NEW",
+        grade: "3-8",
       },
       {
         title: "Connect the Dots",
@@ -219,6 +236,7 @@ const SECTIONS: Section[] = [
         color: "#3b82f6",
         available: true,
         badge: "NEW",
+        grade: "K-3",
       },
       {
         title: "Scratch & Reveal",
@@ -228,6 +246,7 @@ const SECTIONS: Section[] = [
         color: "#eab308",
         available: true,
         badge: "NEW",
+        grade: "2-8",
       },
     ],
   },
@@ -247,6 +266,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "3-12",
       },
       {
         title: "Crossword",
@@ -256,6 +276,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "4-9",
       },
       {
         title: "Word Search",
@@ -265,6 +286,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "2-6",
       },
       {
         title: "Trivia Quiz",
@@ -274,6 +296,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "3-9",
       },
       {
         title: "Nonogram",
@@ -283,6 +306,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "3-9",
       },
       {
         title: "Number Puzzle",
@@ -292,6 +316,7 @@ const SECTIONS: Section[] = [
         color: "#64748b",
         available: true,
         badge: "E-INK",
+        grade: "K-5",
       },
     ],
   },
@@ -327,6 +352,7 @@ function GameCard({
   color,
   available,
   badge,
+  grade,
 }: GameCardProps) {
   const card = (
     <div
@@ -337,6 +363,11 @@ function GameCard({
       }`}
     >
       {badge && <Badge text={badge} color={color} />}
+      {grade && (
+        <span className="absolute -top-2 left-2 text-[9px] font-bold tracking-wide px-2 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
+          Gr {grade}
+        </span>
+      )}
 
       {/* Emoji with color glow */}
       <div className="relative w-14 h-14 mb-3 flex items-center justify-center">
@@ -356,10 +387,10 @@ function GameCard({
       </p>
       {available && (
         <div
-          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold tracking-wide transition-colors group-hover:brightness-125"
-          style={{ color }}
+          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[13px] font-bold tracking-wide transition-all group-hover:brightness-110 group-hover:scale-105"
+          style={{ backgroundColor: `${color}20`, color }}
         >
-          Play
+          Play Now
           <span className="group-hover:translate-x-1 transition-transform duration-200">
             →
           </span>
@@ -458,8 +489,9 @@ export default function GamesPage() {
       </section>
 
       {/* ── Quick Nav (sticky category pills) ── */}
-      <section className="mx-auto max-w-6xl px-6 mb-8">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <section className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md border-b border-white/[0.04] py-3 mb-8">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <span className="text-xs text-slate-600 font-medium shrink-0 mr-1">Jump to:</span>
           {SECTIONS.map((s) => (
             <a
@@ -470,6 +502,7 @@ export default function GamesPage() {
               {s.emoji} {s.title}
             </a>
           ))}
+          </div>
         </div>
       </section>
 

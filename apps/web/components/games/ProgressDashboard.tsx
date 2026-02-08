@@ -11,20 +11,38 @@ import Link from "next/link";
 
 const GAMES = [
   { id: "letter-rain", name: "Letter Rain", emoji: "🌧️", scoreKey: "letterRain_highScore", color: "indigo" },
+  { id: "word-builder", name: "Word Builder", emoji: "🔤", scoreKey: "wordBuilder_highScore", color: "cyan" },
   { id: "math-blitz", name: "Math Blitz", emoji: "⚡", scoreKey: "mathBlitz_highScore", color: "emerald" },
   { id: "fraction-fighter", name: "Fraction Fighter", emoji: "🥊", scoreKey: "fractionFighter_highScore", color: "orange" },
-  { id: "word-builder", name: "Word Builder", emoji: "🔤", scoreKey: "wordBuilder_highScore", color: "cyan" },
   { id: "times-table", name: "Times Table", emoji: "✖️", scoreKey: "timesTable_highScore", color: "violet" },
-  { id: "fraction-lab", name: "Fraction Lab", emoji: "🧪", scoreKey: "fractionLab_highScore", color: "pink" },
-  { id: "element-match", name: "Element Match", emoji: "⚗️", scoreKey: "elementMatch_highScore", color: "teal" },
-  { id: "timeline-dash", name: "Timeline Dash", emoji: "📅", scoreKey: "timelineDash_highScore", color: "amber" },
+  { id: "fraction-lab", name: "Fraction Lab", emoji: "🥧", scoreKey: "fractionLab_highScore", color: "pink" },
+  { id: "decimal-dash", name: "Decimal Dash", emoji: "🔢", scoreKey: "decimalDash_highScore", color: "teal" },
+  { id: "graph-plotter", name: "Graph Plotter", emoji: "📈", scoreKey: "graphPlotter_highScore", color: "indigo" },
+  { id: "element-match", name: "Element Match", emoji: "🧪", scoreKey: "elementMatch_highScore", color: "blue" },
+  { id: "equation-balancer", name: "Equation Balancer", emoji: "⚖️", scoreKey: "equationBalancer_highScore", color: "violet" },
+  { id: "genetics-lab", name: "Genetics Lab", emoji: "🧬", scoreKey: "geneticsLab_highScore", color: "green" },
+  { id: "unit-converter", name: "Unit Converter", emoji: "📏", scoreKey: "unitConverter_highScore", color: "sky" },
+  { id: "timeline-dash", name: "Timeline Dash", emoji: "🕰️", scoreKey: "timelineDash_highScore", color: "purple" },
+  { id: "maze-runner", name: "Maze Runner", emoji: "🏃", scoreKey: "mazeRunner_highScore", color: "cyan" },
+  { id: "trace-learn", name: "Trace & Learn", emoji: "✏️", scoreKey: "traceLearn_highScore", color: "purple" },
+  { id: "color-lab", name: "Color Lab", emoji: "🎨", scoreKey: "colorLab_highScore", color: "pink" },
+  { id: "connect-dots", name: "Connect Dots", emoji: "🔵", scoreKey: "connectDots_highScore", color: "blue" },
+  { id: "scratch-reveal", name: "Scratch & Reveal", emoji: "🎫", scoreKey: "scratchReveal_highScore", color: "yellow" },
+  { id: "sudoku", name: "Sudoku", emoji: "🔢", scoreKey: "sudoku_highScore", color: "slate" },
+  { id: "crossword", name: "Crossword", emoji: "📝", scoreKey: "crossword", color: "slate" },
+  { id: "word-search", name: "Word Search", emoji: "🔍", scoreKey: "wordSearch_highScore", color: "slate" },
+  { id: "trivia-quiz", name: "Trivia Quiz", emoji: "❓", scoreKey: "trivia-quiz", color: "slate" },
+  { id: "nonogram", name: "Nonogram", emoji: "🧩", scoreKey: "nonogram_highScore", color: "slate" },
+  { id: "number-puzzle", name: "Number Puzzle", emoji: "🎲", scoreKey: "numberPuzzle_highScore", color: "slate" },
 ] as const;
 
 const SUBJECT_CATEGORIES: Record<string, string[]> = {
-  Math: ["math-blitz", "fraction-fighter", "times-table", "fraction-lab"],
-  Science: ["element-match"],
-  Language: ["letter-rain", "word-builder"],
-  History: ["timeline-dash"],
+  Math: ["math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter"],
+  Science: ["element-match", "equation-balancer", "genetics-lab", "unit-converter"],
+  Language: ["letter-rain", "word-builder", "word-search", "crossword"],
+  History: ["timeline-dash", "trivia-quiz"],
+  "Touch & Create": ["maze-runner", "trace-learn", "color-lab", "connect-dots", "scratch-reveal"],
+  Puzzles: ["sudoku", "nonogram", "number-puzzle"],
 };
 
 const MEDAL_ICONS: Record<MedalTier, string> = {

@@ -1,11 +1,19 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 /**
- * Version footer displayed at the bottom of all pages.
+ * Version footer displayed at the bottom of all pages (except individual game pages).
  * Shows version, git commit, and build time for debugging deployments.
- * Uses suppressHydrationWarning for the locale-dependent date string.
  */
 export function VersionFooter() {
+  const pathname = usePathname();
+
+  // Hide on individual game pages (e.g. /games/math-blitz) to avoid overlapping game UI
+  // Still show on /games (the arena) and /games/progress
+  const isGamePage = /^\/games\/[^/]+$/.test(pathname) && pathname !== "/games/progress";
+  if (isGamePage) return null;
+
   const version = process.env.NEXT_PUBLIC_APP_VERSION || "dev";
   const commit = process.env.NEXT_PUBLIC_GIT_COMMIT || "local";
   const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME;

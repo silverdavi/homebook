@@ -119,9 +119,9 @@ export const MEDALS: MedalDef[] = [
   {
     id: "polymath",
     name: "Polymath",
-    bronze: { requirement: "Play 3 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 3 },
-    silver: { requirement: "Play 5 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 5 },
-    gold: { requirement: "Play all 7 games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 7 },
+    bronze: { requirement: "Play 5 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 5 },
+    silver: { requirement: "Play 10 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 10 },
+    gold: { requirement: "Play all 25 games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 25 },
   },
   {
     id: "perfectionist",
@@ -130,9 +130,73 @@ export const MEDALS: MedalDef[] = [
     silver: { requirement: "3 perfect levels", check: (c) => (c.stats.perfectLevels ?? 0) >= 3 },
     gold: { requirement: "10 perfect levels", check: (c) => (c.stats.perfectLevels ?? 0) >= 10 },
   },
+  {
+    id: "decimal-master",
+    name: "Decimal Master",
+    bronze: { requirement: "Score 100 in Decimal Dash", check: (c) => c.stats.gameId === "decimal-dash" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 200", check: (c) => c.stats.gameId === "decimal-dash" && (c.stats.score ?? 0) >= 200 },
+    gold: { requirement: "Score 400", check: (c) => c.stats.gameId === "decimal-dash" && (c.stats.score ?? 0) >= 400 },
+  },
+  {
+    id: "graph-guru",
+    name: "Graph Guru",
+    bronze: { requirement: "Score 100 in Graph Plotter", check: (c) => c.stats.gameId === "graph-plotter" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 200", check: (c) => c.stats.gameId === "graph-plotter" && (c.stats.score ?? 0) >= 200 },
+    gold: { requirement: "Score 400", check: (c) => c.stats.gameId === "graph-plotter" && (c.stats.score ?? 0) >= 400 },
+  },
+  {
+    id: "equation-wizard",
+    name: "Equation Wizard",
+    bronze: { requirement: "Score 100 in Equation Balancer", check: (c) => c.stats.gameId === "equation-balancer" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 250", check: (c) => c.stats.gameId === "equation-balancer" && (c.stats.score ?? 0) >= 250 },
+    gold: { requirement: "Score 500", check: (c) => c.stats.gameId === "equation-balancer" && (c.stats.score ?? 0) >= 500 },
+  },
+  {
+    id: "geneticist",
+    name: "Geneticist",
+    bronze: { requirement: "Score 100 in Genetics Lab", check: (c) => c.stats.gameId === "genetics-lab" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 200", check: (c) => c.stats.gameId === "genetics-lab" && (c.stats.score ?? 0) >= 200 },
+    gold: { requirement: "Score 400", check: (c) => c.stats.gameId === "genetics-lab" && (c.stats.score ?? 0) >= 400 },
+  },
+  {
+    id: "unit-expert",
+    name: "Unit Expert",
+    bronze: { requirement: "Score 100 in Unit Converter", check: (c) => c.stats.gameId === "unit-converter" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 200", check: (c) => c.stats.gameId === "unit-converter" && (c.stats.score ?? 0) >= 200 },
+    gold: { requirement: "Score 400", check: (c) => c.stats.gameId === "unit-converter" && (c.stats.score ?? 0) >= 400 },
+  },
+  {
+    id: "historian",
+    name: "Historian",
+    bronze: { requirement: "Score 100 in Timeline Dash", check: (c) => c.stats.gameId === "timeline-dash" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 250", check: (c) => c.stats.gameId === "timeline-dash" && (c.stats.score ?? 0) >= 250 },
+    gold: { requirement: "Score 500", check: (c) => c.stats.gameId === "timeline-dash" && (c.stats.score ?? 0) >= 500 },
+  },
+  {
+    id: "maze-master",
+    name: "Maze Master",
+    bronze: { requirement: "Score 100 in Maze Runner", check: (c) => c.stats.gameId === "maze-runner" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 250", check: (c) => c.stats.gameId === "maze-runner" && (c.stats.score ?? 0) >= 250 },
+    gold: { requirement: "Score 500", check: (c) => c.stats.gameId === "maze-runner" && (c.stats.score ?? 0) >= 500 },
+  },
+  {
+    id: "scratch-champion",
+    name: "Scratch Champion",
+    bronze: { requirement: "Score 100 in Scratch & Reveal", check: (c) => c.stats.gameId === "scratch-reveal" && (c.stats.score ?? 0) >= 100 },
+    silver: { requirement: "Score 200", check: (c) => c.stats.gameId === "scratch-reveal" && (c.stats.score ?? 0) >= 200 },
+    gold: { requirement: "Score 400", check: (c) => c.stats.gameId === "scratch-reveal" && (c.stats.score ?? 0) >= 400 },
+  },
 ];
 
-const GAME_IDS = ["letter-rain", "math-blitz", "fraction-fighter", "word-builder", "times-table", "fraction-lab", "element-match"] as const;
+const GAME_IDS = [
+  "letter-rain", "word-builder",
+  "math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter",
+  "element-match", "equation-balancer", "genetics-lab", "unit-converter",
+  "timeline-dash",
+  "maze-runner", "trace-learn", "color-lab", "connect-dots", "scratch-reveal",
+  "sudoku", "crossword", "word-search", "trivia-quiz", "nonogram", "number-puzzle",
+  "daily-challenge",
+] as const;
 
 export function getAchievements(): Record<string, MedalTier> {
   try {
