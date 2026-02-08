@@ -12,7 +12,10 @@ import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdo
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
-type ChallengeType = "identify" | "compare" | "add" | "equivalent";
+type ChallengeType = "identify" | "compare" | "add" | "equivalent" | "simplify" | "gcf" | "lcm";
+
+/** Visual hint level — fades as player progresses */
+type VisualHint = "full" | "reduced" | "none";
 
 interface Challenge {
   type: ChallengeType;
@@ -21,6 +24,14 @@ interface Challenge {
   choices: string[];
   answer: string;
   explanation: string;
+  visualHint: VisualHint;
+}
+
+/** Determine visual hint level based on how many problems solved */
+function getVisualHint(solved: number): VisualHint {
+  if (solved < 6) return "full";     // First ~6 problems: full visuals with labels
+  if (solved < 14) return "reduced"; // Next ~8: smaller visuals, no labels
+  return "none";                     // After that: pure number work
 }
 
 // ── Visual fraction bar ──
@@ -118,7 +129,9 @@ function FractionPie({ n, d, color, size = 80 }: { n: number; d: number; color: 
 
 function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b); }
 
-function genIdentify(level: number): Challenge {
+function lcm(a: number, b: number): number { return (a * b) / gcd(a, b); }
+
+function genIdentify(level: number, vh: VisualHint): Challenge {
   const maxD = Math.min(3 + level, 12);
   const d = Math.floor(Math.random() * (maxD - 1)) + 2;
   const n = Math.floor(Math.random() * d) + 1;
@@ -133,15 +146,16 @@ function genIdentify(level: number): Challenge {
 
   return {
     type: "identify",
-    question: "What fraction is shown?",
+    question: vh === "none" ? `A shape has ${n} out of ${d} parts shaded. What fraction is that?` : "What fraction is shown?",
     visual: [{ n, d }],
     choices: [...wrongs, `${n}/${d}`].sort(() => Math.random() - 0.5),
     answer: `${n}/${d}`,
     explanation: `${n} out of ${d} parts are filled = ${n}/${d}`,
+    visualHint: vh,
   };
 }
 
-function genCompare(level: number): Challenge {
+function genCompare(level: number, vh: VisualHint): Challenge {
   const maxD = Math.min(4 + level, 12);
   const d1 = Math.floor(Math.random() * (maxD - 2)) + 2;
   const d2 = Math.floor(Math.random() * (maxD - 2)) + 2;
@@ -150,7 +164,7 @@ function genCompare(level: number): Challenge {
   const v1 = n1 / d1;
   const v2 = n2 / d2;
 
-  if (Math.abs(v1 - v2) < 0.01) return genCompare(level);
+  if (Math.abs(v1 - v2) < 0.01) return genCompare(level, vh);
 
   const answer = v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`;
 
@@ -161,10 +175,11 @@ function genCompare(level: number): Challenge {
     choices: [`${n1}/${d1}`, `${n2}/${d2}`, "Equal"],
     answer,
     explanation: `${n1}/${d1} = ${(v1).toFixed(3)}, ${n2}/${d2} = ${(v2).toFixed(3)}`,
+    visualHint: vh,
   };
 }
 
-function genAdd(level: number): Challenge {
+function genAdd(level: number, vh: VisualHint): Challenge {
   const d = Math.min(2 + Math.floor(level / 2), 10);
   const n1 = Math.floor(Math.random() * (d - 1)) + 1;
   const n2 = Math.floor(Math.random() * (d - n1)) + 1;
@@ -189,10 +204,11 @@ function genAdd(level: number): Challenge {
     choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
     answer,
     explanation: `${n1}/${d} + ${n2}/${d} = ${sum}/${d}${sum !== d && g > 1 ? ` = ${simplified}` : ""}`,
+    visualHint: vh,
   };
 }
 
-function genEquivalent(level: number): Challenge {
+function genEquivalent(level: number, vh: VisualHint): Challenge {
   const d = Math.min(2 + level, 8);
   const n = Math.floor(Math.random() * (d - 1)) + 1;
   const mult = Math.floor(Math.random() * 3) + 2;
@@ -215,25 +231,144 @@ function genEquivalent(level: number): Challenge {
     choices: [...wrongs, `${eqN}/${eqD}`].sort(() => Math.random() - 0.5),
     answer: `${eqN}/${eqD}`,
     explanation: `${n}/${d} × ${mult}/${mult} = ${eqN}/${eqD}`,
+    visualHint: vh,
   };
 }
 
-function generateChallenge(level: number, types: ChallengeType[]): Challenge {
+// ── NEW: Simplify fractions (uses GCF) ──
+
+function genSimplify(level: number, vh: VisualHint): Challenge {
+  const baseDenoms = [2, 3, 4, 5, 6, 8, 10, 12];
+  const d0 = baseDenoms[Math.min(level, baseDenoms.length - 1)];
+  const n0 = Math.floor(Math.random() * (d0 - 1)) + 1;
+  const g = gcd(n0, d0);
+  // Make sure we have something to simplify
+  const mult = g === 1 ? (Math.floor(Math.random() * 3) + 2) : 1;
+  const n = n0 * mult;
+  const d = d0 * mult;
+  const simpN = n / gcd(n, d);
+  const simpD = d / gcd(n, d);
+  const answer = simpN === simpD ? "1" : `${simpN}/${simpD}`;
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const wn = Math.max(1, simpN + Math.floor(Math.random() * 3) - 1);
+    const wd = Math.max(2, simpD + Math.floor(Math.random() * 3) - 1);
+    const s = wn === wd ? "1" : `${wn}/${wd}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+
+  return {
+    type: "simplify",
+    question: `Simplify ${n}/${d}`,
+    visual: [{ n, d }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `GCF(${n}, ${d}) = ${gcd(n, d)}, so ${n}÷${gcd(n, d)} / ${d}÷${gcd(n, d)} = ${answer}`,
+    visualHint: vh,
+  };
+}
+
+// ── NEW: GCF (Greatest Common Factor) ──
+
+function genGCF(level: number, vh: VisualHint): Challenge {
+  const ranges = [
+    [4, 12], [6, 18], [8, 24], [10, 36], [12, 48],
+  ];
+  const [lo, hi] = ranges[Math.min(level - 1, ranges.length - 1)];
+  const a = lo + Math.floor(Math.random() * (hi - lo + 1));
+  let b = lo + Math.floor(Math.random() * (hi - lo + 1));
+  if (b === a) b = a + Math.floor(Math.random() * 4) + 1;
+  const ans = gcd(a, b);
+
+  const wrongs: string[] = [];
+  const candidates = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12].filter((c) => c !== ans && c <= Math.max(a, b));
+  while (wrongs.length < 3 && candidates.length > 0) {
+    const idx = Math.floor(Math.random() * candidates.length);
+    wrongs.push(String(candidates[idx]));
+    candidates.splice(idx, 1);
+  }
+
+  // Visual: show a as a fraction visual (a parts of a whole) — optional
+  return {
+    type: "gcf",
+    question: `What is the GCF of ${a} and ${b}?`,
+    visual: [{ n: a, d: a }, { n: b, d: b }], // placeholder — visuals are custom for GCF
+    choices: [...wrongs, String(ans)].sort(() => Math.random() - 0.5),
+    answer: String(ans),
+    explanation: `Factors of ${a}: ${getFactors(a).join(", ")}. Factors of ${b}: ${getFactors(b).join(", ")}. GCF = ${ans}`,
+    visualHint: vh,
+  };
+}
+
+function getFactors(n: number): number[] {
+  const f: number[] = [];
+  for (let i = 1; i <= n; i++) if (n % i === 0) f.push(i);
+  return f;
+}
+
+// ── NEW: LCM (Least Common Multiple) ──
+
+function genLCM(level: number, vh: VisualHint): Challenge {
+  const small = [2, 3, 4, 5, 6, 8, 9, 10, 12];
+  const a = small[Math.floor(Math.random() * Math.min(3 + level, small.length))];
+  let b = small[Math.floor(Math.random() * Math.min(3 + level, small.length))];
+  if (b === a) b = small[(small.indexOf(a) + 1) % small.length];
+  const ans = lcm(a, b);
+
+  const wrongs: string[] = [];
+  const candidates = [a * b, a + b, Math.max(a, b), ans * 2, ans - a].filter(
+    (c) => c !== ans && c > 0 && !wrongs.includes(String(c))
+  );
+  while (wrongs.length < 3 && candidates.length > 0) {
+    const idx = Math.floor(Math.random() * candidates.length);
+    wrongs.push(String(candidates[idx]));
+    candidates.splice(idx, 1);
+  }
+  // Fill remaining wrongs if needed
+  let fill = ans + 1;
+  while (wrongs.length < 3) {
+    if (fill !== ans && !wrongs.includes(String(fill))) wrongs.push(String(fill));
+    fill++;
+  }
+
+  const multiplesA = Array.from({ length: 6 }, (_, i) => a * (i + 1));
+  const multiplesB = Array.from({ length: 6 }, (_, i) => b * (i + 1));
+
+  return {
+    type: "lcm",
+    question: `What is the LCM of ${a} and ${b}?`,
+    visual: [{ n: a, d: a }, { n: b, d: b }], // placeholder
+    choices: [...wrongs, String(ans)].sort(() => Math.random() - 0.5),
+    answer: String(ans),
+    explanation: `Multiples of ${a}: ${multiplesA.join(", ")}… Multiples of ${b}: ${multiplesB.join(", ")}… LCM = ${ans}`,
+    visualHint: vh,
+  };
+}
+
+function generateChallenge(level: number, types: ChallengeType[], solved: number): Challenge {
   const type = types[Math.floor(Math.random() * types.length)];
+  const vh = getVisualHint(solved);
   switch (type) {
-    case "identify": return genIdentify(level);
-    case "compare": return genCompare(level);
-    case "add": return genAdd(level);
-    case "equivalent": return genEquivalent(level);
+    case "identify": return genIdentify(level, vh);
+    case "compare": return genCompare(level, vh);
+    case "add": return genAdd(level, vh);
+    case "equivalent": return genEquivalent(level, vh);
+    case "simplify": return genSimplify(level, vh);
+    case "gcf": return genGCF(level, vh);
+    case "lcm": return genLCM(level, vh);
   }
 }
 
 const CHALLENGE_SETS = [
-  { label: "Identify", emoji: "👀", types: ["identify"] as ChallengeType[], color: "#22c55e" },
-  { label: "Compare", emoji: "⚖️", types: ["compare"] as ChallengeType[], color: "#3b82f6" },
-  { label: "Add", emoji: "➕", types: ["add"] as ChallengeType[], color: "#f59e0b" },
-  { label: "Equivalent", emoji: "🔄", types: ["equivalent"] as ChallengeType[], color: "#a855f7" },
-  { label: "Mixed", emoji: "🎲", types: ["identify", "compare", "add", "equivalent"] as ChallengeType[], color: "#ef4444" },
+  { label: "Identify", emoji: "👀", desc: "Name the fraction shown", types: ["identify"] as ChallengeType[], color: "#22c55e" },
+  { label: "Compare", emoji: "⚖️", desc: "Which fraction is larger?", types: ["compare"] as ChallengeType[], color: "#3b82f6" },
+  { label: "Add", emoji: "➕", desc: "Add fractions together", types: ["add"] as ChallengeType[], color: "#f59e0b" },
+  { label: "Equivalent", emoji: "🔄", desc: "Find equal fractions", types: ["equivalent"] as ChallengeType[], color: "#a855f7" },
+  { label: "Simplify", emoji: "✂️", desc: "Reduce to lowest terms (uses GCF)", types: ["simplify"] as ChallengeType[], color: "#06b6d4" },
+  { label: "GCF", emoji: "🔢", desc: "Greatest Common Factor", types: ["gcf"] as ChallengeType[], color: "#8b5cf6" },
+  { label: "LCM", emoji: "📐", desc: "Least Common Multiple", types: ["lcm"] as ChallengeType[], color: "#ec4899" },
+  { label: "Mixed", emoji: "🎲", desc: "All challenge types", types: ["identify", "compare", "add", "equivalent", "simplify", "gcf", "lcm"] as ChallengeType[], color: "#ef4444" },
 ];
 
 const FRACTION_TIPS: Record<ChallengeType, string[]> = {
@@ -260,6 +395,29 @@ const FRACTION_TIPS: Record<ChallengeType, string[]> = {
     "1/2 = 2/4 = 3/6 = 4/8 — all equivalent!",
     "Dividing both parts by their GCD gives the simplest form.",
     "Equivalent fractions represent the same point on a number line.",
+  ],
+  simplify: [
+    "Find the GCF of numerator and denominator, then divide both by it.",
+    "A fraction is fully simplified when GCF(numerator, denominator) = 1.",
+    "6/8 → GCF(6,8) = 2 → 6÷2 / 8÷2 = 3/4.",
+    "Simplifying doesn't change the value — just makes it easier to read.",
+    "Always check: can both numbers be divided by 2? 3? 5?",
+  ],
+  gcf: [
+    "GCF = Greatest Common Factor — the largest number that divides both evenly.",
+    "List all factors of each number, then find the biggest one they share.",
+    "GCF(12, 8): Factors of 12 = {1,2,3,4,6,12}, Factors of 8 = {1,2,4,8} → GCF = 4.",
+    "GCF is essential for simplifying fractions to lowest terms.",
+    "If GCF = 1, the numbers are 'coprime' (no common factors).",
+    "Use prime factorization: break each number into primes, multiply the shared ones.",
+  ],
+  lcm: [
+    "LCM = Least Common Multiple — the smallest number both divide into evenly.",
+    "List multiples of each number until you find the first one they share.",
+    "LCM(4, 6): Multiples of 4 = {4,8,12,16…}, Multiples of 6 = {6,12,18…} → LCM = 12.",
+    "LCM is used to find common denominators when adding fractions.",
+    "Shortcut: LCM(a,b) = (a × b) ÷ GCF(a,b).",
+    "If one number is a multiple of the other, that's the LCM.",
   ],
 };
 
@@ -324,7 +482,7 @@ export function FractionLabGame() {
             setLevel(1);
             setAchievementQueue([]);
             setShowAchievementIndex(0);
-            setChallenge(generateChallenge(1, pendingStart.types));
+            setChallenge(generateChallenge(1, pendingStart.types, 0));
             setFeedback(null);
             setSelectedAnswer(null);
             setPendingStart(null);
@@ -342,7 +500,7 @@ export function FractionLabGame() {
   const nextChallenge = useCallback((currentSolved: number) => {
     const lvl = Math.floor(currentSolved / 3) + 1;
     setLevel(lvl);
-    setChallenge(generateChallenge(lvl, challengeTypes));
+    setChallenge(generateChallenge(lvl, challengeTypes, currentSolved));
     setFeedback(null);
     setSelectedAnswer(null);
     setPhase("playing");
@@ -472,10 +630,15 @@ export function FractionLabGame() {
                   <span className="text-2xl">{cs.emoji}</span>
                   <div className="text-left flex-1">
                     <div className="text-white font-bold text-sm">{cs.label}</div>
+                    <div className="text-slate-500 text-[10px]">{cs.desc}</div>
                   </div>
                   <span className="text-slate-600">→</span>
                 </button>
               ))}
+            </div>
+
+            <div className="text-[10px] text-slate-600 text-center px-4">
+              Visuals start strong and fade as you progress — train your mental math!
             </div>
 
             {highScore > 0 && (
@@ -526,21 +689,77 @@ export function FractionLabGame() {
               {challenge.question}
             </div>
 
-            {/* Visual */}
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              {challenge.visual.map((v, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  {usePie ? (
-                    <FractionPie n={v.n} d={v.d} color={currentColor} size={90} />
-                  ) : (
-                    <FractionBar n={v.n} d={v.d} color={currentColor} width={180} height={36} animate />
-                  )}
-                  {challenge.type === "add" && i < challenge.visual.length - 1 && (
-                    <span className="text-2xl text-white font-bold mt-2">+</span>
-                  )}
-                </div>
-              ))}
-            </div>
+            {/* Visual — progressive scaffolding */}
+            {challenge.visualHint !== "none" && challenge.type !== "gcf" && challenge.type !== "lcm" && (
+              <div className={`flex items-center justify-center gap-4 flex-wrap transition-opacity duration-300 ${challenge.visualHint === "reduced" ? "opacity-60" : ""}`}>
+                {challenge.visual.map((v, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    {usePie ? (
+                      <FractionPie
+                        n={v.n} d={v.d} color={currentColor}
+                        size={challenge.visualHint === "reduced" ? 60 : 90}
+                      />
+                    ) : (
+                      <FractionBar
+                        n={v.n} d={v.d} color={currentColor}
+                        width={challenge.visualHint === "reduced" ? 120 : 180}
+                        height={challenge.visualHint === "reduced" ? 24 : 36}
+                        showLabel={challenge.visualHint === "full"}
+                        animate
+                      />
+                    )}
+                    {challenge.type === "add" && i < challenge.visual.length - 1 && (
+                      <span className="text-2xl text-white font-bold mt-2">+</span>
+                    )}
+                  </div>
+                ))}
+                {challenge.visualHint === "reduced" && (
+                  <div className="w-full text-center text-[10px] text-slate-600 mt-1">Visual hint fading — use your math skills!</div>
+                )}
+              </div>
+            )}
+
+            {/* GCF visual: factor lists */}
+            {challenge.type === "gcf" && challenge.visualHint !== "none" && (
+              <div className="text-center space-y-2">
+                {challenge.visual.map((v, i) => {
+                  const num = v.n;
+                  const factors = getFactors(num);
+                  const g = parseInt(challenge.answer);
+                  return (
+                    <div key={i} className="bg-white/5 rounded-lg px-4 py-2 border border-white/10">
+                      <span className="text-slate-400 text-xs">Factors of </span>
+                      <span className="text-white font-bold">{num}</span>
+                      {challenge.visualHint === "full" && (
+                        <span className="text-slate-400 text-xs">: {factors.map((f) => (
+                          <span key={f} className={f === g ? "text-green-400 font-bold mx-0.5" : "text-slate-500 mx-0.5"}>{f}</span>
+                        ))}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* LCM visual: multiples lists */}
+            {challenge.type === "lcm" && challenge.visualHint !== "none" && (
+              <div className="text-center space-y-2">
+                {challenge.visual.map((v, i) => {
+                  const num = v.n;
+                  const mults = Array.from({ length: challenge.visualHint === "full" ? 8 : 4 }, (_, j) => num * (j + 1));
+                  const ans = parseInt(challenge.answer);
+                  return (
+                    <div key={i} className="bg-white/5 rounded-lg px-4 py-2 border border-white/10">
+                      <span className="text-slate-400 text-xs">Multiples of </span>
+                      <span className="text-white font-bold">{num}</span>
+                      <span className="text-slate-400 text-xs">: {mults.map((m) => (
+                        <span key={m} className={m === ans ? "text-yellow-400 font-bold mx-0.5" : "text-slate-500 mx-0.5"}>{m}</span>
+                      ))}…</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Explanation on feedback */}
             {feedback && (
