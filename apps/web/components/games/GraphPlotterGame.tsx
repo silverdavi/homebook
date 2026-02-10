@@ -49,11 +49,14 @@ function generatePlotProblem(range: number): PlotProblem {
 }
 
 function generateSlopeProblem(range: number): SlopeProblem {
-  const x1 = Math.floor(Math.random() * (range * 2 - 2)) - range + 1;
+  const safeRange = Math.max(range, 2); // Ensure range >= 2 to avoid infinite loop
+  const x1 = Math.floor(Math.random() * (safeRange * 2 - 2)) - safeRange + 1;
   let x2 = x1;
-  while (x2 === x1) {
-    x2 = Math.floor(Math.random() * (range * 2 - 2)) - range + 1;
+  let _sc = 0;
+  while (x2 === x1 && _sc++ < 100) {
+    x2 = Math.floor(Math.random() * (safeRange * 2 - 2)) - safeRange + 1;
   }
+  if (x2 === x1) x2 = x1 + 1; // Fallback
   const y1 = Math.floor(Math.random() * (range * 2 - 2)) - range + 1;
   const y2 = Math.floor(Math.random() * (range * 2 - 2)) - range + 1;
 

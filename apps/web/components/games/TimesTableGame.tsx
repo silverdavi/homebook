@@ -114,11 +114,19 @@ function generateProblem(tables: number[], usedPairs: Set<string>, maxMultiplier
   // Off by one multiplier
   if (b > 1) wrongSet.add(a * (b - 1));
   wrongSet.add(a * (b + 1));
-  // Random near answers
-  while (wrongSet.size < 5) {
-    const offset = Math.floor(Math.random() * a * 2) - a;
-    const wrong = answer + (offset === 0 ? a : offset);
+  // Random near answers — safety limit to prevent infinite loop
+  let safetyCounter = 0;
+  while (wrongSet.size < 5 && safetyCounter < 100) {
+    safetyCounter++;
+    const spread = Math.max(a, 3) * 2;
+    const offset = Math.floor(Math.random() * spread) - Math.floor(spread / 2);
+    const wrong = answer + (offset === 0 ? 1 : offset);
     if (wrong > 0 && wrong !== answer) wrongSet.add(wrong);
+  }
+  // Fallback: fill with simple offsets if needed
+  for (let i = 1; wrongSet.size < 5; i++) {
+    if (answer + i !== answer) wrongSet.add(answer + i);
+    if (wrongSet.size < 5 && answer - i > 0) wrongSet.add(answer - i);
   }
 
   // Pick 3 wrong answers

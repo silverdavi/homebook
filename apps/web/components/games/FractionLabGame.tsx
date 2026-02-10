@@ -192,11 +192,15 @@ function genIdentify(level: number, vh: VisualHint): Challenge {
   const n = Math.floor(Math.random() * d) + 1;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls1 = 0;
+  while (wrongs.length < 3 && _ls1++ < 200) {
     const wn = Math.floor(Math.random() * d) + 1;
     const wd = d + (Math.random() > 0.5 ? 1 : -1) * (Math.random() > 0.5 ? 1 : 0);
     const s = `${wn}/${Math.max(2, wd)}`;
     if (s !== `${n}/${d}` && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -263,11 +267,15 @@ function genAdd(level: number, vh: VisualHint): Challenge {
   const answer = sum === d ? "1" : sum / g === sum && d / g === d ? unsimplified : simplified;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls2 = 0;
+  while (wrongs.length < 3 && _ls2++ < 200) {
     const wn = Math.floor(Math.random() * d) + 1;
     const wd = d + (Math.random() > 0.5 ? 1 : 0);
     const s = wn === wd ? "1" : `${wn}/${wd}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -289,12 +297,16 @@ function genEquivalent(level: number, vh: VisualHint): Challenge {
   const eqD = d * mult;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls3 = 0;
+  while (wrongs.length < 3 && _ls3++ < 200) {
     const wm = Math.floor(Math.random() * 4) + 2;
     const wn = n * wm + (Math.random() > 0.5 ? 1 : -1);
     const wd = d * wm;
     const s = `${Math.max(1, wn)}/${wd}`;
     if (s !== `${eqN}/${eqD}` && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -324,11 +336,15 @@ function genSimplify(level: number, vh: VisualHint): Challenge {
   const answer = simpN === simpD ? "1" : `${simpN}/${simpD}`;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls4 = 0;
+  while (wrongs.length < 3 && _ls4++ < 200) {
     const wn = Math.max(1, simpN + Math.floor(Math.random() * 3) - 1);
     const wd = Math.max(2, simpD + Math.floor(Math.random() * 3) - 1);
     const s = wn === wd ? "1" : `${wn}/${wd}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -356,10 +372,16 @@ function genGCF(level: number, vh: VisualHint): Challenge {
 
   const wrongs: string[] = [];
   const candidates = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12].filter((c) => c !== ans && c <= Math.max(a, b));
-  while (wrongs.length < 3 && candidates.length > 0) {
+  let _ls5 = 0;
+  while (wrongs.length < 3 && candidates.length > 0 && _ls5++ < 200) {
     const idx = Math.floor(Math.random() * candidates.length);
     wrongs.push(String(candidates[idx]));
     candidates.splice(idx, 1);
+  }
+  while (wrongs.length < 3) {
+    const fallback = ans + wrongs.length + 1;
+    if (!wrongs.includes(String(fallback))) wrongs.push(String(fallback));
+    else wrongs.push(String(fallback + 10));
   }
 
   // Visual: show a as a fraction visual (a parts of a whole) — optional
@@ -393,16 +415,23 @@ function genLCM(level: number, vh: VisualHint): Challenge {
   const candidates = [a * b, a + b, Math.max(a, b), ans * 2, ans - a].filter(
     (c) => c !== ans && c > 0 && !wrongs.includes(String(c))
   );
-  while (wrongs.length < 3 && candidates.length > 0) {
+  let _ls6 = 0;
+  while (wrongs.length < 3 && candidates.length > 0 && _ls6++ < 200) {
     const idx = Math.floor(Math.random() * candidates.length);
     wrongs.push(String(candidates[idx]));
     candidates.splice(idx, 1);
   }
   // Fill remaining wrongs if needed
   let fill = ans + 1;
-  while (wrongs.length < 3) {
+  let _ls7 = 0;
+  while (wrongs.length < 3 && _ls7++ < 200) {
     if (fill !== ans && !wrongs.includes(String(fill))) wrongs.push(String(fill));
     fill++;
+  }
+  while (wrongs.length < 3) {
+    const fallback = ans + wrongs.length + 1;
+    if (!wrongs.includes(String(fallback))) wrongs.push(String(fallback));
+    else wrongs.push(String(fallback + 10));
   }
 
   const multiplesA = Array.from({ length: 6 }, (_, i) => a * (i + 1));
@@ -431,11 +460,15 @@ function genSubtract(level: number, vh: VisualHint): Challenge {
   const answer = diff === 0 ? "0" : diff === d ? "1" : g > 1 ? simplified : `${diff}/${d}`;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls8 = 0;
+  while (wrongs.length < 3 && _ls8++ < 200) {
     const wn = Math.floor(Math.random() * d) + 1;
     const wd = d + (Math.random() > 0.5 ? 1 : 0);
     const s = wn === wd ? "1" : `${wn}/${Math.max(2, wd)}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -465,11 +498,15 @@ function genMultiply(level: number, vh: VisualHint): Challenge {
   const answer = simpN === simpD ? "1" : simpD === 1 ? `${simpN}` : `${simpN}/${simpD}`;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls9 = 0;
+  while (wrongs.length < 3 && _ls9++ < 200) {
     const wn = Math.max(1, simpN + Math.floor(Math.random() * 5) - 2);
     const wd = Math.max(2, simpD + Math.floor(Math.random() * 5) - 2);
     const s = wn === wd ? "1" : wd === 1 ? `${wn}` : `${wn}/${wd}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
   }
 
   return {
@@ -494,10 +531,14 @@ function genMixedToImproper(level: number, vh: VisualHint): Challenge {
   const answer = `${impN}/${d}`;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls10 = 0;
+  while (wrongs.length < 3 && _ls10++ < 200) {
     const w = impN + Math.floor(Math.random() * 5) - 2;
     const s = `${Math.max(1, w)}/${d}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(`${impN + wrongs.length + 1}/${d}`);
   }
 
   return {
@@ -522,11 +563,15 @@ function genImproperToMixed(level: number, vh: VisualHint): Challenge {
   const answer = `${whole} ${remainder}/${d}`;
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls11 = 0;
+  while (wrongs.length < 3 && _ls11++ < 200) {
     const ww = whole + Math.floor(Math.random() * 3) - 1;
     const wr = Math.max(1, remainder + Math.floor(Math.random() * 3) - 1);
     const s = `${Math.max(1, ww)} ${Math.min(wr, d - 1)}/${d}`;
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) {
+    wrongs.push(`${whole + wrongs.length + 1} 1/${d}`);
   }
 
   return {
@@ -551,9 +596,15 @@ function genFractionOfNumber(level: number, vh: VisualHint): Challenge {
   const answer = String((n * whole) / d);
 
   const wrongs: string[] = [];
-  while (wrongs.length < 3) {
+  let _ls12 = 0;
+  while (wrongs.length < 3 && _ls12++ < 200) {
     const w = parseInt(answer) + Math.floor(Math.random() * 7) - 3;
     if (String(w) !== answer && w > 0 && !wrongs.includes(String(w))) wrongs.push(String(w));
+  }
+  while (wrongs.length < 3) {
+    const fallback = parseInt(answer) + wrongs.length + 1;
+    if (!wrongs.includes(String(fallback))) wrongs.push(String(fallback));
+    else wrongs.push(String(fallback + 10));
   }
 
   return {

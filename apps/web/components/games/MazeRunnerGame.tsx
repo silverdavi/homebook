@@ -81,10 +81,15 @@ function genMathQ(difficulty: number): MazeQuestion {
   }
 
   const wrongAnswers = new Set<number>();
-  while (wrongAnswers.size < 3) {
+  let _sc = 0;
+  while (wrongAnswers.size < 3 && _sc++ < 100) {
     const offset = Math.floor(Math.random() * 10) - 5;
     const wrong = answer + (offset === 0 ? 1 : offset);
     if (wrong !== answer && wrong >= 0) wrongAnswers.add(wrong);
+  }
+  for (let i = 1; wrongAnswers.size < 3; i++) {
+    if (answer + i !== answer) wrongAnswers.add(answer + i);
+    if (wrongAnswers.size < 3 && answer - i > 0) wrongAnswers.add(answer - i);
   }
 
   const answers = [answer, ...Array.from(wrongAnswers).slice(0, 3)];

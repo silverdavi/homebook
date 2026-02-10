@@ -80,13 +80,19 @@ function generateProblem(difficulty: number, enabledOps?: Operation[]): Problem 
     }
   }
 
-  // Wrong choices — spread increases with difficulty
+  // Wrong choices — spread increases with difficulty (safety counter prevents infinite loop)
   const spread = Math.max(3, Math.min(difficulty * 2, 20));
   const wrongSet = new Set<number>();
-  while (wrongSet.size < 3) {
+  let _sc = 0;
+  while (wrongSet.size < 3 && _sc++ < 100) {
     const offset = Math.floor(Math.random() * spread) - Math.floor(spread / 2);
     const wrong = answer + (offset === 0 ? (Math.random() > 0.5 ? 1 : -1) : offset);
     if (wrong !== answer && wrong >= 0) wrongSet.add(wrong);
+  }
+  // Fallback: fill with simple offsets if we couldn't generate enough
+  for (let i = 1; wrongSet.size < 3; i++) {
+    if (answer + i !== answer) wrongSet.add(answer + i);
+    if (wrongSet.size < 3 && answer - i > 0) wrongSet.add(answer - i);
   }
 
   const choices = [...wrongSet, answer].sort(() => Math.random() - 0.5);

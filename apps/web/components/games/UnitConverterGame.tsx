@@ -128,13 +128,18 @@ function generateProblem(categories: UnitCategory[]): Problem {
 
   const answer = roundSmart(conv.convert ? conv.convert(value) : value * conv.factor!);
 
-  // Generate wrong answers
+  // Generate wrong answers (safety counter prevents infinite loop)
   const wrongSet = new Set<number>();
   const spread = Math.max(Math.abs(answer) * 0.3, 1);
-  while (wrongSet.size < 3) {
+  let _sc = 0;
+  while (wrongSet.size < 3 && _sc++ < 100) {
     const offset = roundSmart((Math.random() - 0.5) * spread * 2);
     const wrong = roundSmart(answer + (offset === 0 ? (answer > 0 ? 1 : -1) : offset));
     if (Math.abs(wrong - answer) > 0.01) wrongSet.add(wrong);
+  }
+  for (let i = 1; wrongSet.size < 3; i++) {
+    wrongSet.add(roundSmart(answer + i));
+    if (wrongSet.size < 3) wrongSet.add(roundSmart(answer - i));
   }
 
   return {

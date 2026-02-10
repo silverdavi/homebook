@@ -92,11 +92,13 @@ function generateNumberLineProblem(places: number): Problem {
     const idx = Math.floor(Math.random() * valid.length);
     choices.push(valid.splice(idx, 1)[0]);
   }
-  // Fill remaining with random if needed
-  while (choices.length < 4) {
+  // Fill remaining with random if needed (safety counter prevents infinite loop)
+  let _sc4 = 0;
+  while (choices.length < 4 && _sc4++ < 100) {
     const r = roundDec(start + step * (Math.floor(Math.random() * 9) + 1), places + 1);
     if (!choices.includes(r)) choices.push(r);
   }
+  for (let _i = 1; choices.length < 4; _i++) choices.push(roundDec(target + _i * step, places + 1));
 
   return {
     question: `Place the decimal on the number line: ${target}`,
@@ -153,12 +155,14 @@ function generateOperationsProblem(places: number, params?: DecimalParams): Prob
   }
 
   const wrongSet = new Set<number>();
-  while (wrongSet.size < 3) {
+  let _sc0 = 0;
+  while (wrongSet.size < 3 && _sc0++ < 100) {
     const spread = Math.max(0.5, answer * 0.3);
     const offset = roundDec((Math.random() - 0.5) * spread * 2, places);
     const wrong = roundDec(answer + (offset === 0 ? 0.1 : offset), places);
     if (Math.abs(wrong - answer) > 0.0001 && wrong >= 0) wrongSet.add(wrong);
   }
+  for (let _i = 1; wrongSet.size < 3; _i++) wrongSet.add(roundDec(answer + _i * 0.1, places));
 
   return {
     question,
@@ -210,11 +214,13 @@ function generateConvertProblem(places: number, params?: DecimalParams): Problem
       explanation = `To convert ${numer}/${denom} to a decimal, divide ${numer} by ${denom}:\n${numer} ÷ ${denom} = ${decimal}`;
       // Generate wrong answers
       const wrongs = new Set<string>();
-      while (wrongs.size < 3) {
+      let _sc1 = 0;
+      while (wrongs.size < 3 && _sc1++ < 100) {
         const offset = roundDec((Math.random() - 0.5) * 0.4, 3);
         const wrong = roundDec(decimal + (offset === 0 ? 0.1 : offset), 3);
         if (String(wrong) !== answer && wrong > 0 && wrong < 1.5) wrongs.add(String(wrong));
       }
+      for (let _i = 1; wrongs.size < 3; _i++) wrongs.add(String(roundDec(decimal + _i * 0.05, 3)));
       choices.push(...wrongs, answer);
       break;
     }
@@ -225,10 +231,12 @@ function generateConvertProblem(places: number, params?: DecimalParams): Problem
       answer = `${pct}%`;
       explanation = `To convert a decimal to a percentage, multiply by 100:\n${decimal} × 100 = ${pct}%\n\nPercent means "per hundred."`;
       const wrongs = new Set<string>();
-      while (wrongs.size < 3) {
+      let _sc2 = 0;
+      while (wrongs.size < 3 && _sc2++ < 100) {
         const wrong = pct + Math.floor((Math.random() - 0.5) * 30);
         if (wrong !== pct && wrong > 0 && wrong <= 100) wrongs.add(`${wrong}%`);
       }
+      for (let _i = 1; wrongs.size < 3; _i++) wrongs.add(`${pct + _i * 5}%`);
       choices.push(...wrongs, answer);
       break;
     }
@@ -239,10 +247,12 @@ function generateConvertProblem(places: number, params?: DecimalParams): Problem
       answer = String(decimal);
       explanation = `To convert a percentage to a decimal, divide by 100:\n${pct}% = ${pct} ÷ 100 = ${decimal}\n\nJust move the decimal point two places to the left.`;
       const wrongs = new Set<string>();
-      while (wrongs.size < 3) {
+      let _sc3 = 0;
+      while (wrongs.size < 3 && _sc3++ < 100) {
         const wrong = roundDec(decimal + (Math.random() - 0.5) * 0.3, 2);
         if (String(wrong) !== answer && wrong > 0 && wrong < 1.5) wrongs.add(String(wrong));
       }
+      for (let _i = 1; wrongs.size < 3; _i++) wrongs.add(String(roundDec(decimal + _i * 0.05, 2)));
       choices.push(...wrongs, answer);
       break;
     }
