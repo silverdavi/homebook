@@ -13,7 +13,7 @@ import { createAdaptiveState, adaptiveUpdate, getFractionParams, getDifficultyLa
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
-type ChallengeType = "identify" | "compare" | "add" | "subtract" | "multiply" | "equivalent" | "simplify" | "mixed-to-improper" | "improper-to-mixed" | "fraction-of-number" | "gcf" | "lcm";
+type ChallengeType = "identify" | "compare" | "add" | "subtract" | "multiply" | "divide" | "equivalent" | "simplify" | "mixed-to-improper" | "improper-to-mixed" | "fraction-of-number" | "add-different-denoms" | "gcf" | "lcm";
 
 /** Visual hint level — fades as player progresses */
 type VisualHint = "full" | "reduced" | "none";
@@ -186,22 +186,162 @@ function gcd(a: number, b: number): number { return b === 0 ? a : gcd(b, a % b);
 
 function lcm(a: number, b: number): number { return (a * b) / gcd(a, b); }
 
+// ── Centralized grade-level configuration ──
+// Maps the adaptive level (1-50) to grade-appropriate fraction parameters.
+// This is the SINGLE source of truth for difficulty scaling.
+//
+// Level  1-3  → Grade 1-2 : halves, thirds, fourths only; same denominator
+// Level  4-7  → Grade 3   : fifths, sixths added; equivalent fractions
+// Level  8-12 → Grade 4   : eighths, tenths; start mixing different denominators (30%)
+// Level 13-18 → Grade 5   : all common denoms; different denoms common (60%); multiply
+// Level 19-25 → Grade 6   : larger denoms; different denoms dominant (80%); divide, simplify
+// Level 26-32 → Grade 7-8 : full range; different denoms (90%); all operations fluent
+// Level 33-40 → Grade 9-10: large denoms including primes; complex simplification
+// Level 41-50 → Grade 11+ : mastery; large/unusual denoms; near-100% different denoms
+
+interface LevelConfig {
+  /** Pool of denominators to choose from */
+  denomPool: number[];
+  /** Probability (0-1) that add/subtract uses DIFFERENT denominators */
+  diffDenomProb: number;
+  /** Max whole number for mixed number problems */
+  maxWhole: number;
+  /** Max multiplier for equivalent fraction generation */
+  maxEquivMult: number;
+  /** Max "whole number" target for fraction-of-number problems */
+  maxWholeNumber: number;
+  /** Number ranges for GCF/LCM problems [min, max] */
+  gcfLcmRange: [number, number];
+  /** Grade label for display */
+  gradeLabel: string;
+}
+
+function getLevelConfig(level: number): LevelConfig {
+  if (level <= 3) return {
+    denomPool: [2, 3, 4],
+    diffDenomProb: 0,
+    maxWhole: 2,
+    maxEquivMult: 2,
+    maxWholeNumber: 20,
+    gcfLcmRange: [4, 12],
+    gradeLabel: "Grade 1-2",
+  };
+  if (level <= 7) return {
+    denomPool: [2, 3, 4, 5, 6],
+    diffDenomProb: 0,
+    maxWhole: 3,
+    maxEquivMult: 3,
+    maxWholeNumber: 30,
+    gcfLcmRange: [4, 16],
+    gradeLabel: "Grade 3",
+  };
+  if (level <= 12) return {
+    denomPool: [2, 3, 4, 5, 6, 8, 10],
+    diffDenomProb: 0.35,
+    maxWhole: 4,
+    maxEquivMult: 4,
+    maxWholeNumber: 50,
+    gcfLcmRange: [6, 24],
+    gradeLabel: "Grade 4",
+  };
+  if (level <= 18) return {
+    denomPool: [2, 3, 4, 5, 6, 7, 8, 9, 10, 12],
+    diffDenomProb: 0.6,
+    maxWhole: 5,
+    maxEquivMult: 5,
+    maxWholeNumber: 60,
+    gcfLcmRange: [8, 36],
+    gradeLabel: "Grade 5",
+  };
+  if (level <= 25) return {
+    denomPool: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15],
+    diffDenomProb: 0.8,
+    maxWhole: 7,
+    maxEquivMult: 6,
+    maxWholeNumber: 80,
+    gcfLcmRange: [10, 48],
+    gradeLabel: "Grade 6",
+  };
+  if (level <= 32) return {
+    denomPool: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20],
+    diffDenomProb: 0.9,
+    maxWhole: 9,
+    maxEquivMult: 8,
+    maxWholeNumber: 120,
+    gcfLcmRange: [12, 60],
+    gradeLabel: "Grade 7-8",
+  };
+  if (level <= 40) return {
+    denomPool: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 25],
+    diffDenomProb: 0.95,
+    maxWhole: 12,
+    maxEquivMult: 10,
+    maxWholeNumber: 200,
+    gcfLcmRange: [15, 80],
+    gradeLabel: "Grade 9-10",
+  };
+  return {
+    denomPool: [3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 24, 25, 30, 36],
+    diffDenomProb: 0.97,
+    maxWhole: 15,
+    maxEquivMult: 12,
+    maxWholeNumber: 300,
+    gcfLcmRange: [20, 120],
+    gradeLabel: "Grade 11+",
+  };
+}
+
+/** Pick a random element from a denominator pool */
+function pickDenom(pool: number[]): number {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** Pick two DIFFERENT denominators from a pool */
+function pickTwoDenoms(pool: number[]): [number, number] {
+  const d1 = pickDenom(pool);
+  let d2: number;
+  let sc = 0;
+  do { d2 = pickDenom(pool); } while (d2 === d1 && sc++ < 50);
+  if (d2 === d1) d2 = pool[(pool.indexOf(d1) + 1) % pool.length];
+  return [d1, d2];
+}
+
+/** Format a fraction answer, simplifying and handling whole numbers */
+function formatAnswer(n: number, d: number): string {
+  if (n === 0) return "0";
+  const g = gcd(Math.abs(n), Math.abs(d));
+  const sn = n / g;
+  const sd = d / g;
+  if (sn === sd) return "1";
+  if (sd === 1) return `${sn}`;
+  return `${sn}/${sd}`;
+}
+
 function genIdentify(level: number, vh: VisualHint): Challenge {
-  const maxD = Math.min(3 + level, 12);
-  const d = Math.floor(Math.random() * (maxD - 1)) + 2;
-  const n = Math.floor(Math.random() * d) + 1;
+  const cfg = getLevelConfig(level);
+  const d = pickDenom(cfg.denomPool);
+  const n = Math.floor(Math.random() * (d - 1)) + 1;
 
   const wrongs: string[] = [];
+  const wrongCandidates = [
+    `${d}/${n}`, // swapped
+    `${Math.max(1, n - 1)}/${d}`,
+    `${Math.min(d, n + 1)}/${d}`,
+    `${n}/${Math.max(2, d - 1)}`,
+    `${n}/${d + 1}`,
+    `${n + 1}/${d + 1}`,
+  ];
+  for (const wc of wrongCandidates) {
+    if (wc !== `${n}/${d}` && !wrongs.includes(wc) && wrongs.length < 3) wrongs.push(wc);
+  }
   let _ls1 = 0;
   while (wrongs.length < 3 && _ls1++ < 200) {
     const wn = Math.floor(Math.random() * d) + 1;
-    const wd = d + (Math.random() > 0.5 ? 1 : -1) * (Math.random() > 0.5 ? 1 : 0);
-    const s = `${wn}/${Math.max(2, wd)}`;
+    const wd = pickDenom(cfg.denomPool);
+    const s = `${wn}/${wd}`;
     if (s !== `${n}/${d}` && !wrongs.includes(s)) wrongs.push(s);
   }
-  while (wrongs.length < 3) {
-    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
-  }
+  while (wrongs.length < 3) wrongs.push(`${wrongs.length + 1}/${wrongs.length + 3}`);
 
   return {
     type: "identify",
@@ -215,13 +355,13 @@ function genIdentify(level: number, vh: VisualHint): Challenge {
 }
 
 function genCompare(level: number, vh: VisualHint): Challenge {
-  const maxD = Math.min(4 + level, 12);
+  const cfg = getLevelConfig(level);
 
-  // ~25% chance of equal fractions (using equivalent fractions, not identical)
-  if (Math.random() < 0.25) {
-    const d1 = Math.floor(Math.random() * (maxD - 2)) + 2;
+  // ~20% chance of equal fractions (using equivalent fractions)
+  if (Math.random() < 0.20) {
+    const d1 = pickDenom(cfg.denomPool);
     const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-    const mult = Math.floor(Math.random() * 3) + 2;
+    const mult = Math.floor(Math.random() * Math.min(cfg.maxEquivMult, 4)) + 2;
     const n2 = n1 * mult;
     const d2 = d1 * mult;
     return {
@@ -235,79 +375,137 @@ function genCompare(level: number, vh: VisualHint): Challenge {
     };
   }
 
-  // Generate unequal fractions
-  const d1 = Math.floor(Math.random() * (maxD - 2)) + 2;
-  const d2 = Math.floor(Math.random() * (maxD - 2)) + 2;
+  // Unequal fractions — use different denominators based on level
+  const useDiffDenom = Math.random() < cfg.diffDenomProb;
+  let d1: number, d2: number;
+  if (useDiffDenom) {
+    [d1, d2] = pickTwoDenoms(cfg.denomPool);
+  } else {
+    d1 = pickDenom(cfg.denomPool);
+    d2 = d1;
+  }
   const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
   const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
   const v1 = n1 / d1;
   const v2 = n2 / d2;
   if (Math.abs(v1 - v2) < 0.01) return genCompare(level, vh);
   const larger = v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`;
-  const answer = larger;
   return {
     type: "compare",
     question: "Which fraction is larger?",
     visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
     choices: [`${n1}/${d1}`, `${n2}/${d2}`, "Equal"],
-    answer,
+    answer: larger,
     explanation: `Step 1: Convert to decimals — ${n1}/${d1} = ${v1.toFixed(3)}, ${n2}/${d2} = ${v2.toFixed(3)}.\nStep 2: ${v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`} is larger.\nCross-multiply: ${n1}×${d2} = ${n1 * d2} vs ${n2}×${d1} = ${n2 * d1} — ${n1 * d2 > n2 * d1 ? `${n1 * d2} > ${n2 * d1}` : `${n2 * d1} > ${n1 * d2}`}.`,
     visualHint: vh,
   };
 }
 
 function genAdd(level: number, vh: VisualHint): Challenge {
-  const d = Math.min(2 + Math.floor(level / 2), 10);
-  const n1 = Math.floor(Math.random() * (d - 1)) + 1;
-  const n2 = Math.floor(Math.random() * (d - n1)) + 1;
-  const sum = n1 + n2;
-  const g = gcd(sum, d);
-  const simplified = `${sum / g}/${d / g}`;
-  const unsimplified = `${sum}/${d}`;
-  const answer = sum === d ? "1" : sum / g === sum && d / g === d ? unsimplified : simplified;
+  const cfg = getLevelConfig(level);
+  const useDiffDenom = Math.random() < cfg.diffDenomProb;
 
-  const wrongs: string[] = [];
-  let _ls2 = 0;
-  while (wrongs.length < 3 && _ls2++ < 200) {
-    const wn = Math.floor(Math.random() * d) + 1;
-    const wd = d + (Math.random() > 0.5 ? 1 : 0);
-    const s = wn === wd ? "1" : `${wn}/${wd}`;
-    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
-  }
-  while (wrongs.length < 3) {
-    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
+  let d1: number, d2: number, n1: number, n2: number;
+  let question: string, explanation: string;
+  let answerN: number, answerD: number;
+  let isDiffDenom = false;
+
+  if (useDiffDenom) {
+    // DIFFERENT denominators — requires finding LCD
+    [d1, d2] = pickTwoDenoms(cfg.denomPool);
+    n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+    n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+    const lcd = lcm(d1, d2);
+    const adjN1 = n1 * (lcd / d1);
+    const adjN2 = n2 * (lcd / d2);
+    answerN = adjN1 + adjN2;
+    answerD = lcd;
+    isDiffDenom = true;
+    question = `${n1}/${d1} + ${n2}/${d2} = ?`;
+    explanation = `Step 1: Find LCD of ${d1} and ${d2} = ${lcd}.\nStep 2: Convert: ${n1}/${d1} = ${adjN1}/${lcd}, ${n2}/${d2} = ${adjN2}/${lcd}.\nStep 3: Add numerators: ${adjN1} + ${adjN2} = ${answerN}.`;
+  } else {
+    // Same denominator
+    const d = pickDenom(cfg.denomPool);
+    d1 = d; d2 = d;
+    n1 = Math.floor(Math.random() * (d - 1)) + 1;
+    n2 = Math.floor(Math.random() * Math.min(d - 1, d - n1 + 2)) + 1;
+    answerN = n1 + n2;
+    answerD = d;
+    question = `${n1}/${d} + ${n2}/${d} = ?`;
+    explanation = `Step 1: Same denominator (${d}) — add numerators: ${n1} + ${n2} = ${answerN}.\nStep 2: Result = ${answerN}/${answerD}.`;
   }
 
+  const answer = formatAnswer(answerN, answerD);
+  const g = gcd(answerN, answerD);
+  if (g > 1 && answerN !== answerD && answerD / g !== 1) {
+    explanation += `\nSimplify: GCF(${answerN}, ${answerD}) = ${g} → ${answerN}÷${g} / ${answerD}÷${g} = ${answer}.`;
+  } else if (answerN === answerD) {
+    explanation += `\n${answerN}/${answerD} = 1 (a whole!).`;
+  }
+
+  const wrongs = generatePlausibleWrongs(answer, n1, n2, d1, d2, answerN, answerD, cfg.denomPool);
   return {
     type: "add",
-    question: `${n1}/${d} + ${n2}/${d} = ?`,
-    visual: [{ n: n1, d }, { n: n2, d }],
+    question,
+    visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
     choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
     answer,
-    explanation: `Step 1: Same denominator (${d}) — add numerators: ${n1} + ${n2} = ${sum}.\nStep 2: Result = ${sum}/${d}.${sum !== d && g > 1 ? `\nStep 3: Simplify — GCF(${sum}, ${d}) = ${g}, so ${sum}÷${g} / ${d}÷${g} = ${simplified}.` : sum === d ? `\nStep 3: ${sum}/${d} = 1 (a whole!).` : ""}`,
+    explanation,
     visualHint: vh,
   };
 }
 
+/** Generate plausible wrong answers for arithmetic problems */
+function generatePlausibleWrongs(
+  answer: string, n1: number, n2: number, d1: number, d2: number,
+  ansN: number, ansD: number, denomPool: number[]
+): string[] {
+  const g = ansN === 0 ? 1 : gcd(Math.abs(ansN), ansD);
+  const simpN = ansN / g;
+  const simpD = ansD / g;
+  const wrongs: string[] = [];
+  const candidates = [
+    `${n1 + n2}/${d1 + d2}`,            // common mistake: add denoms too
+    formatAnswer(ansN + 1, ansD),        // off by one numerator
+    formatAnswer(Math.max(1, ansN - 1), ansD), // off by one
+    `${ansN}/${ansD}`,                   // unsimplified form
+    formatAnswer(simpN, simpD + 1),      // wrong denominator
+    formatAnswer(simpN + 1, simpD),      // off after simplify
+    formatAnswer(n1 * n2, d1 * d2),      // multiplied instead of added
+    `${Math.max(1, simpN - 1)}/${simpD}`,
+  ];
+  for (const wc of candidates) {
+    if (wc && wc !== answer && !wrongs.includes(wc) && wrongs.length < 3 && wc !== "0") wrongs.push(wc);
+  }
+  let sc = 0;
+  while (wrongs.length < 3 && sc++ < 100) {
+    const wn = Math.floor(Math.random() * 10) + 1;
+    const wd = denomPool[Math.floor(Math.random() * denomPool.length)];
+    const s = formatAnswer(wn, wd);
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) wrongs.push(`${wrongs.length + 2}/${wrongs.length + 5}`);
+  return wrongs;
+}
+
 function genEquivalent(level: number, vh: VisualHint): Challenge {
-  const d = Math.min(2 + level, 8);
+  const cfg = getLevelConfig(level);
+  const d = pickDenom(cfg.denomPool);
   const n = Math.floor(Math.random() * (d - 1)) + 1;
-  const mult = Math.floor(Math.random() * 3) + 2;
+  const mult = Math.floor(Math.random() * (cfg.maxEquivMult - 1)) + 2;
   const eqN = n * mult;
   const eqD = d * mult;
 
   const wrongs: string[] = [];
   let _ls3 = 0;
   while (wrongs.length < 3 && _ls3++ < 200) {
-    const wm = Math.floor(Math.random() * 4) + 2;
+    const wm = Math.floor(Math.random() * cfg.maxEquivMult) + 2;
     const wn = n * wm + (Math.random() > 0.5 ? 1 : -1);
     const wd = d * wm;
     const s = `${Math.max(1, wn)}/${wd}`;
     if (s !== `${eqN}/${eqD}` && !wrongs.includes(s)) wrongs.push(s);
   }
-  while (wrongs.length < 3) {
-    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
-  }
+  while (wrongs.length < 3) wrongs.push(`${wrongs.length + 2}/${wrongs.length + 5}`);
 
   return {
     type: "equivalent",
@@ -323,12 +521,12 @@ function genEquivalent(level: number, vh: VisualHint): Challenge {
 // ── NEW: Simplify fractions (uses GCF) ──
 
 function genSimplify(level: number, vh: VisualHint): Challenge {
-  const baseDenoms = [2, 3, 4, 5, 6, 8, 10, 12];
-  const d0 = baseDenoms[Math.min(level, baseDenoms.length - 1)];
+  const cfg = getLevelConfig(level);
+  const d0 = pickDenom(cfg.denomPool);
   const n0 = Math.floor(Math.random() * (d0 - 1)) + 1;
   const g = gcd(n0, d0);
   // Make sure we have something to simplify
-  const mult = g === 1 ? (Math.floor(Math.random() * 3) + 2) : 1;
+  const mult = g === 1 ? (Math.floor(Math.random() * (cfg.maxEquivMult - 1)) + 2) : 1;
   const n = n0 * mult;
   const d = d0 * mult;
   const simpN = n / gcd(n, d);
@@ -361,10 +559,8 @@ function genSimplify(level: number, vh: VisualHint): Challenge {
 // ── NEW: GCF (Greatest Common Factor) ──
 
 function genGCF(level: number, vh: VisualHint): Challenge {
-  const ranges = [
-    [4, 12], [6, 18], [8, 24], [10, 36], [12, 48],
-  ];
-  const [lo, hi] = ranges[Math.min(level - 1, ranges.length - 1)];
+  const cfg = getLevelConfig(level);
+  const [lo, hi] = cfg.gcfLcmRange;
   const a = lo + Math.floor(Math.random() * (hi - lo + 1));
   let b = lo + Math.floor(Math.random() * (hi - lo + 1));
   if (b === a) b = a + Math.floor(Math.random() * 4) + 1;
@@ -405,10 +601,10 @@ function getFactors(n: number): number[] {
 // ── NEW: LCM (Least Common Multiple) ──
 
 function genLCM(level: number, vh: VisualHint): Challenge {
-  const small = [2, 3, 4, 5, 6, 8, 9, 10, 12];
-  const a = small[Math.floor(Math.random() * Math.min(3 + level, small.length))];
-  let b = small[Math.floor(Math.random() * Math.min(3 + level, small.length))];
-  if (b === a) b = small[(small.indexOf(a) + 1) % small.length];
+  const cfg = getLevelConfig(level);
+  const a = pickDenom(cfg.denomPool);
+  let b = pickDenom(cfg.denomPool);
+  if (b === a) b = cfg.denomPool[(cfg.denomPool.indexOf(a) + 1) % cfg.denomPool.length];
   const ans = lcm(a, b);
 
   const wrongs: string[] = [];
@@ -451,33 +647,55 @@ function genLCM(level: number, vh: VisualHint): Challenge {
 // ── Subtract fractions (same denominator) ──
 
 function genSubtract(level: number, vh: VisualHint): Challenge {
-  const d = Math.min(2 + Math.floor(level / 2), 10);
-  const n1 = Math.floor(Math.random() * (d - 1)) + 2; // at least 2 so we can subtract
-  const n2 = Math.floor(Math.random() * (n1 - 1)) + 1; // smaller than n1
-  const diff = n1 - n2;
-  const g = gcd(diff, d);
-  const simplified = `${diff / g}/${d / g}`;
-  const answer = diff === 0 ? "0" : diff === d ? "1" : g > 1 ? simplified : `${diff}/${d}`;
+  const cfg = getLevelConfig(level);
+  const useDiffDenom = Math.random() < cfg.diffDenomProb;
 
-  const wrongs: string[] = [];
-  let _ls8 = 0;
-  while (wrongs.length < 3 && _ls8++ < 200) {
-    const wn = Math.floor(Math.random() * d) + 1;
-    const wd = d + (Math.random() > 0.5 ? 1 : 0);
-    const s = wn === wd ? "1" : `${wn}/${Math.max(2, wd)}`;
-    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
-  }
-  while (wrongs.length < 3) {
-    wrongs.push(wrongs.length === 0 ? "1/2" : `${wrongs.length + 1}/${wrongs.length + 2}`);
+  let d1: number, d2: number, n1: number, n2: number;
+  let question: string, explanation: string;
+  let answerN: number, answerD: number;
+
+  if (useDiffDenom) {
+    // Different denominators
+    [d1, d2] = pickTwoDenoms(cfg.denomPool);
+    n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+    n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+    // Ensure first fraction >= second fraction (positive result)
+    if (n1 / d1 < n2 / d2) { [n1, d1, n2, d2] = [n2, d2, n1, d1]; }
+    if (n1 / d1 === n2 / d2) n1 = Math.min(n1 + 1, d1);
+    const lcd = lcm(d1, d2);
+    const adjN1 = n1 * (lcd / d1);
+    const adjN2 = n2 * (lcd / d2);
+    answerN = adjN1 - adjN2;
+    answerD = lcd;
+    question = `${n1}/${d1} − ${n2}/${d2} = ?`;
+    explanation = `Step 1: Find LCD of ${d1} and ${d2} = ${lcd}.\nStep 2: Convert: ${n1}/${d1} = ${adjN1}/${lcd}, ${n2}/${d2} = ${adjN2}/${lcd}.\nStep 3: Subtract: ${adjN1} − ${adjN2} = ${answerN}.`;
+  } else {
+    const d = pickDenom(cfg.denomPool);
+    d1 = d; d2 = d;
+    n1 = Math.floor(Math.random() * (d - 1)) + 2;
+    if (n1 > d) n1 = d;
+    n2 = Math.floor(Math.random() * (n1 - 1)) + 1;
+    answerN = n1 - n2;
+    answerD = d;
+    question = `${n1}/${d} − ${n2}/${d} = ?`;
+    explanation = `Step 1: Same denominator (${d}) — subtract: ${n1} − ${n2} = ${answerN}.\nStep 2: Result = ${answerN}/${answerD}.`;
   }
 
+  if (answerN <= 0) answerN = 1;
+  const answer = formatAnswer(answerN, answerD);
+  const g = gcd(answerN, answerD);
+  if (g > 1 && answerN !== answerD && answerD / g !== 1) {
+    explanation += `\nSimplify: GCF(${answerN}, ${answerD}) = ${g} → ${answer}.`;
+  }
+
+  const wrongs = generatePlausibleWrongs(answer, n1, n2, d1, d2, answerN, answerD, cfg.denomPool);
   return {
     type: "subtract",
-    question: `${n1}/${d} − ${n2}/${d} = ?`,
-    visual: [{ n: n1, d }, { n: n2, d }],
+    question,
+    visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
     choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
     answer,
-    explanation: `Step 1: Same denominator (${d}) — subtract numerators: ${n1} − ${n2} = ${diff}.\nStep 2: Result = ${diff}/${d}.${g > 1 ? `\nStep 3: Simplify — GCF(${diff}, ${d}) = ${g}, so ${diff}÷${g} / ${d}÷${g} = ${simplified}.` : ""}`,
+    explanation,
     visualHint: vh,
   };
 }
@@ -485,9 +703,9 @@ function genSubtract(level: number, vh: VisualHint): Challenge {
 // ── Multiply two fractions ──
 
 function genMultiply(level: number, vh: VisualHint): Challenge {
-  const maxD = Math.min(3 + level, 8);
-  const d1 = Math.floor(Math.random() * (maxD - 1)) + 2;
-  const d2 = Math.floor(Math.random() * (maxD - 1)) + 2;
+  const cfg = getLevelConfig(level);
+  const d1 = pickDenom(cfg.denomPool);
+  const d2 = pickDenom(cfg.denomPool);
   const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
   const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
   const prodN = n1 * n2;
@@ -520,12 +738,113 @@ function genMultiply(level: number, vh: VisualHint): Challenge {
   };
 }
 
+// ── Divide two fractions (multiply by reciprocal) ──
+
+function genDivide(level: number, vh: VisualHint): Challenge {
+  const cfg = getLevelConfig(level);
+  const d1 = pickDenom(cfg.denomPool);
+  const d2 = pickDenom(cfg.denomPool);
+  const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+  const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+  // a/b ÷ c/d = a/b × d/c = (a*d)/(b*c)
+  const prodN = n1 * d2;
+  const prodD = d1 * n2;
+  const g = gcd(prodN, prodD);
+  const simpN = prodN / g;
+  const simpD = prodD / g;
+  const answer = simpN === simpD ? "1" : simpD === 1 ? `${simpN}` : `${simpN}/${simpD}`;
+
+  const wrongs: string[] = [];
+  const wrongCandidates = [
+    `${n1 * n2}/${d1 * d2}`, // multiplied instead of divided
+    `${Math.max(1, simpN + 1)}/${simpD}`,
+    `${Math.max(1, simpN - 1)}/${Math.max(2, simpD)}`,
+    `${simpN}/${Math.max(2, simpD + 1)}`,
+    `${simpD}/${Math.max(1, simpN)}`, // inverted
+  ];
+  for (const wc of wrongCandidates) {
+    if (wc !== answer && !wrongs.includes(wc) && wrongs.length < 3) wrongs.push(wc);
+  }
+  let _lsDiv = 0;
+  while (wrongs.length < 3 && _lsDiv++ < 200) {
+    const wn = Math.floor(Math.random() * 8) + 1;
+    const wd = Math.floor(Math.random() * 8) + 2;
+    const s = wn === wd ? "1" : `${wn}/${wd}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+  while (wrongs.length < 3) wrongs.push(`${wrongs.length + 1}/${wrongs.length + 3}`);
+
+  return {
+    type: "divide",
+    question: `${n1}/${d1} ÷ ${n2}/${d2} = ?`,
+    visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: "Keep, Change, Flip" — keep ${n1}/${d1}, change ÷ to ×, flip ${n2}/${d2} to ${d2}/${n2}.\nStep 2: Multiply: ${n1}×${d2} = ${prodN}, ${d1}×${n2} = ${prodD}.\nStep 3: ${prodN}/${prodD}${g > 1 ? ` → simplify by ${g} → ${answer}` : ` = ${answer}`}.`,
+    visualHint: vh,
+  };
+}
+
+// ── Add/Subtract with DIFFERENT denominators (focused practice) ──
+
+function genAddDifferentDenoms(level: number, vh: VisualHint): Challenge {
+  const cfg = getLevelConfig(level);
+
+  // Always different denominators in this mode
+  const [d1, d2] = pickTwoDenoms(cfg.denomPool);
+  let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+  let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+
+  const isAdd = Math.random() > 0.4;
+  const lcd = lcm(d1, d2);
+  const adjN1 = n1 * (lcd / d1);
+  const adjN2 = n2 * (lcd / d2);
+
+  let answerN: number, question: string, opExplanation: string;
+  let visD1 = d1, visD2 = d2, visN1 = n1, visN2 = n2;
+  if (isAdd) {
+    answerN = adjN1 + adjN2;
+    question = `${n1}/${d1} + ${n2}/${d2} = ?`;
+    opExplanation = `Step 3: Add: ${adjN1} + ${adjN2} = ${answerN}.`;
+  } else {
+    if (adjN1 >= adjN2) {
+      answerN = adjN1 - adjN2;
+      question = `${n1}/${d1} − ${n2}/${d2} = ?`;
+      opExplanation = `Step 3: Subtract: ${adjN1} − ${adjN2} = ${answerN}.`;
+    } else {
+      answerN = adjN2 - adjN1;
+      question = `${n2}/${d2} − ${n1}/${d1} = ?`;
+      opExplanation = `Step 3: Subtract: ${adjN2} − ${adjN1} = ${answerN}.`;
+      visN1 = n2; visD1 = d2; visN2 = n1; visD2 = d1;
+    }
+  }
+  const answerD = lcd;
+  const answer = formatAnswer(answerN, answerD);
+
+  let explanation = `Step 1: Find LCD of ${d1} and ${d2} = ${lcd}.\nStep 2: Convert: ${n1}/${d1} = ${adjN1}/${lcd}, ${n2}/${d2} = ${adjN2}/${lcd}.\n${opExplanation}`;
+  const g = answerN === 0 ? 1 : gcd(answerN, answerD);
+  if (g > 1 && answerN !== answerD && answerN > 0 && answerD / g !== 1) {
+    explanation += `\nStep 4: Simplify ${answerN}/${answerD} → ${answer} (÷${g}).`;
+  }
+
+  const wrongs = generatePlausibleWrongs(answer, visN1, visN2, visD1, visD2, answerN, answerD, cfg.denomPool);
+  return {
+    type: "add-different-denoms",
+    question,
+    visual: [{ n: visN1, d: visD1 }, { n: visN2, d: visD2 }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation,
+    visualHint: vh,
+  };
+}
+
 // ── Mixed number to improper fraction ──
 
 function genMixedToImproper(level: number, vh: VisualHint): Challenge {
-  const maxD = Math.min(3 + level, 8);
-  const d = Math.floor(Math.random() * (maxD - 1)) + 2;
-  const whole = Math.floor(Math.random() * 3) + 1;
+  const cfg = getLevelConfig(level);
+  const d = pickDenom(cfg.denomPool);
+  const whole = Math.floor(Math.random() * cfg.maxWhole) + 1;
   const n = Math.floor(Math.random() * (d - 1)) + 1;
   const impN = whole * d + n;
   const answer = `${impN}/${d}`;
@@ -555,9 +874,9 @@ function genMixedToImproper(level: number, vh: VisualHint): Challenge {
 // ── Improper fraction to mixed number ──
 
 function genImproperToMixed(level: number, vh: VisualHint): Challenge {
-  const maxD = Math.min(3 + level, 8);
-  const d = Math.floor(Math.random() * (maxD - 1)) + 2;
-  const whole = Math.floor(Math.random() * 3) + 1;
+  const cfg = getLevelConfig(level);
+  const d = pickDenom(cfg.denomPool);
+  const whole = Math.floor(Math.random() * cfg.maxWhole) + 1;
   const remainder = Math.floor(Math.random() * (d - 1)) + 1;
   const impN = whole * d + remainder;
   const answer = `${whole} ${remainder}/${d}`;
@@ -588,11 +907,11 @@ function genImproperToMixed(level: number, vh: VisualHint): Challenge {
 // ── Fraction of a number ──
 
 function genFractionOfNumber(level: number, vh: VisualHint): Challenge {
-  const denoms = [2, 3, 4, 5, 6, 8, 10];
-  const d = denoms[Math.min(level - 1, denoms.length - 1)];
+  const cfg = getLevelConfig(level);
+  const d = pickDenom(cfg.denomPool);
   const n = Math.floor(Math.random() * (d - 1)) + 1;
-  const multiples = [d, d * 2, d * 3, d * 4, d * 5].filter(m => m <= 50);
-  const whole = multiples[Math.floor(Math.random() * multiples.length)];
+  const multiples = Array.from({ length: 10 }, (_, i) => d * (i + 1)).filter(m => m <= cfg.maxWholeNumber);
+  const whole = multiples.length > 0 ? multiples[Math.floor(Math.random() * multiples.length)] : d;
   const answer = String((n * whole) / d);
 
   const wrongs: string[] = [];
@@ -621,8 +940,9 @@ function genFractionOfNumber(level: number, vh: VisualHint): Challenge {
 function generateChallenge(level: number, types: ChallengeType[], solved: number, diff: string, showHints: boolean): Challenge {
   const type = types[Math.floor(Math.random() * types.length)];
   const vh = getVisualHint(solved, diff, showHints);
-  // Difficulty scales effective level
-  const effLevel = diff === "beginner" ? Math.max(1, level - 1) : diff === "advanced" ? level + 2 : diff === "expert" ? level + 4 : level;
+  // The adaptive level IS the difficulty — getLevelConfig maps it to grade-appropriate content.
+  // No artificial offset needed; the starting level is set based on chosen difficulty tier.
+  const effLevel = Math.max(1, level);
   switch (type) {
     case "identify": return genIdentify(effLevel, vh);
     case "compare": return genCompare(effLevel, vh);
@@ -634,6 +954,8 @@ function generateChallenge(level: number, types: ChallengeType[], solved: number
     case "mixed-to-improper": return genMixedToImproper(effLevel, vh);
     case "improper-to-mixed": return genImproperToMixed(effLevel, vh);
     case "fraction-of-number": return genFractionOfNumber(effLevel, vh);
+    case "divide": return genDivide(effLevel, vh);
+    case "add-different-denoms": return genAddDifferentDenoms(effLevel, vh);
     case "gcf": return genGCF(effLevel, vh);
     case "lcm": return genLCM(effLevel, vh);
   }
@@ -642,16 +964,18 @@ function generateChallenge(level: number, types: ChallengeType[], solved: number
 const CHALLENGE_SETS = [
   { label: "Identify", emoji: "👀", desc: "Name the fraction shown", types: ["identify"] as ChallengeType[], color: "#22c55e" },
   { label: "Compare", emoji: "⚖️", desc: "Which fraction is larger? (includes equal!)", types: ["compare"] as ChallengeType[], color: "#3b82f6" },
-  { label: "Add", emoji: "➕", desc: "Add fractions together", types: ["add"] as ChallengeType[], color: "#f59e0b" },
-  { label: "Subtract", emoji: "➖", desc: "Subtract fractions", types: ["subtract"] as ChallengeType[], color: "#ef4444" },
+  { label: "Add", emoji: "➕", desc: "Add fractions — evolves from same to different denominators", types: ["add"] as ChallengeType[], color: "#f59e0b" },
+  { label: "Subtract", emoji: "➖", desc: "Subtract fractions — adapts to your level", types: ["subtract"] as ChallengeType[], color: "#ef4444" },
+  { label: "LCD Practice", emoji: "🧩", desc: "Add/subtract with DIFFERENT denominators — always! Master the LCD", types: ["add-different-denoms"] as ChallengeType[], color: "#d97706" },
   { label: "Multiply", emoji: "✖️", desc: "Multiply two fractions", types: ["multiply"] as ChallengeType[], color: "#10b981" },
+  { label: "Divide", emoji: "➗", desc: "Divide fractions — Keep, Change, Flip!", types: ["divide"] as ChallengeType[], color: "#0ea5e9" },
   { label: "Equivalent", emoji: "🔄", desc: "Find equal fractions", types: ["equivalent"] as ChallengeType[], color: "#a855f7" },
   { label: "Simplify", emoji: "✂️", desc: "Reduce to lowest terms", types: ["simplify"] as ChallengeType[], color: "#06b6d4" },
   { label: "Mixed ↔ Improper", emoji: "🔀", desc: "Convert between mixed and improper fractions", types: ["mixed-to-improper", "improper-to-mixed"] as ChallengeType[], color: "#f97316" },
   { label: "Fraction of Number", emoji: "🎯", desc: "What is 3/4 of 20?", types: ["fraction-of-number"] as ChallengeType[], color: "#14b8a6" },
   { label: "GCF", emoji: "🔢", desc: "Greatest Common Factor", types: ["gcf"] as ChallengeType[], color: "#8b5cf6" },
   { label: "LCM", emoji: "📐", desc: "Least Common Multiple", types: ["lcm"] as ChallengeType[], color: "#ec4899" },
-  { label: "Mixed", emoji: "🎲", desc: "All challenge types", types: ["identify", "compare", "add", "subtract", "multiply", "equivalent", "simplify", "mixed-to-improper", "improper-to-mixed", "fraction-of-number", "gcf", "lcm"] as ChallengeType[], color: "#ef4444" },
+  { label: "All Operations", emoji: "🎲", desc: "Everything mixed — the ultimate fraction challenge!", types: ["identify", "compare", "add", "subtract", "multiply", "divide", "equivalent", "simplify", "mixed-to-improper", "improper-to-mixed", "fraction-of-number", "add-different-denoms", "gcf", "lcm"] as ChallengeType[], color: "#ef4444" },
 ];
 
 const FRACTION_TIPS: Record<ChallengeType, string[]> = {
@@ -686,6 +1010,22 @@ const FRACTION_TIPS: Record<ChallengeType, string[]> = {
     "You can cross-cancel before multiplying to simplify.",
     "Multiplying by a fraction less than 1 makes the result smaller.",
     "A fraction times its reciprocal always equals 1.",
+  ],
+  divide: [
+    "To divide fractions: Keep the first, Change ÷ to ×, Flip the second.",
+    "2/3 ÷ 4/5 = 2/3 × 5/4 = 10/12 = 5/6.",
+    "Dividing by a fraction less than 1 makes the result LARGER.",
+    "Any number divided by itself equals 1.",
+    "The reciprocal of a/b is b/a — just flip it!",
+    "Dividing by 1/2 is the same as multiplying by 2.",
+  ],
+  "add-different-denoms": [
+    "When denominators differ, find the LCD (Least Common Denominator) first!",
+    "1/3 + 1/4: LCD = 12, so 4/12 + 3/12 = 7/12.",
+    "The LCD is the LCM of the two denominators.",
+    "Multiply each fraction's top and bottom by whatever makes the denominator equal the LCD.",
+    "A common mistake is adding the denominators — don't do that!",
+    "2/5 + 1/3: LCD = 15 → 6/15 + 5/15 = 11/15.",
   ],
   equivalent: [
     "Multiply both numerator and denominator by the same number to get an equivalent fraction.",
@@ -772,6 +1112,18 @@ export function FractionLabGame() {
   const [pendingStart, setPendingStart] = useState<{ types: ChallengeType[]; idx: number; diff: string; showHints: boolean; timed: boolean; timePerQ: number; practice: boolean } | null>(null);
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
 
+  // Map difficulty tier to starting adaptive level (= grade bracket)
+  // These directly index into getLevelConfig's grade tiers
+  const getStartLevel = useCallback((diff: string) => {
+    switch (diff) {
+      case "beginner": return 1;        // Grade 1-2: halves, thirds, fourths
+      case "intermediate": return 8;     // Grade 4: eighths, tenths, intro different denoms
+      case "advanced": return 19;        // Grade 6: all denoms, different denoms dominant
+      case "expert": return 33;          // Grade 9-10: large denoms, near-100% different denoms
+      default: return 1;
+    }
+  }, []);
+
   useEffect(() => {
     if (challenge) setTipIdx(Math.floor(Math.random() * 100));
   }, [challenge]);
@@ -793,6 +1145,7 @@ export function FractionLabGame() {
     if (phase !== "countdown") return;
     if (pendingStart?.practice) {
       // Practice mode: skip countdown, go straight to playing
+      const startLvl = getStartLevel(pendingStart.diff);
       setChallengeTypes(pendingStart.types);
       setSetIdx(pendingStart.idx);
       setScore(0);
@@ -802,14 +1155,14 @@ export function FractionLabGame() {
       setStreak(0);
       setBestStreak(0);
             setShowHeartRecovery(false);
-            setLevel(1);
-            setAdaptive(createAdaptiveState(1));
+            setLevel(startLvl);
+            setAdaptive(createAdaptiveState(startLvl));
             setAchievementQueue([]);
             setShowAchievementIndex(0);
             setPracticeCorrect(0);
             setPracticeTotal(0);
             setPracticeWaiting(false);
-            setChallenge(generateChallenge(1, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
+            setChallenge(generateChallenge(startLvl, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
             setTimePerQuestion(0);
             setFeedback(null);
             setSelectedAnswer(null);
@@ -819,8 +1172,9 @@ export function FractionLabGame() {
     }
     const t = setTimeout(() => {
       setCountdown((c) => {
-        if (c <= 1) {
+          if (c <= 1) {
           if (pendingStart) {
+            const startLvl = getStartLevel(pendingStart.diff);
             setChallengeTypes(pendingStart.types);
             setSetIdx(pendingStart.idx);
             setScore(0);
@@ -830,14 +1184,14 @@ export function FractionLabGame() {
             setStreak(0);
             setBestStreak(0);
             setShowHeartRecovery(false);
-            setLevel(1);
-            setAdaptive(createAdaptiveState(1));
+            setLevel(startLvl);
+            setAdaptive(createAdaptiveState(startLvl));
             setAchievementQueue([]);
             setShowAchievementIndex(0);
             setPracticeCorrect(0);
             setPracticeTotal(0);
             setPracticeWaiting(false);
-            setChallenge(generateChallenge(1, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
+            setChallenge(generateChallenge(startLvl, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
             if (pendingStart.timed && pendingStart.timePerQ > 0) {
               setTimePerQuestion(pendingStart.timePerQ);
             } else {
@@ -1046,29 +1400,32 @@ export function FractionLabGame() {
               </button>
             </div>
 
-            {/* Difficulty selector */}
+            {/* Difficulty selector — maps to grade level */}
             <div className="space-y-2">
-              <div className="text-xs text-slate-400 text-left">Difficulty</div>
+              <div className="text-xs text-slate-400 text-left">Starting Level</div>
               <div className="grid grid-cols-4 gap-1.5">
-                {(["beginner", "intermediate", "advanced", "expert"] as const).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setDifficulty(d)}
-                    className={`px-2 py-2 rounded-lg text-xs font-medium capitalize transition-all ${
-                      difficulty === d
-                        ? "bg-orange-500/20 text-orange-400 border border-orange-400/30"
-                        : "text-slate-500 hover:text-white bg-white/[0.03] border border-white/5"
-                    }`}
-                  >
-                    {d}
-                  </button>
-                ))}
+                {(["beginner", "intermediate", "advanced", "expert"] as const).map((d) => {
+                  const labels = { beginner: "Grade 1-3", intermediate: "Grade 4-5", advanced: "Grade 6-8", expert: "Grade 9-11" };
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => setDifficulty(d)}
+                      className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                        difficulty === d
+                          ? "bg-orange-500/20 text-orange-400 border border-orange-400/30"
+                          : "text-slate-500 hover:text-white bg-white/[0.03] border border-white/5"
+                      }`}
+                    >
+                      {labels[d]}
+                    </button>
+                  );
+                })}
               </div>
               <div className="text-[10px] text-slate-600">
-                {difficulty === "beginner" && "Small denominators (2-6), generous visual hints"}
-                {difficulty === "intermediate" && "Medium denominators (2-10), hints fade faster"}
-                {difficulty === "advanced" && "Larger denominators (2-12), minimal hints"}
-                {difficulty === "expert" && "Full range (2-16), no visual hints, tougher problems"}
+                {difficulty === "beginner" && "Halves, thirds, fourths. Same denominator. Visual hints. Builds foundation."}
+                {difficulty === "intermediate" && "Larger denoms (2-10). Introduces different-denominator addition. LCD practice."}
+                {difficulty === "advanced" && "All denominators. Different denoms in 80% of problems. Multiply, divide, simplify."}
+                {difficulty === "expert" && "Large/prime denoms. Nearly all different-denominator. Complex multi-step problems."}
               </div>
             </div>
 
@@ -1174,9 +1531,10 @@ export function FractionLabGame() {
             <div className="text-xs text-slate-500 text-center -mt-2">
               {(() => {
                 const dl = getDifficultyLabel(adaptive.level);
+                const gl = getLevelConfig(Math.max(1, Math.round(adaptive.level))).gradeLabel;
                 return (
-                  <span className="inline-flex items-center gap-2">
-                    <span>Lvl {adaptive.level.toFixed(1)} · {solved} solved</span>
+                  <span className="inline-flex items-center gap-2 flex-wrap justify-center">
+                    <span>{gl} · Lvl {adaptive.level.toFixed(1)} · {solved} solved</span>
                     <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ color: dl.color, backgroundColor: dl.color + "15" }}>{dl.emoji} {dl.label}</span>
                     {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
                       <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
@@ -1347,10 +1705,11 @@ export function FractionLabGame() {
             <h3 className="text-2xl font-bold text-white">Game Over</h3>
             <div className="text-4xl font-bold text-orange-400">{score}</div>
 
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-3 text-center">
               <div><div className="text-xl font-bold text-white">{solved}</div><div className="text-[10px] text-slate-500 uppercase">Solved</div></div>
               <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
               <div><div className="text-xl font-bold text-cyan-400">{adaptive.level.toFixed(1)}</div><div className="text-[10px] text-slate-500 uppercase">Difficulty</div></div>
+              <div><div className="text-sm font-bold text-orange-400">{getLevelConfig(Math.max(1, Math.round(adaptive.level))).gradeLabel}</div><div className="text-[10px] text-slate-500 uppercase">Level Reached</div></div>
             </div>
 
             {score >= highScore && score > 0 && (
