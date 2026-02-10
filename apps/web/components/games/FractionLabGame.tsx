@@ -738,51 +738,143 @@ function genMultiply(level: number, vh: VisualHint): Challenge {
   };
 }
 
-// ── Divide two fractions (multiply by reciprocal) ──
+// ── Divide fractions ──
+// Grade 5 (level ≤18): fraction ÷ whole number only  (3/4 ÷ 2)
+// Grade 6  (level ≤25): adds whole ÷ fraction          (6 ÷ 3/4)
+// Grade 7+ (level >25): all three variants including fraction ÷ fraction
 
 function genDivide(level: number, vh: VisualHint): Challenge {
   const cfg = getLevelConfig(level);
+
+  // Decide variant based on grade level
+  type DivVariant = "frac_div_whole" | "whole_div_frac" | "frac_div_frac";
+  let variant: DivVariant;
+  if (level <= 18) {
+    // Grade 5: only fraction ÷ whole number
+    variant = "frac_div_whole";
+  } else if (level <= 25) {
+    // Grade 6: fraction ÷ whole (40%), whole ÷ fraction (30%), fraction ÷ fraction (30%)
+    const r = Math.random();
+    variant = r < 0.4 ? "frac_div_whole" : r < 0.7 ? "whole_div_frac" : "frac_div_frac";
+  } else {
+    // Grade 7+: all three roughly equal, slightly more frac÷frac
+    const r = Math.random();
+    variant = r < 0.25 ? "frac_div_whole" : r < 0.5 ? "whole_div_frac" : "frac_div_frac";
+  }
+
+  let question: string, explanation: string, answer: string;
+  let visuals: { n: number; d: number }[];
+
+  if (variant === "frac_div_whole") {
+    // a/b ÷ c = a/b × 1/c = a/(b*c)
+    const d = pickDenom(cfg.denomPool);
+    const n = Math.floor(Math.random() * (d - 1)) + 1;
+    const whole = Math.floor(Math.random() * Math.min(cfg.maxWhole, 6)) + 2;
+    const ansN = n;
+    const ansD = d * whole;
+    answer = formatAnswer(ansN, ansD);
+    question = `${n}/${d} ÷ ${whole} = ?`;
+    explanation = `Step 1: Dividing by ${whole} = multiplying by 1/${whole}.\nStep 2: ${n}/${d} × 1/${whole} = ${n}/${d * whole}.`;
+    const g = gcd(ansN, ansD);
+    if (g > 1) explanation += `\nStep 3: Simplify: ${ansN}÷${g} / ${ansD}÷${g} = ${answer}.`;
+    visuals = [{ n, d }];
+
+    // Generate wrongs specific to this variant
+    const wrongs: string[] = [];
+    const wrongCandidates = [
+      formatAnswer(n * whole, d),          // multiplied instead of divided
+      formatAnswer(n, d + whole),           // added denominator
+      formatAnswer(n + whole, d),           // added to numerator
+      formatAnswer(Math.max(1, n - 1), ansD),
+      formatAnswer(n, ansD + 1),
+    ];
+    for (const wc of wrongCandidates) {
+      if (wc && wc !== answer && !wrongs.includes(wc) && wrongs.length < 3) wrongs.push(wc);
+    }
+    let sc = 0;
+    while (wrongs.length < 3 && sc++ < 100) {
+      const wn = Math.floor(Math.random() * 8) + 1;
+      const wd = pickDenom(cfg.denomPool) * (Math.floor(Math.random() * 3) + 1);
+      const s = formatAnswer(wn, wd);
+      if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+    }
+    while (wrongs.length < 3) wrongs.push(`${wrongs.length + 1}/${wrongs.length + 5}`);
+
+    return { type: "divide", question, visual: visuals, choices: [...wrongs, answer].sort(() => Math.random() - 0.5), answer, explanation, visualHint: vh };
+  }
+
+  if (variant === "whole_div_frac") {
+    // c ÷ a/b = c × b/a = (c*b)/a
+    const d = pickDenom(cfg.denomPool);
+    const n = Math.floor(Math.random() * (d - 1)) + 1;
+    const whole = Math.floor(Math.random() * Math.min(cfg.maxWhole, 8)) + 1;
+    const ansN = whole * d;
+    const ansD = n;
+    answer = formatAnswer(ansN, ansD);
+    question = `${whole} ÷ ${n}/${d} = ?`;
+    explanation = `Step 1: "Keep, Change, Flip" — ${whole} ÷ ${n}/${d} = ${whole} × ${d}/${n}.\nStep 2: ${whole} × ${d}/${n} = ${whole * d}/${n}.`;
+    const g = gcd(ansN, ansD);
+    if (ansD !== 1 && g > 1) explanation += `\nStep 3: Simplify: ${ansN}÷${g} / ${ansD}÷${g} = ${answer}.`;
+    else if (ansD === 1 || g === ansD) explanation += `\nStep 3: = ${answer}.`;
+    visuals = [{ n: whole, d: 1 }, { n, d }];
+
+    const wrongs: string[] = [];
+    const wrongCandidates = [
+      formatAnswer(whole * n, d),           // multiplied wrong way
+      formatAnswer(whole, d * n),           // divided wrong way
+      `${Math.max(1, parseInt(answer) - 1)}`,
+      `${parseInt(answer) + 1}`,
+      formatAnswer(whole + n, d),
+    ];
+    for (const wc of wrongCandidates) {
+      if (wc && wc !== answer && !wrongs.includes(wc) && wrongs.length < 3 && wc !== "NaN") wrongs.push(wc);
+    }
+    let sc = 0;
+    while (wrongs.length < 3 && sc++ < 100) {
+      const wn = Math.floor(Math.random() * 12) + 1;
+      const wd = Math.random() > 0.5 ? 1 : pickDenom(cfg.denomPool);
+      const s = formatAnswer(wn, wd);
+      if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+    }
+    while (wrongs.length < 3) wrongs.push(`${wrongs.length + 2}/${wrongs.length + 5}`);
+
+    return { type: "divide", question, visual: visuals, choices: [...wrongs, answer].sort(() => Math.random() - 0.5), answer, explanation, visualHint: vh };
+  }
+
+  // variant === "frac_div_frac": a/b ÷ c/d = a/b × d/c = (a*d)/(b*c)
   const d1 = pickDenom(cfg.denomPool);
   const d2 = pickDenom(cfg.denomPool);
   const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
   const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-  // a/b ÷ c/d = a/b × d/c = (a*d)/(b*c)
   const prodN = n1 * d2;
   const prodD = d1 * n2;
+  answer = formatAnswer(prodN, prodD);
+  question = `${n1}/${d1} ÷ ${n2}/${d2} = ?`;
   const g = gcd(prodN, prodD);
-  const simpN = prodN / g;
-  const simpD = prodD / g;
-  const answer = simpN === simpD ? "1" : simpD === 1 ? `${simpN}` : `${simpN}/${simpD}`;
+  explanation = `Step 1: "Keep, Change, Flip" — keep ${n1}/${d1}, change ÷ to ×, flip ${n2}/${d2} to ${d2}/${n2}.\nStep 2: Multiply: ${n1}×${d2} = ${prodN}, ${d1}×${n2} = ${prodD}.\nStep 3: ${prodN}/${prodD}${g > 1 ? ` → simplify by ${g} → ${answer}` : ` = ${answer}`}.`;
+  visuals = [{ n: n1, d: d1 }, { n: n2, d: d2 }];
 
   const wrongs: string[] = [];
   const wrongCandidates = [
-    `${n1 * n2}/${d1 * d2}`, // multiplied instead of divided
-    `${Math.max(1, simpN + 1)}/${simpD}`,
-    `${Math.max(1, simpN - 1)}/${Math.max(2, simpD)}`,
-    `${simpN}/${Math.max(2, simpD + 1)}`,
-    `${simpD}/${Math.max(1, simpN)}`, // inverted
+    formatAnswer(n1 * n2, d1 * d2),      // multiplied instead of divided
+    formatAnswer(prodN + 1, prodD),
+    formatAnswer(Math.max(1, prodN - 1), prodD),
+    formatAnswer(prodD, prodN),            // inverted
+    formatAnswer(prodN, prodD + 1),
   ];
   for (const wc of wrongCandidates) {
-    if (wc !== answer && !wrongs.includes(wc) && wrongs.length < 3) wrongs.push(wc);
+    if (wc && wc !== answer && !wrongs.includes(wc) && wrongs.length < 3) wrongs.push(wc);
   }
   let _lsDiv = 0;
-  while (wrongs.length < 3 && _lsDiv++ < 200) {
-    const wn = Math.floor(Math.random() * 8) + 1;
-    const wd = Math.floor(Math.random() * 8) + 2;
-    const s = wn === wd ? "1" : `${wn}/${wd}`;
+  while (wrongs.length < 3 && _lsDiv++ < 100) {
+    const wn = Math.floor(Math.random() * 10) + 1;
+    const wd = pickDenom(cfg.denomPool);
+    const s = formatAnswer(wn, wd);
     if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
   }
   while (wrongs.length < 3) wrongs.push(`${wrongs.length + 1}/${wrongs.length + 3}`);
 
-  return {
-    type: "divide",
-    question: `${n1}/${d1} ÷ ${n2}/${d2} = ?`,
-    visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
-    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
-    answer,
-    explanation: `Step 1: "Keep, Change, Flip" — keep ${n1}/${d1}, change ÷ to ×, flip ${n2}/${d2} to ${d2}/${n2}.\nStep 2: Multiply: ${n1}×${d2} = ${prodN}, ${d1}×${n2} = ${prodD}.\nStep 3: ${prodN}/${prodD}${g > 1 ? ` → simplify by ${g} → ${answer}` : ` = ${answer}`}.`,
-    visualHint: vh,
-  };
+  return { type: "divide", question, visual: visuals, choices: [...wrongs, answer].sort(() => Math.random() - 0.5), answer, explanation, visualHint: vh };
 }
 
 // ── Add/Subtract with DIFFERENT denominators (focused practice) ──
@@ -968,7 +1060,7 @@ const CHALLENGE_SETS = [
   { label: "Subtract", emoji: "➖", desc: "Subtract fractions — adapts to your level", types: ["subtract"] as ChallengeType[], color: "#ef4444" },
   { label: "LCD Practice", emoji: "🧩", desc: "Add/subtract with DIFFERENT denominators — always! Master the LCD", types: ["add-different-denoms"] as ChallengeType[], color: "#d97706" },
   { label: "Multiply", emoji: "✖️", desc: "Multiply two fractions", types: ["multiply"] as ChallengeType[], color: "#10b981" },
-  { label: "Divide", emoji: "➗", desc: "Divide fractions — Keep, Change, Flip!", types: ["divide"] as ChallengeType[], color: "#0ea5e9" },
+  { label: "Divide", emoji: "➗", desc: "Divide fractions, whole numbers — Keep, Change, Flip!", types: ["divide"] as ChallengeType[], color: "#0ea5e9" },
   { label: "Equivalent", emoji: "🔄", desc: "Find equal fractions", types: ["equivalent"] as ChallengeType[], color: "#a855f7" },
   { label: "Simplify", emoji: "✂️", desc: "Reduce to lowest terms", types: ["simplify"] as ChallengeType[], color: "#06b6d4" },
   { label: "Mixed ↔ Improper", emoji: "🔀", desc: "Convert between mixed and improper fractions", types: ["mixed-to-improper", "improper-to-mixed"] as ChallengeType[], color: "#f97316" },
@@ -1018,6 +1110,9 @@ const FRACTION_TIPS: Record<ChallengeType, string[]> = {
     "Any number divided by itself equals 1.",
     "The reciprocal of a/b is b/a — just flip it!",
     "Dividing by 1/2 is the same as multiplying by 2.",
+    "3/4 ÷ 2 = 3/4 × 1/2 = 3/8. Dividing a fraction by a whole number makes it smaller.",
+    "6 ÷ 3/4 = 6 × 4/3 = 24/3 = 8. Dividing by a fraction less than 1 gives a BIGGER result!",
+    "To divide a fraction by a whole number: multiply the denominator by that number.",
   ],
   "add-different-denoms": [
     "When denominators differ, find the LCD (Least Common Denominator) first!",
