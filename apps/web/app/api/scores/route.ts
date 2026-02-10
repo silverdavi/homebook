@@ -25,8 +25,8 @@ const MAX_SCORES_PER_GAME = 50;
 const VALID_GAMES = [
   "letter-rain", "word-builder",
   "math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter",
-  "element-match", "equation-balancer", "genetics-lab", "unit-converter",
-  "timeline-dash",
+  "element-match", "equation-balancer", "genetics-lab", "unit-converter", "science-study",
+  "timeline-dash", "geography",
   "maze-runner", "trace-learn", "color-lab", "connect-dots", "scratch-reveal",
   "sudoku", "crossword", "word-search", "trivia-quiz", "nonogram", "number-puzzle",
   "daily-challenge",

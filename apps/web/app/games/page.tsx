@@ -70,10 +70,11 @@ const SECTIONS: Section[] = [
     gradient: "from-blue-400 to-violet-400",
     borderAccent: "border-blue-500/20",
     games: [
+      { title: "Science Study", description: "Learn chemistry, biology, physics & earth science with adaptive quizzes!", emoji: "🔬", iconId: "science-study", href: "/games/science-study", color: "#6366f1", available: true, badge: "NEW", grade: "4-12" },
       { title: "Element Match", description: "Match element symbols to names. Memory meets chemistry!", emoji: "🧪", iconId: "element-match", href: "/games/element-match", color: "#3b82f6", available: true, grade: "5-9" },
-      { title: "Equation Balancer", description: "Balance chemical equations. Conservation of mass!", emoji: "⚖️", iconId: "equation-balancer", href: "/games/equation-balancer", color: "#8b5cf6", available: true, badge: "NEW", grade: "7-12" },
-      { title: "Genetics Lab", description: "Punnett squares, offspring ratios, Mendelian genetics.", emoji: "🧬", iconId: "genetics-lab", href: "/games/genetics-lab", color: "#22c55e", available: true, badge: "NEW", grade: "7-12" },
-      { title: "Unit Converter", description: "Race to convert between units of length, mass, and more.", emoji: "📏", iconId: "unit-converter", href: "/games/unit-converter", color: "#0ea5e9", available: true, badge: "NEW", grade: "4-8" },
+      { title: "Equation Balancer", description: "Balance chemical equations. Conservation of mass!", emoji: "⚖️", iconId: "equation-balancer", href: "/games/equation-balancer", color: "#8b5cf6", available: true, grade: "7-12" },
+      { title: "Genetics Lab", description: "Punnett squares, offspring ratios, Mendelian genetics.", emoji: "🧬", iconId: "genetics-lab", href: "/games/genetics-lab", color: "#22c55e", available: true, grade: "7-12" },
+      { title: "Unit Converter", description: "Race to convert between units of length, mass, and more.", emoji: "📏", iconId: "unit-converter", href: "/games/unit-converter", color: "#0ea5e9", available: true, grade: "4-8" },
     ],
   },
   {
@@ -85,6 +86,7 @@ const SECTIONS: Section[] = [
     gradient: "from-purple-400 to-pink-400",
     borderAccent: "border-purple-500/20",
     games: [
+      { title: "Geography Challenge", description: "Learn world capitals, countries, rivers, mountains & landmarks!", emoji: "🌍", iconId: "geography", href: "/games/geography", color: "#06b6d4", available: true, badge: "NEW", grade: "3-9" },
       { title: "Timeline Dash", description: "Place historical events in the right order on a timeline.", emoji: "🕰️", iconId: "timeline-dash", href: "/games/timeline-dash", color: "#8b5cf6", available: true, grade: "4-9" },
     ],
   },

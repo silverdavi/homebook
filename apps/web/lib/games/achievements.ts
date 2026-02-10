@@ -174,6 +174,22 @@ export const MEDALS: MedalDef[] = [
     silver: { requirement: "Score 1500", check: (c) => c.stats.gameId === "unit-converter" && (c.stats.score ?? 0) >= 1500 },
     gold: { requirement: "Score 4000", check: (c) => c.stats.gameId === "unit-converter" && (c.stats.score ?? 0) >= 4000 },
   },
+  // ── Science Study ──
+  {
+    id: "science-scholar",
+    name: "Science Scholar",
+    bronze: { requirement: "Score 500 in Science Study", check: (c) => c.stats.gameId === "science-study" && (c.stats.score ?? 0) >= 500 },
+    silver: { requirement: "Score 2000", check: (c) => c.stats.gameId === "science-study" && (c.stats.score ?? 0) >= 2000 },
+    gold: { requirement: "Score 5000", check: (c) => c.stats.gameId === "science-study" && (c.stats.score ?? 0) >= 5000 },
+  },
+  // ── Geography ──
+  {
+    id: "world-explorer",
+    name: "World Explorer",
+    bronze: { requirement: "Score 500 in Geography", check: (c) => c.stats.gameId === "geography" && (c.stats.score ?? 0) >= 500 },
+    silver: { requirement: "Score 2000", check: (c) => c.stats.gameId === "geography" && (c.stats.score ?? 0) >= 2000 },
+    gold: { requirement: "Score 5000", check: (c) => c.stats.gameId === "geography" && (c.stats.score ?? 0) >= 5000 },
+  },
   // ── History / Creative / Puzzles ──
   {
     id: "historian",
@@ -201,8 +217,8 @@ export const MEDALS: MedalDef[] = [
 const GAME_IDS = [
   "letter-rain", "word-builder",
   "math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter",
-  "element-match", "equation-balancer", "genetics-lab", "unit-converter",
-  "timeline-dash",
+  "element-match", "equation-balancer", "genetics-lab", "unit-converter", "science-study",
+  "timeline-dash", "geography",
   "maze-runner", "trace-learn", "color-lab", "connect-dots", "scratch-reveal",
   "sudoku", "crossword", "word-search", "trivia-quiz", "nonogram", "number-puzzle",
   "daily-challenge",
