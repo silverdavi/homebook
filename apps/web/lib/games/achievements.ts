@@ -235,6 +235,24 @@ export function setAchievement(medalId: string, tier: MedalTier): void {
   } catch {
     // ignore
   }
+  // Sync to server if logged in
+  syncAchievementToServer(medalId, tier);
+}
+
+/** Sync achievement to server profile (fire-and-forget). */
+function syncAchievementToServer(medalId: string, tier: MedalTier): void {
+  try {
+    const profileId = typeof window !== "undefined" ? localStorage.getItem("activeProfileId") : null;
+    if (!profileId) return;
+
+    fetch(`/api/profiles/${profileId}/achievements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ medalId, tier }),
+    }).catch(() => {});
+  } catch {
+    // Ignore
+  }
 }
 
 export function getMedalDef(id: string): MedalDef | undefined {

@@ -123,8 +123,24 @@ export function getProfile(): PlayerProfile {
   }
 }
 
+/** Sync game progress to server profile (fire-and-forget). */
+function syncProgressToServer(gameId: string, score: number, stats?: { bestStreak?: number; adaptiveLevel?: number }): void {
+  try {
+    const profileId = typeof window !== "undefined" ? localStorage.getItem("activeProfileId") : null;
+    if (!profileId) return; // Guest mode, no sync
+
+    fetch(`/api/profiles/${profileId}/progress`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId, score, ...stats }),
+    }).catch(() => {}); // Fire and forget
+  } catch {
+    // Ignore
+  }
+}
+
 /** Call when a game ends to update profile counts (for achievements and profile modal). */
-export function trackGamePlayed(gameId: string, score: number = 0): void {
+export function trackGamePlayed(gameId: string, score: number = 0, stats?: { bestStreak?: number; adaptiveLevel?: number }): void {
   try {
     const profile = getProfile();
     profile.totalGamesPlayed += 1;
@@ -134,4 +150,6 @@ export function trackGamePlayed(gameId: string, score: number = 0): void {
   } catch {
     // Ignore
   }
+  // Also sync to server if logged in
+  syncProgressToServer(gameId, score, stats);
 }

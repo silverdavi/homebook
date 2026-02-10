@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GamesProviders } from "./GamesProviders";
 
 export const metadata: Metadata = {
   title: "Game Arena | teacher.ninja",
@@ -16,5 +17,5 @@ export default function GamesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <GamesProviders>{children}</GamesProviders>;
 }
