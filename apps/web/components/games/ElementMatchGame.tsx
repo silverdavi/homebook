@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Clock } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Clock, BookOpen } from "lucide-react";
 import { trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick, sfxCountdownGo } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 import { getElementsByDifficulty } from "@/lib/games/science-data";
 
@@ -21,6 +22,13 @@ interface Card {
   type: "symbol" | "name";
   flipped: boolean;
   matched: boolean;
+}
+
+/** Map adaptive level (1-50) to element difficulty tier */
+function getElementDifficulty(level: number): Difficulty {
+  if (level < 4) return "easy";
+  if (level < 10) return "medium";
+  return "hard";
 }
 
 function createCards(pairCount: number, difficulty: Difficulty): Card[] {
@@ -82,6 +90,12 @@ export function ElementMatchGame() {
   const [countdown, setCountdown] = useState(3);
   const [pendingStart, setPendingStart] = useState<{ pairs: number; cols: number; difficulty: Difficulty } | null>(null);
 
+  // ── Adaptive difficulty ──
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
+  // ── Practice mode ──
+  const [isPractice, setIsPractice] = useState(false);
+
   useEffect(() => {
     if (phase !== "playing") return;
     const t = setInterval(() => setChemTipIdx((i) => (i + 1) % CHEMISTRY_TIPS.length), 6000);
@@ -91,14 +105,16 @@ export function ElementMatchGame() {
   useEffect(() => {
     if (phase !== "won") return;
     const scoreVal = Math.max(1, 1000 - elapsed * 10 - moves * 5);
-    trackGamePlayed("element-match", scoreVal);
-    const profile = getProfile();
-    const newOnes = checkAchievements(
-      { gameId: "element-match", timeSeconds: elapsed, elapsed, moves, totalPairs },
-      profile.totalGamesPlayed,
-      profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+    if (!isPractice) {
+      trackGamePlayed("element-match", scoreVal);
+      const profile = getProfile();
+      const newOnes = checkAchievements(
+        { gameId: "element-match", timeSeconds: elapsed, elapsed, moves, totalPairs },
+        profile.totalGamesPlayed,
+        profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+    }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on won
 
   // Countdown
@@ -108,7 +124,8 @@ export function ElementMatchGame() {
       setCountdown((c) => {
         if (c <= 1) {
           if (pendingStart) {
-            setCards(createCards(pendingStart.pairs, pendingStart.difficulty));
+            const diff = getElementDifficulty(adaptive.level);
+            setCards(createCards(pendingStart.pairs, diff));
             setFlippedIds([]);
             setMoves(0);
             setMatchedPairs(0);
@@ -127,7 +144,7 @@ export function ElementMatchGame() {
       });
     }, 800);
     return () => clearTimeout(t);
-  }, [phase, countdown, pendingStart]);
+  }, [phase, countdown, pendingStart, adaptive.level]);
 
   // Timer
   useEffect(() => {
@@ -136,11 +153,34 @@ export function ElementMatchGame() {
     return () => clearInterval(t);
   }, [phase]);
 
-  const startGame = useCallback((pairCount: number, cols: number, difficulty: Difficulty = "easy") => {
+  const startGame = useCallback((pairCount: number, cols: number, difficulty: Difficulty = "easy", practice = false) => {
+    setIsPractice(practice);
     setPendingStart({ pairs: pairCount, cols, difficulty });
     setCurrentDifficulty(difficulty);
     setCountdown(3);
-    setPhase("countdown");
+
+    // Map initial difficulty to an adaptive starting level
+    const startLevel = difficulty === "easy" ? 1 : difficulty === "medium" ? 5 : 10;
+    setAdaptive(createAdaptiveState(startLevel));
+
+    if (practice) {
+      // Skip countdown in practice mode
+      const diff = getElementDifficulty(startLevel);
+      setCards(createCards(pairCount, diff));
+      setFlippedIds([]);
+      setMoves(0);
+      setMatchedPairs(0);
+      setTotalPairs(pairCount);
+      setElapsed(0);
+      setGridCols(cols);
+      setAchievementQueue([]);
+      setShowAchievementIndex(0);
+      setPendingStart(null);
+      setPhase("playing");
+      sfxCountdownGo();
+    } else {
+      setPhase("countdown");
+    }
   }, []);
 
   const handleCardClick = useCallback(
@@ -163,6 +203,7 @@ export function ElementMatchGame() {
         if (first.pairId === second.pairId) {
           // Match!
           sfxCorrect();
+          setAdaptive(prev => adaptiveUpdate(prev, true, false));
           setTimeout(() => {
             // Guard: only proceed if still playing
             setPhase(currentPhase => {
@@ -179,15 +220,17 @@ export function ElementMatchGame() {
                   sfxLevelUp();
                   setPhase("won");
                   // Save best time
-                  const key = `${totalPairs}`;
-                  setBestTime((prev) => {
-                    const newBest = { ...prev };
-                    if (!newBest[key] || elapsed < newBest[key]) {
-                      newBest[key] = elapsed;
-                      localStorage.setItem("elementMatch_best", JSON.stringify(newBest));
-                    }
-                    return newBest;
-                  });
+                  if (!isPractice) {
+                    const key = `${totalPairs}`;
+                    setBestTime((prev) => {
+                      const newBest = { ...prev };
+                      if (!newBest[key] || elapsed < newBest[key]) {
+                        newBest[key] = elapsed;
+                        localStorage.setItem("elementMatch_best", JSON.stringify(newBest));
+                      }
+                      return newBest;
+                    });
+                  }
                 }
                 return nm;
               });
@@ -197,6 +240,7 @@ export function ElementMatchGame() {
         } else {
           // No match
           sfxWrong();
+          setAdaptive(prev => adaptiveUpdate(prev, false, false));
           setTimeout(() => {
             // Guard: only proceed if still playing
             setPhase(currentPhase => {
@@ -213,10 +257,12 @@ export function ElementMatchGame() {
         }
       }
     },
-    [phase, cards, flippedIds, totalPairs, elapsed]
+    [phase, cards, flippedIds, totalPairs, elapsed, isPractice]
   );
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const dl = getDifficultyLabel(adaptive.level);
+  const scoreVal = Math.max(1, 1000 - elapsed * 10 - moves * 5);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 flex flex-col items-center">
@@ -251,6 +297,15 @@ export function ElementMatchGame() {
                 </button>
               ))}
             </div>
+            {/* Practice mode button */}
+            <div className="mt-4 max-w-xs mx-auto">
+              <button
+                onClick={() => startGame(6, 4, "easy", true)}
+                className="w-full py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 hover:border-emerald-400/50 text-emerald-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
+            </div>
           </div>
         )}
 
@@ -273,11 +328,34 @@ export function ElementMatchGame() {
                 <Clock className="w-4 h-4" />
                 <span className="tabular-nums text-white font-bold">{formatTime(elapsed)}</span>
               </div>
+
+              {/* Adaptive difficulty badge */}
+              <div className="flex items-center gap-1.5">
+                <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                  {dl.emoji} {dl.label}
+                </div>
+                {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
+              </div>
+
               <div className="text-slate-400">
                 {matchedPairs}/{totalPairs} matched
               </div>
               <div className="text-slate-400">{moves} moves</div>
             </div>
+
+            {/* Practice mode indicator + end button */}
+            {isPractice && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-emerald-400 font-medium">Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">
+                  End Practice
+                </button>
+              </div>
+            )}
 
             {/* Chemistry tip */}
             <div className="text-center text-[11px] text-slate-500 italic px-2">
@@ -320,18 +398,21 @@ export function ElementMatchGame() {
           <div className="text-center">
             <div className="text-5xl mb-4">🎉</div>
             <h3 className="text-3xl font-bold text-white mb-2">Complete!</h3>
-            <div className="space-y-1 text-slate-300 mb-6">
+            <div className="space-y-1 text-slate-300 mb-2">
               <p className="text-2xl font-bold text-blue-400">{formatTime(elapsed)}</p>
               <p>{moves} moves</p>
-              {bestTime[String(totalPairs)] === elapsed && (
+              {!isPractice && bestTime[String(totalPairs)] === elapsed && (
                 <p className="text-yellow-400 flex items-center justify-center gap-1 mt-2">
                   <Trophy className="w-4 h-4" /> New Best Time!
                 </p>
               )}
             </div>
-            <div className="mb-3">
-              <ScoreSubmit game="element-match" score={Math.max(1, 1000 - elapsed * 10 - moves * 5)} level={totalPairs} stats={{ time: formatTime(elapsed), moves }} />
-            </div>
+            <p className="text-slate-400 mb-6 text-sm">Final difficulty: <span className="text-white font-bold">{adaptive.level.toFixed(1)}</span> {dl.emoji} {dl.label}</p>
+            {!isPractice && (
+              <div className="mb-3">
+                <ScoreSubmit game="element-match" score={scoreVal} level={totalPairs} stats={{ time: formatTime(elapsed), moves, finalDifficulty: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -344,7 +425,7 @@ export function ElementMatchGame() {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => startGame(totalPairs, gridCols, currentDifficulty)}
+                onClick={() => startGame(totalPairs, gridCols, currentDifficulty, isPractice)}
                 className="px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" /> Again

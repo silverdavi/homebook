@@ -9,10 +9,11 @@ import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/component
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdownGo } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getFractionParams, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
-type ChallengeType = "identify" | "compare" | "add" | "equivalent" | "simplify" | "gcf" | "lcm";
+type ChallengeType = "identify" | "compare" | "add" | "subtract" | "multiply" | "equivalent" | "simplify" | "mixed-to-improper" | "improper-to-mixed" | "fraction-of-number" | "gcf" | "lcm";
 
 /** Visual hint level — fades as player progresses */
 type VisualHint = "full" | "reduced" | "none";
@@ -27,11 +28,14 @@ interface Challenge {
   visualHint: VisualHint;
 }
 
-/** Determine visual hint level based on how many problems solved */
-function getVisualHint(solved: number): VisualHint {
-  if (solved < 6) return "full";     // First ~6 problems: full visuals with labels
-  if (solved < 14) return "reduced"; // Next ~8: smaller visuals, no labels
-  return "none";                     // After that: pure number work
+/** Determine visual hint level based on difficulty and toggle */
+function getVisualHint(solved: number, difficulty: string, showHints: boolean): VisualHint {
+  if (!showHints) return "none";
+  if (difficulty === "expert") return "none";
+  if (difficulty === "advanced") return solved < 4 ? "reduced" : "none";
+  if (difficulty === "intermediate") return solved < 6 ? "full" : solved < 14 ? "reduced" : "none";
+  // beginner: generous visuals
+  return solved < 10 ? "full" : solved < 20 ? "reduced" : "none";
 }
 
 // ── Visual fraction bar ──
@@ -53,6 +57,55 @@ function FractionBar({
   showLabel?: boolean;
   animate?: boolean;
 }) {
+  // For improper fractions (n > d), show multiple bars
+  const wholeBars = Math.floor(n / d);
+  const remainder = n % d;
+  const barCount = wholeBars + (remainder > 0 ? 1 : 0);
+
+  if (barCount > 1) {
+    return (
+      <div className="flex flex-col items-center gap-1" style={{ width }}>
+        <div className="flex gap-1 w-full">
+          {Array.from({ length: barCount }).map((_, barIdx) => {
+            const filled = barIdx < wholeBars ? d : remainder;
+            return (
+              <div
+                key={barIdx}
+                className="flex-1 rounded-lg overflow-hidden border border-white/20 relative"
+                style={{ height }}
+              >
+                {Array.from({ length: d }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute top-0 bottom-0"
+                    style={{
+                      left: `${(i / d) * 100}%`,
+                      width: `${(1 / d) * 100}%`,
+                      borderRight: i < d - 1 ? "1px solid rgba(255,255,255,0.15)" : "none",
+                    }}
+                  >
+                    <div
+                      className={`h-full ${animate ? "transition-all duration-500" : ""}`}
+                      style={{
+                        backgroundColor: i < filled ? color : "rgba(255,255,255,0.05)",
+                        opacity: i < filled ? 0.8 : 1,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+        {showLabel && (
+          <span className="text-xs text-slate-400 tabular-nums">
+            {n}/{d}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-1" style={{ width }}>
       <div
@@ -91,7 +144,7 @@ function FractionBar({
 
 // ── Pie fraction visual ──
 
-function FractionPie({ n, d, color, size = 80 }: { n: number; d: number; color: string; size?: number }) {
+function FractionPie({ n, d, color, size = 80, showLabel = false }: { n: number; d: number; color: string; size?: number; showLabel?: boolean }) {
   const sliceAngle = 360 / d;
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -118,9 +171,11 @@ function FractionPie({ n, d, color, size = 80 }: { n: number; d: number; color: 
           );
         })}
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-white/80">{n}/{d}</span>
-      </div>
+      {showLabel && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-bold text-white/80">{n}/{d}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -150,31 +205,49 @@ function genIdentify(level: number, vh: VisualHint): Challenge {
     visual: [{ n, d }],
     choices: [...wrongs, `${n}/${d}`].sort(() => Math.random() - 0.5),
     answer: `${n}/${d}`,
-    explanation: `${n} out of ${d} parts are filled = ${n}/${d}`,
+    explanation: `Step 1: Count the shaded parts — ${n}.\nStep 2: Count the total parts — ${d}.\nStep 3: Write as a fraction: ${n}/${d} (${(n / d * 100).toFixed(0)}% of the whole).`,
     visualHint: vh,
   };
 }
 
 function genCompare(level: number, vh: VisualHint): Challenge {
   const maxD = Math.min(4 + level, 12);
+
+  // ~25% chance of equal fractions (using equivalent fractions, not identical)
+  if (Math.random() < 0.25) {
+    const d1 = Math.floor(Math.random() * (maxD - 2)) + 2;
+    const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+    const mult = Math.floor(Math.random() * 3) + 2;
+    const n2 = n1 * mult;
+    const d2 = d1 * mult;
+    return {
+      type: "compare",
+      question: "Which fraction is larger?",
+      visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
+      choices: [`${n1}/${d1}`, `${n2}/${d2}`, "Equal"],
+      answer: "Equal",
+      explanation: `Step 1: Convert to decimals — ${n1}/${d1} = ${(n1 / d1).toFixed(3)} and ${n2}/${d2} = ${(n2 / d2).toFixed(3)}.\nStep 2: They are equal! ${n2}/${d2} simplifies to ${n1}/${d1} (divide top and bottom by ${mult}).\nCross-multiply check: ${n1}×${d2} = ${n1 * d2} and ${n2}×${d1} = ${n2 * d1} — equal!`,
+      visualHint: vh,
+    };
+  }
+
+  // Generate unequal fractions
   const d1 = Math.floor(Math.random() * (maxD - 2)) + 2;
   const d2 = Math.floor(Math.random() * (maxD - 2)) + 2;
   const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
   const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
   const v1 = n1 / d1;
   const v2 = n2 / d2;
-
   if (Math.abs(v1 - v2) < 0.01) return genCompare(level, vh);
-
-  const answer = v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`;
-
+  const larger = v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`;
+  const answer = larger;
   return {
     type: "compare",
     question: "Which fraction is larger?",
     visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
     choices: [`${n1}/${d1}`, `${n2}/${d2}`, "Equal"],
     answer,
-    explanation: `${n1}/${d1} = ${(v1).toFixed(3)}, ${n2}/${d2} = ${(v2).toFixed(3)}`,
+    explanation: `Step 1: Convert to decimals — ${n1}/${d1} = ${v1.toFixed(3)}, ${n2}/${d2} = ${v2.toFixed(3)}.\nStep 2: ${v1 > v2 ? `${n1}/${d1}` : `${n2}/${d2}`} is larger.\nCross-multiply: ${n1}×${d2} = ${n1 * d2} vs ${n2}×${d1} = ${n2 * d1} — ${n1 * d2 > n2 * d1 ? `${n1 * d2} > ${n2 * d1}` : `${n2 * d1} > ${n1 * d2}`}.`,
     visualHint: vh,
   };
 }
@@ -203,7 +276,7 @@ function genAdd(level: number, vh: VisualHint): Challenge {
     visual: [{ n: n1, d }, { n: n2, d }],
     choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
     answer,
-    explanation: `${n1}/${d} + ${n2}/${d} = ${sum}/${d}${sum !== d && g > 1 ? ` = ${simplified}` : ""}`,
+    explanation: `Step 1: Same denominator (${d}) — add numerators: ${n1} + ${n2} = ${sum}.\nStep 2: Result = ${sum}/${d}.${sum !== d && g > 1 ? `\nStep 3: Simplify — GCF(${sum}, ${d}) = ${g}, so ${sum}÷${g} / ${d}÷${g} = ${simplified}.` : sum === d ? `\nStep 3: ${sum}/${d} = 1 (a whole!).` : ""}`,
     visualHint: vh,
   };
 }
@@ -230,7 +303,7 @@ function genEquivalent(level: number, vh: VisualHint): Challenge {
     visual: [{ n, d }],
     choices: [...wrongs, `${eqN}/${eqD}`].sort(() => Math.random() - 0.5),
     answer: `${eqN}/${eqD}`,
-    explanation: `${n}/${d} × ${mult}/${mult} = ${eqN}/${eqD}`,
+    explanation: `Step 1: Multiply numerator and denominator by ${mult}.\nStep 2: ${n}×${mult} = ${eqN}, ${d}×${mult} = ${eqD}.\nStep 3: ${n}/${d} = ${eqN}/${eqD} — same value, different form!`,
     visualHint: vh,
   };
 }
@@ -264,7 +337,7 @@ function genSimplify(level: number, vh: VisualHint): Challenge {
     visual: [{ n, d }],
     choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
     answer,
-    explanation: `GCF(${n}, ${d}) = ${gcd(n, d)}, so ${n}÷${gcd(n, d)} / ${d}÷${gcd(n, d)} = ${answer}`,
+    explanation: `Step 1: Find GCF(${n}, ${d}) = ${gcd(n, d)}.\nStep 2: Divide numerator: ${n} ÷ ${gcd(n, d)} = ${n / gcd(n, d)}.\nStep 3: Divide denominator: ${d} ÷ ${gcd(n, d)} = ${d / gcd(n, d)}.\nResult: ${answer}.`,
     visualHint: vh,
   };
 }
@@ -296,7 +369,7 @@ function genGCF(level: number, vh: VisualHint): Challenge {
     visual: [{ n: a, d: a }, { n: b, d: b }], // placeholder — visuals are custom for GCF
     choices: [...wrongs, String(ans)].sort(() => Math.random() - 0.5),
     answer: String(ans),
-    explanation: `Factors of ${a}: ${getFactors(a).join(", ")}. Factors of ${b}: ${getFactors(b).join(", ")}. GCF = ${ans}`,
+    explanation: `Step 1: Factors of ${a} = {${getFactors(a).join(", ")}}.\nStep 2: Factors of ${b} = {${getFactors(b).join(", ")}}.\nStep 3: Common factors = {${getFactors(a).filter(f => b % f === 0).join(", ")}}.\nGreatest = ${ans}.`,
     visualHint: vh,
   };
 }
@@ -341,34 +414,193 @@ function genLCM(level: number, vh: VisualHint): Challenge {
     visual: [{ n: a, d: a }, { n: b, d: b }], // placeholder
     choices: [...wrongs, String(ans)].sort(() => Math.random() - 0.5),
     answer: String(ans),
-    explanation: `Multiples of ${a}: ${multiplesA.join(", ")}… Multiples of ${b}: ${multiplesB.join(", ")}… LCM = ${ans}`,
+    explanation: `Step 1: Multiples of ${a}: ${multiplesA.join(", ")}…\nStep 2: Multiples of ${b}: ${multiplesB.join(", ")}…\nStep 3: Smallest common multiple = ${ans}.\nShortcut: LCM = (${a}×${b}) ÷ GCF(${a},${b}) = ${a * b} ÷ ${gcd(a, b)} = ${ans}.`,
     visualHint: vh,
   };
 }
 
-function generateChallenge(level: number, types: ChallengeType[], solved: number): Challenge {
+// ── Subtract fractions (same denominator) ──
+
+function genSubtract(level: number, vh: VisualHint): Challenge {
+  const d = Math.min(2 + Math.floor(level / 2), 10);
+  const n1 = Math.floor(Math.random() * (d - 1)) + 2; // at least 2 so we can subtract
+  const n2 = Math.floor(Math.random() * (n1 - 1)) + 1; // smaller than n1
+  const diff = n1 - n2;
+  const g = gcd(diff, d);
+  const simplified = `${diff / g}/${d / g}`;
+  const answer = diff === 0 ? "0" : diff === d ? "1" : g > 1 ? simplified : `${diff}/${d}`;
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const wn = Math.floor(Math.random() * d) + 1;
+    const wd = d + (Math.random() > 0.5 ? 1 : 0);
+    const s = wn === wd ? "1" : `${wn}/${Math.max(2, wd)}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+
+  return {
+    type: "subtract",
+    question: `${n1}/${d} − ${n2}/${d} = ?`,
+    visual: [{ n: n1, d }, { n: n2, d }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: Same denominator (${d}) — subtract numerators: ${n1} − ${n2} = ${diff}.\nStep 2: Result = ${diff}/${d}.${g > 1 ? `\nStep 3: Simplify — GCF(${diff}, ${d}) = ${g}, so ${diff}÷${g} / ${d}÷${g} = ${simplified}.` : ""}`,
+    visualHint: vh,
+  };
+}
+
+// ── Multiply two fractions ──
+
+function genMultiply(level: number, vh: VisualHint): Challenge {
+  const maxD = Math.min(3 + level, 8);
+  const d1 = Math.floor(Math.random() * (maxD - 1)) + 2;
+  const d2 = Math.floor(Math.random() * (maxD - 1)) + 2;
+  const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+  const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+  const prodN = n1 * n2;
+  const prodD = d1 * d2;
+  const g = gcd(prodN, prodD);
+  const simpN = prodN / g;
+  const simpD = prodD / g;
+  const answer = simpN === simpD ? "1" : simpD === 1 ? `${simpN}` : `${simpN}/${simpD}`;
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const wn = Math.max(1, simpN + Math.floor(Math.random() * 5) - 2);
+    const wd = Math.max(2, simpD + Math.floor(Math.random() * 5) - 2);
+    const s = wn === wd ? "1" : wd === 1 ? `${wn}` : `${wn}/${wd}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+
+  return {
+    type: "multiply",
+    question: `${n1}/${d1} × ${n2}/${d2} = ?`,
+    visual: [{ n: n1, d: d1 }, { n: n2, d: d2 }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: Multiply numerators: ${n1} × ${n2} = ${prodN}.\nStep 2: Multiply denominators: ${d1} × ${d2} = ${prodD}.\nStep 3: ${prodN}/${prodD}${g > 1 ? ` — simplify by GCF(${prodN},${prodD})=${g} → ${answer}` : ""}.`,
+    visualHint: vh,
+  };
+}
+
+// ── Mixed number to improper fraction ──
+
+function genMixedToImproper(level: number, vh: VisualHint): Challenge {
+  const maxD = Math.min(3 + level, 8);
+  const d = Math.floor(Math.random() * (maxD - 1)) + 2;
+  const whole = Math.floor(Math.random() * 3) + 1;
+  const n = Math.floor(Math.random() * (d - 1)) + 1;
+  const impN = whole * d + n;
+  const answer = `${impN}/${d}`;
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const w = impN + Math.floor(Math.random() * 5) - 2;
+    const s = `${Math.max(1, w)}/${d}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+
+  return {
+    type: "mixed-to-improper",
+    question: `Convert ${whole} ${n}/${d} to an improper fraction`,
+    visual: [{ n: impN, d }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: Multiply whole by denominator: ${whole} × ${d} = ${whole * d}.\nStep 2: Add the numerator: ${whole * d} + ${n} = ${impN}.\nStep 3: Keep the denominator: ${impN}/${d}.\nSo ${whole} ${n}/${d} = ${impN}/${d}.`,
+    visualHint: vh,
+  };
+}
+
+// ── Improper fraction to mixed number ──
+
+function genImproperToMixed(level: number, vh: VisualHint): Challenge {
+  const maxD = Math.min(3 + level, 8);
+  const d = Math.floor(Math.random() * (maxD - 1)) + 2;
+  const whole = Math.floor(Math.random() * 3) + 1;
+  const remainder = Math.floor(Math.random() * (d - 1)) + 1;
+  const impN = whole * d + remainder;
+  const answer = `${whole} ${remainder}/${d}`;
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const ww = whole + Math.floor(Math.random() * 3) - 1;
+    const wr = Math.max(1, remainder + Math.floor(Math.random() * 3) - 1);
+    const s = `${Math.max(1, ww)} ${Math.min(wr, d - 1)}/${d}`;
+    if (s !== answer && !wrongs.includes(s)) wrongs.push(s);
+  }
+
+  return {
+    type: "improper-to-mixed",
+    question: `Convert ${impN}/${d} to a mixed number`,
+    visual: [{ n: impN, d }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: Divide ${impN} ÷ ${d} = ${whole} remainder ${remainder}.\nStep 2: Whole number = ${whole}, remainder = ${remainder}.\nStep 3: ${impN}/${d} = ${whole} ${remainder}/${d}.`,
+    visualHint: vh,
+  };
+}
+
+// ── Fraction of a number ──
+
+function genFractionOfNumber(level: number, vh: VisualHint): Challenge {
+  const denoms = [2, 3, 4, 5, 6, 8, 10];
+  const d = denoms[Math.min(level - 1, denoms.length - 1)];
+  const n = Math.floor(Math.random() * (d - 1)) + 1;
+  const multiples = [d, d * 2, d * 3, d * 4, d * 5].filter(m => m <= 50);
+  const whole = multiples[Math.floor(Math.random() * multiples.length)];
+  const answer = String((n * whole) / d);
+
+  const wrongs: string[] = [];
+  while (wrongs.length < 3) {
+    const w = parseInt(answer) + Math.floor(Math.random() * 7) - 3;
+    if (String(w) !== answer && w > 0 && !wrongs.includes(String(w))) wrongs.push(String(w));
+  }
+
+  return {
+    type: "fraction-of-number",
+    question: `What is ${n}/${d} of ${whole}?`,
+    visual: [{ n, d }],
+    choices: [...wrongs, answer].sort(() => Math.random() - 0.5),
+    answer,
+    explanation: `Step 1: Divide ${whole} by the denominator: ${whole} ÷ ${d} = ${whole / d}.\nStep 2: Multiply by the numerator: ${whole / d} × ${n} = ${answer}.\nSo ${n}/${d} of ${whole} = ${answer}. (Same as ${n}/${d} × ${whole}.)`,
+    visualHint: vh,
+  };
+}
+
+function generateChallenge(level: number, types: ChallengeType[], solved: number, diff: string, showHints: boolean): Challenge {
   const type = types[Math.floor(Math.random() * types.length)];
-  const vh = getVisualHint(solved);
+  const vh = getVisualHint(solved, diff, showHints);
+  // Difficulty scales effective level
+  const effLevel = diff === "beginner" ? Math.max(1, level - 1) : diff === "advanced" ? level + 2 : diff === "expert" ? level + 4 : level;
   switch (type) {
-    case "identify": return genIdentify(level, vh);
-    case "compare": return genCompare(level, vh);
-    case "add": return genAdd(level, vh);
-    case "equivalent": return genEquivalent(level, vh);
-    case "simplify": return genSimplify(level, vh);
-    case "gcf": return genGCF(level, vh);
-    case "lcm": return genLCM(level, vh);
+    case "identify": return genIdentify(effLevel, vh);
+    case "compare": return genCompare(effLevel, vh);
+    case "add": return genAdd(effLevel, vh);
+    case "subtract": return genSubtract(effLevel, vh);
+    case "multiply": return genMultiply(effLevel, vh);
+    case "equivalent": return genEquivalent(effLevel, vh);
+    case "simplify": return genSimplify(effLevel, vh);
+    case "mixed-to-improper": return genMixedToImproper(effLevel, vh);
+    case "improper-to-mixed": return genImproperToMixed(effLevel, vh);
+    case "fraction-of-number": return genFractionOfNumber(effLevel, vh);
+    case "gcf": return genGCF(effLevel, vh);
+    case "lcm": return genLCM(effLevel, vh);
   }
 }
 
 const CHALLENGE_SETS = [
   { label: "Identify", emoji: "👀", desc: "Name the fraction shown", types: ["identify"] as ChallengeType[], color: "#22c55e" },
-  { label: "Compare", emoji: "⚖️", desc: "Which fraction is larger?", types: ["compare"] as ChallengeType[], color: "#3b82f6" },
+  { label: "Compare", emoji: "⚖️", desc: "Which fraction is larger? (includes equal!)", types: ["compare"] as ChallengeType[], color: "#3b82f6" },
   { label: "Add", emoji: "➕", desc: "Add fractions together", types: ["add"] as ChallengeType[], color: "#f59e0b" },
+  { label: "Subtract", emoji: "➖", desc: "Subtract fractions", types: ["subtract"] as ChallengeType[], color: "#ef4444" },
+  { label: "Multiply", emoji: "✖️", desc: "Multiply two fractions", types: ["multiply"] as ChallengeType[], color: "#10b981" },
   { label: "Equivalent", emoji: "🔄", desc: "Find equal fractions", types: ["equivalent"] as ChallengeType[], color: "#a855f7" },
-  { label: "Simplify", emoji: "✂️", desc: "Reduce to lowest terms (uses GCF)", types: ["simplify"] as ChallengeType[], color: "#06b6d4" },
+  { label: "Simplify", emoji: "✂️", desc: "Reduce to lowest terms", types: ["simplify"] as ChallengeType[], color: "#06b6d4" },
+  { label: "Mixed ↔ Improper", emoji: "🔀", desc: "Convert between mixed and improper fractions", types: ["mixed-to-improper", "improper-to-mixed"] as ChallengeType[], color: "#f97316" },
+  { label: "Fraction of Number", emoji: "🎯", desc: "What is 3/4 of 20?", types: ["fraction-of-number"] as ChallengeType[], color: "#14b8a6" },
   { label: "GCF", emoji: "🔢", desc: "Greatest Common Factor", types: ["gcf"] as ChallengeType[], color: "#8b5cf6" },
   { label: "LCM", emoji: "📐", desc: "Least Common Multiple", types: ["lcm"] as ChallengeType[], color: "#ec4899" },
-  { label: "Mixed", emoji: "🎲", desc: "All challenge types", types: ["identify", "compare", "add", "equivalent", "simplify", "gcf", "lcm"] as ChallengeType[], color: "#ef4444" },
+  { label: "Mixed", emoji: "🎲", desc: "All challenge types", types: ["identify", "compare", "add", "subtract", "multiply", "equivalent", "simplify", "mixed-to-improper", "improper-to-mixed", "fraction-of-number", "gcf", "lcm"] as ChallengeType[], color: "#ef4444" },
 ];
 
 const FRACTION_TIPS: Record<ChallengeType, string[]> = {
@@ -383,12 +615,26 @@ const FRACTION_TIPS: Record<ChallengeType, string[]> = {
     "Cross-multiply to compare: a/b vs c/d → compare a×d with b×c.",
     "A bigger denominator means smaller pieces (if numerators are the same).",
     "Convert to the same denominator to compare fractions easily.",
+    "Some fractions look different but are equal — like 1/2 and 3/6!",
   ],
   add: [
     "You can only add fractions that have the same denominator.",
     "Find the Least Common Denominator (LCD) before adding fractions.",
     "When adding fractions: add the numerators, keep the denominator.",
     "Always simplify your answer by dividing by the GCD.",
+  ],
+  subtract: [
+    "Subtracting fractions with the same denominator: subtract the numerators, keep the denominator.",
+    "Always simplify your answer by dividing by the GCD.",
+    "If fractions have different denominators, find the LCD first.",
+    "5/8 − 3/8 = (5−3)/8 = 2/8 = 1/4.",
+  ],
+  multiply: [
+    "To multiply fractions: multiply the numerators, multiply the denominators.",
+    "2/3 × 4/5 = (2×4)/(3×5) = 8/15.",
+    "You can cross-cancel before multiplying to simplify.",
+    "Multiplying by a fraction less than 1 makes the result smaller.",
+    "A fraction times its reciprocal always equals 1.",
   ],
   equivalent: [
     "Multiply both numerator and denominator by the same number to get an equivalent fraction.",
@@ -402,6 +648,24 @@ const FRACTION_TIPS: Record<ChallengeType, string[]> = {
     "6/8 → GCF(6,8) = 2 → 6÷2 / 8÷2 = 3/4.",
     "Simplifying doesn't change the value — just makes it easier to read.",
     "Always check: can both numbers be divided by 2? 3? 5?",
+  ],
+  "mixed-to-improper": [
+    "Multiply the whole number by the denominator, then add the numerator.",
+    "2 3/4 → (2×4)+3 = 11, so 2 3/4 = 11/4.",
+    "The denominator stays the same when converting.",
+    "Think of it as: how many pieces total?",
+  ],
+  "improper-to-mixed": [
+    "Divide the numerator by the denominator to get the whole number part.",
+    "The remainder becomes the new numerator over the same denominator.",
+    "11/4 → 11÷4 = 2 remainder 3, so 11/4 = 2 3/4.",
+    "An improper fraction has a numerator ≥ the denominator.",
+  ],
+  "fraction-of-number": [
+    "To find a fraction of a number: divide by the denominator, multiply by the numerator.",
+    "3/4 of 20 = (20 ÷ 4) × 3 = 5 × 3 = 15.",
+    "This is the same as multiplying: 3/4 × 20.",
+    "'Of' in math means multiply.",
   ],
   gcf: [
     "GCF = Greatest Common Factor — the largest number that divides both evenly.",
@@ -440,12 +704,22 @@ export function FractionLabGame() {
   const [challengeTypes, setChallengeTypes] = useState<ChallengeType[]>(["identify"]);
   const [setIdx, setSetIdx] = useState(0);
   const [usePie, setUsePie] = useState(false);
+  const [difficulty, setDifficulty] = useState<"beginner" | "intermediate" | "advanced" | "expert">("beginner");
+  const [showVisualHints, setShowVisualHints] = useState(true);
+  const [timedMode, setTimedMode] = useState(false);
+  const [timePerQuestion, setTimePerQuestion] = useState(0); // 0 = no timer, >0 = seconds
+  const [questionTimer, setQuestionTimer] = useState(0);
   const [highScore, setHighScore] = useState(() => getLocalHighScore("fractionLab_highScore"));
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
   const [countdown, setCountdown] = useState(3);
-  const [pendingStart, setPendingStart] = useState<{ types: ChallengeType[]; idx: number } | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+  const [practiceWaiting, setPracticeWaiting] = useState(false); // waiting for "Next" click
+  const [pendingStart, setPendingStart] = useState<{ types: ChallengeType[]; idx: number; diff: string; showHints: boolean; timed: boolean; timePerQ: number; practice: boolean } | null>(null);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
 
   useEffect(() => {
     if (challenge) setTipIdx(Math.floor(Math.random() * 100));
@@ -463,9 +737,35 @@ export function FractionLabGame() {
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- run once on complete
 
-  // Countdown
+  // Countdown (skip in practice mode)
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (pendingStart?.practice) {
+      // Practice mode: skip countdown, go straight to playing
+      setChallengeTypes(pendingStart.types);
+      setSetIdx(pendingStart.idx);
+      setScore(0);
+      setLives(LIVES);
+      setSolved(0);
+      setWrong(0);
+      setStreak(0);
+      setBestStreak(0);
+            setShowHeartRecovery(false);
+            setLevel(1);
+            setAdaptive(createAdaptiveState(1));
+            setAchievementQueue([]);
+            setShowAchievementIndex(0);
+            setPracticeCorrect(0);
+            setPracticeTotal(0);
+            setPracticeWaiting(false);
+            setChallenge(generateChallenge(1, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
+            setTimePerQuestion(0);
+            setFeedback(null);
+            setSelectedAnswer(null);
+            setPendingStart(null);
+            setPhase("playing");
+            return;
+    }
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -480,9 +780,18 @@ export function FractionLabGame() {
             setBestStreak(0);
             setShowHeartRecovery(false);
             setLevel(1);
+            setAdaptive(createAdaptiveState(1));
             setAchievementQueue([]);
             setShowAchievementIndex(0);
-            setChallenge(generateChallenge(1, pendingStart.types, 0));
+            setPracticeCorrect(0);
+            setPracticeTotal(0);
+            setPracticeWaiting(false);
+            setChallenge(generateChallenge(1, pendingStart.types, 0, pendingStart.diff, pendingStart.showHints));
+            if (pendingStart.timed && pendingStart.timePerQ > 0) {
+              setTimePerQuestion(pendingStart.timePerQ);
+            } else {
+              setTimePerQuestion(0);
+            }
             setFeedback(null);
             setSelectedAnswer(null);
             setPendingStart(null);
@@ -498,18 +807,82 @@ export function FractionLabGame() {
   }, [phase, countdown, pendingStart]);
 
   const nextChallenge = useCallback((currentSolved: number) => {
-    const lvl = Math.floor(currentSolved / 3) + 1;
+    const lvl = Math.max(1, Math.round(adaptive.level));
     setLevel(lvl);
-    setChallenge(generateChallenge(lvl, challengeTypes, currentSolved));
+    setChallenge(generateChallenge(lvl, challengeTypes, currentSolved, difficulty, showVisualHints));
     setFeedback(null);
     setSelectedAnswer(null);
+    setPracticeWaiting(false);
     setPhase("playing");
-  }, [challengeTypes]);
+  }, [challengeTypes, difficulty, showVisualHints, adaptive.level]);
+
+  // Question timer (for timed mode)
+  useEffect(() => {
+    if (phase !== "playing" || timePerQuestion <= 0 || feedback !== null) {
+      if (phase !== "playing" || timePerQuestion <= 0) {
+        setQuestionTimer(0);
+      }
+      return;
+    }
+    setQuestionTimer(timePerQuestion);
+    const interval = setInterval(() => {
+      setQuestionTimer((t) => {
+        if (t <= 1 || feedback !== null) {
+          clearInterval(interval);
+          if (feedback === null) {
+            // Time's up — treat as wrong
+            sfxWrong();
+            setStreak(0);
+            setWrong((w) => w + 1);
+            setFeedback("wrong");
+            setLives((l) => {
+              const nl = l - 1;
+              if (nl <= 0) {
+                sfxGameOver();
+                setTimeout(() => setPhase("complete"), 1000);
+              } else {
+                setTimeout(() => {
+                  setFeedback(null);
+                  setSelectedAnswer(null);
+                  nextChallenge(solved);
+                }, 800);
+              }
+              return nl;
+            });
+          }
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase, challenge, timePerQuestion, solved, nextChallenge, feedback]);
 
   const handleAnswer = useCallback(
     (choice: string) => {
-      if (phase !== "playing" || !challenge) return;
+      if (phase !== "playing" || !challenge || practiceWaiting) return;
       setSelectedAnswer(choice);
+
+      if (practiceMode) {
+        // Practice mode: no lives, always show explanation, wait for "Next"
+        setPracticeTotal((t) => t + 1);
+        if (choice === challenge.answer) {
+          sfxCorrect();
+          setPracticeCorrect((c) => c + 1);
+          const newSolved = solved + 1;
+          setSolved(newSolved);
+          setStreak((s) => s + 1);
+          setFeedback("correct");
+        } else {
+          sfxWrong();
+          setStreak(0);
+          setWrong((w) => w + 1);
+          setFeedback("wrong");
+        }
+        setAdaptive(prev => adaptiveUpdate(prev, choice === challenge.answer, false));
+        setPracticeWaiting(true); // Wait for "Next" click
+        return;
+      }
 
       if (choice === challenge.answer) {
         sfxCorrect();
@@ -534,6 +907,7 @@ export function FractionLabGame() {
           setLives((l) => Math.min(LIVES, l + 1));
         }
         setFeedback("correct");
+        setAdaptive(prev => adaptiveUpdate(prev, true, false)); // FractionLab doesn't have a speed timer in normal mode
         setTimeout(() => {
           setPhase(currentPhase => {
             if (currentPhase !== "playing") return currentPhase;
@@ -546,6 +920,7 @@ export function FractionLabGame() {
         setStreak(0);
         setWrong((w) => w + 1);
         setFeedback("wrong");
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
         const nl = lives - 1;
         setLives(nl);
         if (nl <= 0) {
@@ -572,11 +947,11 @@ export function FractionLabGame() {
         }
       }
     },
-    [phase, challenge, lives, highScore, streak, solved, nextChallenge]
+    [phase, challenge, lives, highScore, streak, solved, nextChallenge, practiceMode, practiceWaiting]
   );
 
   const startGame = (types: ChallengeType[], idx: number) => {
-    setPendingStart({ types, idx });
+    setPendingStart({ types, idx, diff: difficulty, showHints: showVisualHints, timed: practiceMode ? false : timedMode, timePerQ: !practiceMode && timedMode ? ({ beginner: 30, intermediate: 20, advanced: 15, expert: 10 }[difficulty]) : 0, practice: practiceMode });
     setCountdown(3);
     setPhase("countdown");
   };
@@ -618,6 +993,54 @@ export function FractionLabGame() {
               >
                 🥧 Pies
               </button>
+            </div>
+
+            {/* Difficulty selector */}
+            <div className="space-y-2">
+              <div className="text-xs text-slate-400 text-left">Difficulty</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["beginner", "intermediate", "advanced", "expert"] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDifficulty(d)}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium capitalize transition-all ${
+                      difficulty === d
+                        ? "bg-orange-500/20 text-orange-400 border border-orange-400/30"
+                        : "text-slate-500 hover:text-white bg-white/[0.03] border border-white/5"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-slate-600">
+                {difficulty === "beginner" && "Small denominators (2-6), generous visual hints"}
+                {difficulty === "intermediate" && "Medium denominators (2-10), hints fade faster"}
+                {difficulty === "advanced" && "Larger denominators (2-12), minimal hints"}
+                {difficulty === "expert" && "Full range (2-16), no visual hints, tougher problems"}
+              </div>
+            </div>
+
+            {/* Settings toggles */}
+            <div className="space-y-2">
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <span className="text-xs text-slate-400">Show visual hints</span>
+                <input type="checkbox" checked={showVisualHints} onChange={(e) => setShowVisualHints(e.target.checked)}
+                  className="rounded accent-orange-500 w-4 h-4" />
+              </label>
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <span className="text-xs text-slate-400">Timed mode</span>
+                <input type="checkbox" checked={timedMode} onChange={(e) => setTimedMode(e.target.checked)}
+                  className="rounded accent-orange-500 w-4 h-4" />
+              </label>
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <div>
+                  <span className="text-xs text-slate-400">Practice mode</span>
+                  <div className="text-[10px] text-slate-600">No lives, detailed explanations, learn at your own pace</div>
+                </div>
+                <input type="checkbox" checked={practiceMode} onChange={(e) => setPracticeMode(e.target.checked)}
+                  className="rounded accent-orange-500 w-4 h-4" />
+              </label>
             </div>
 
             <div className="space-y-2">
@@ -665,17 +1088,54 @@ export function FractionLabGame() {
             {/* HUD */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">
-                  {Array.from({ length: LIVES }).map((_, i) => (
-                    <Heart key={i} className={`w-4 h-4 transition-all ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
-                  ))}
-                </div>
-                <StreakBadge streak={streak} />
+                {practiceMode ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 font-medium">Practice</span>
+                    <span className="text-slate-400 tabular-nums">
+                      {practiceCorrect}/{practiceTotal}
+                      {practiceTotal > 0 && ` (${Math.round((practiceCorrect / practiceTotal) * 100)}%)`}
+                    </span>
+                    <button onClick={() => setPhase("menu")} className="ml-2 px-2 py-0.5 rounded-md bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 text-[10px] transition-colors">
+                      End
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: LIVES }).map((_, i) => (
+                        <Heart key={i} className={`w-4 h-4 transition-all ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
+                      ))}
+                    </div>
+                    <StreakBadge streak={streak} />
+                  </>
+                )}
               </div>
-              <div className="text-white font-bold tabular-nums">{score}</div>
+              <div className="flex items-center gap-3">
+                {!practiceMode && timePerQuestion > 0 && questionTimer > 0 && (
+                  <div className={`text-sm font-bold tabular-nums ${questionTimer <= 5 ? "text-red-400 animate-pulse" : "text-slate-400"}`}>
+                    {questionTimer}s
+                  </div>
+                )}
+                {!practiceMode && <div className="text-white font-bold tabular-nums">{score}</div>}
+              </div>
             </div>
             <HeartRecovery show={showHeartRecovery} />
-            <div className="text-xs text-slate-500 text-center -mt-2">Lvl {level} · {solved} solved</div>
+            <div className="text-xs text-slate-500 text-center -mt-2">
+              {(() => {
+                const dl = getDifficultyLabel(adaptive.level);
+                return (
+                  <span className="inline-flex items-center gap-2">
+                    <span>Lvl {adaptive.level.toFixed(1)} · {solved} solved</span>
+                    <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ color: dl.color, backgroundColor: dl.color + "15" }}>{dl.emoji} {dl.label}</span>
+                    {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                      <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                        {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                      </span>
+                    )}
+                  </span>
+                );
+              })()}
+            </div>
 
             {/* Educational tip */}
             {!feedback && (
@@ -698,18 +1158,25 @@ export function FractionLabGame() {
                       <FractionPie
                         n={v.n} d={v.d} color={currentColor}
                         size={challenge.visualHint === "reduced" ? 60 : 90}
+                        showLabel={challenge.visualHint === "full" && challenge.type !== "identify"}
                       />
                     ) : (
                       <FractionBar
                         n={v.n} d={v.d} color={currentColor}
                         width={challenge.visualHint === "reduced" ? 120 : 180}
                         height={challenge.visualHint === "reduced" ? 24 : 36}
-                        showLabel={challenge.visualHint === "full"}
+                        showLabel={challenge.visualHint === "full" && challenge.type !== "identify"}
                         animate
                       />
                     )}
                     {challenge.type === "add" && i < challenge.visual.length - 1 && (
                       <span className="text-2xl text-white font-bold mt-2">+</span>
+                    )}
+                    {challenge.type === "subtract" && i < challenge.visual.length - 1 && (
+                      <span className="text-2xl text-white font-bold mt-2">−</span>
+                    )}
+                    {challenge.type === "multiply" && i < challenge.visual.length - 1 && (
+                      <span className="text-2xl text-white font-bold mt-2">×</span>
                     )}
                   </div>
                 ))}
@@ -725,14 +1192,13 @@ export function FractionLabGame() {
                 {challenge.visual.map((v, i) => {
                   const num = v.n;
                   const factors = getFactors(num);
-                  const g = parseInt(challenge.answer);
                   return (
                     <div key={i} className="bg-white/5 rounded-lg px-4 py-2 border border-white/10">
                       <span className="text-slate-400 text-xs">Factors of </span>
                       <span className="text-white font-bold">{num}</span>
                       {challenge.visualHint === "full" && (
                         <span className="text-slate-400 text-xs">: {factors.map((f) => (
-                          <span key={f} className={f === g ? "text-green-400 font-bold mx-0.5" : "text-slate-500 mx-0.5"}>{f}</span>
+                          <span key={f} className="text-slate-400 mx-0.5">{f}</span>
                         ))}</span>
                       )}
                     </div>
@@ -747,13 +1213,12 @@ export function FractionLabGame() {
                 {challenge.visual.map((v, i) => {
                   const num = v.n;
                   const mults = Array.from({ length: challenge.visualHint === "full" ? 8 : 4 }, (_, j) => num * (j + 1));
-                  const ans = parseInt(challenge.answer);
                   return (
                     <div key={i} className="bg-white/5 rounded-lg px-4 py-2 border border-white/10">
                       <span className="text-slate-400 text-xs">Multiples of </span>
                       <span className="text-white font-bold">{num}</span>
                       <span className="text-slate-400 text-xs">: {mults.map((m) => (
-                        <span key={m} className={m === ans ? "text-yellow-400 font-bold mx-0.5" : "text-slate-500 mx-0.5"}>{m}</span>
+                        <span key={m} className="text-slate-400 mx-0.5">{m}</span>
                       ))}…</span>
                     </div>
                   );
@@ -765,12 +1230,34 @@ export function FractionLabGame() {
             {feedback && (
               <div className={`text-center text-sm font-medium ${feedback === "correct" ? "text-green-400" : "text-red-400"}`}>
                 {feedback === "correct" ? (
-                  <span className="flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Correct!</span>
+                  <div className="space-y-1">
+                    <span className="flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Correct!</span>
+                    {practiceMode && (
+                      <div className="text-xs text-slate-400 whitespace-pre-line text-left bg-white/5 rounded-lg px-4 py-2 mt-2 border border-white/10">
+                        {challenge.explanation}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <span className="flex flex-col items-center gap-0.5">
-                    <span className="flex items-center gap-1"><X className="w-4 h-4" /> {challenge.explanation}</span>
-                  </span>
+                  <div className="space-y-1">
+                    <span className="flex items-center justify-center gap-1"><X className="w-4 h-4" /> Wrong — the answer is {challenge.answer}</span>
+                    <div className="text-xs text-slate-400 whitespace-pre-line text-left bg-white/5 rounded-lg px-4 py-2 mt-2 border border-white/10">
+                      {challenge.explanation}
+                    </div>
+                  </div>
                 )}
+              </div>
+            )}
+
+            {/* Practice mode: Next button */}
+            {practiceMode && practiceWaiting && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => nextChallenge(solved)}
+                  className="px-8 py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                >
+                  Next →
+                </button>
               </div>
             )}
 
@@ -812,7 +1299,7 @@ export function FractionLabGame() {
             <div className="grid grid-cols-3 gap-4 text-center">
               <div><div className="text-xl font-bold text-white">{solved}</div><div className="text-[10px] text-slate-500 uppercase">Solved</div></div>
               <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
-              <div><div className="text-xl font-bold text-cyan-400">{level}</div><div className="text-[10px] text-slate-500 uppercase">Level</div></div>
+              <div><div className="text-xl font-bold text-cyan-400">{adaptive.level.toFixed(1)}</div><div className="text-[10px] text-slate-500 uppercase">Difficulty</div></div>
             </div>
 
             {score >= highScore && score > 0 && (

@@ -24,6 +24,8 @@ import {
   setLocalHighScore,
 } from "@/lib/games/use-scores";
 import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
+import { WORD_SEARCH_WORDS } from "@/lib/games/data/word-data";
+import { WORD_SEARCH_WORDS_2 } from "@/lib/games/data/word-data-2";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -40,34 +42,31 @@ interface PlacedWord {
   found: boolean;
 }
 
-// ─── Word Bank ───────────────────────────────────────────────────────
+// ─── Word Bank (from expanded data file) ─────────────────────────────
 
-const WORD_BANK: Record<string, string[]> = {
-  science: [
-    "PHOTOSYNTHESIS", "MITOSIS", "ELECTRON", "NEUTRON", "PROTON",
-    "NUCLEUS", "GRAVITY", "FRICTION", "VOLTAGE", "SPECIES",
-    "ENZYME", "GENOME", "PLANET", "CARBON", "OXYGEN",
-    "PLASMA", "FOSSIL", "MAGNET", "ENERGY", "ATOM",
-  ],
-  math: [
-    "EQUATION", "FRACTION", "DECIMAL", "ALGEBRA", "GEOMETRY",
-    "CALCULUS", "INTEGER", "PRODUCT", "FACTOR", "ANGLE",
-    "RADIUS", "VOLUME", "SQUARE", "PRIME", "RATIO",
-    "MEDIAN", "GRAPH", "SLOPE", "MATRIX", "PROOF",
-  ],
-  history: [
-    "REVOLUTION", "DEMOCRACY", "EMPIRE", "DYNASTY", "TREATY",
-    "COLONY", "REFORM", "SENATE", "FEUDAL", "PHARAOH",
-    "KNIGHT", "MONARCH", "BATTLE", "NATION", "RIGHTS",
-    "LIBERTY", "TREASON", "ALLIED", "BRONZE", "VIKING",
-  ],
-  geography: [
-    "CONTINENT", "MOUNTAIN", "VOLCANO", "GLACIER", "PLATEAU",
-    "DESERT", "ISLAND", "CANYON", "RIVER", "OCEAN",
-    "TUNDRA", "FOREST", "DELTA", "BASIN", "STRAIT",
-    "SAVANNA", "CLIMATE", "TROPIC", "ARCTIC", "COAST",
-  ],
+// Map extra categories to the four game categories
+const WS_CATEGORY_MAP: Record<string, string> = {
+  science: "science",
+  math: "math",
+  history: "history",
+  geography: "geography",
+  biology: "science",
+  chemistry: "science",
+  technology: "science",
+  literature: "history",
+  music: "history",
+  art: "history",
 };
+
+const WORD_BANK: Record<string, string[]> = [...WORD_SEARCH_WORDS, ...WORD_SEARCH_WORDS_2].reduce(
+  (acc, w) => {
+    const mapped = WS_CATEGORY_MAP[w.category] || "science";
+    if (!acc[mapped]) acc[mapped] = [];
+    acc[mapped].push(w.word);
+    return acc;
+  },
+  {} as Record<string, string[]>,
+);
 
 // ─── Directions (forward only) ───────────────────────────────────────
 

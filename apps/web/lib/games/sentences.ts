@@ -5,6 +5,8 @@ export interface SentenceData {
 }
 
 import { SCIENCE_SENTENCES } from "./science-data";
+import { EXPANDED_SENTENCES } from "./data/expanded-sentences";
+import { EXPANDED_SENTENCES_2 } from "./data/expanded-sentences-2";
 
 export const CATEGORIES = [
   { id: "math", label: "Math Facts", color: "#6366f1" },
@@ -112,6 +114,10 @@ export const SENTENCES: SentenceData[] = [
     category: s.category,
     difficulty: s.difficulty,
   })),
+
+  // ── Expanded sentences (from data file) ──
+  ...EXPANDED_SENTENCES,
+  ...EXPANDED_SENTENCES_2,
 ];
 
 /** Get sentences filtered by difficulty and optionally category */

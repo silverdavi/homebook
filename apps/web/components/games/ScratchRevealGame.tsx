@@ -10,6 +10,8 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
+import { FLASHCARDS } from "@/lib/games/data/vocabulary-data";
+import { FLASHCARDS_2 } from "@/lib/games/data/vocabulary-data-2";
 
 // ── Types ──
 
@@ -21,7 +23,7 @@ interface Card {
   answer: string;
 }
 
-// ── Question Banks ──
+// ── Question Banks (from expanded data file + procedural math) ──
 
 function generateMathCards(count: number): Card[] {
   const cards: Card[] = [];
@@ -64,15 +66,20 @@ function generateMathCards(count: number): Card[] {
   return cards;
 }
 
-const ELEMENTS: [string, string][] = [
-  ["H", "Hydrogen"], ["He", "Helium"], ["Li", "Lithium"], ["Be", "Beryllium"],
-  ["B", "Boron"], ["C", "Carbon"], ["N", "Nitrogen"], ["O", "Oxygen"],
-  ["F", "Fluorine"], ["Ne", "Neon"], ["Na", "Sodium"], ["Mg", "Magnesium"],
-  ["Al", "Aluminum"], ["Si", "Silicon"], ["P", "Phosphorus"], ["S", "Sulfur"],
-  ["Cl", "Chlorine"], ["Ar", "Argon"], ["K", "Potassium"], ["Ca", "Calcium"],
-  ["Fe", "Iron"], ["Cu", "Copper"], ["Zn", "Zinc"], ["Ag", "Silver"],
-  ["Au", "Gold"], ["Pb", "Lead"], ["Sn", "Tin"], ["Pt", "Platinum"],
-];
+// Build card arrays from FLASHCARDS + FLASHCARDS_2 by category
+const ALL_FLASHCARDS = [...FLASHCARDS, ...FLASHCARDS_2];
+
+const ELEMENTS: [string, string][] = ALL_FLASHCARDS
+  .filter((c) => c.category === "elements")
+  .map((c) => [c.front, c.back]);
+
+const HISTORY_FACTS: [string, string][] = ALL_FLASHCARDS
+  .filter((c) => c.category === "history")
+  .map((c) => [c.front, c.back]);
+
+const VOCAB: [string, string][] = ALL_FLASHCARDS
+  .filter((c) => c.category === "vocabulary")
+  .map((c) => [c.front, c.back]);
 
 function generateScienceCards(count: number): Card[] {
   const shuffled = [...ELEMENTS].sort(() => Math.random() - 0.5);
@@ -82,29 +89,6 @@ function generateScienceCards(count: number): Card[] {
   }));
 }
 
-const HISTORY_FACTS: [string, string][] = [
-  ["1776", "American Declaration of Independence"],
-  ["1969", "First Moon Landing (Apollo 11)"],
-  ["1865", "End of the American Civil War"],
-  ["1492", "Columbus reaches the Americas"],
-  ["1945", "End of World War II"],
-  ["1789", "French Revolution begins"],
-  ["1066", "Battle of Hastings"],
-  ["1215", "Magna Carta signed"],
-  ["1620", "Mayflower reaches Plymouth"],
-  ["1903", "Wright Brothers' first flight"],
-  ["1929", "Wall Street Crash"],
-  ["1963", "MLK's 'I Have a Dream' speech"],
-  ["1989", "Fall of the Berlin Wall"],
-  ["1804", "Lewis and Clark expedition begins"],
-  ["1517", "Martin Luther's 95 Theses"],
-  ["1869", "Transcontinental Railroad completed"],
-  ["1848", "California Gold Rush begins"],
-  ["1914", "World War I begins"],
-  ["1607", "Jamestown settlement founded"],
-  ["1773", "Boston Tea Party"],
-];
-
 function generateHistoryCards(count: number): Card[] {
   const shuffled = [...HISTORY_FACTS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count).map(([date, event]) => ({
@@ -112,29 +96,6 @@ function generateHistoryCards(count: number): Card[] {
     answer: event,
   }));
 }
-
-const VOCAB: [string, string][] = [
-  ["Benevolent", "Well-meaning and kindly"],
-  ["Ephemeral", "Lasting for a very short time"],
-  ["Ubiquitous", "Present everywhere"],
-  ["Pragmatic", "Dealing with things practically"],
-  ["Resilient", "Able to recover quickly"],
-  ["Meticulous", "Showing great attention to detail"],
-  ["Ambiguous", "Open to more than one meaning"],
-  ["Eloquent", "Fluent or persuasive in speaking"],
-  ["Diligent", "Having careful and persistent effort"],
-  ["Innovative", "Featuring new methods or ideas"],
-  ["Tenacious", "Holding firmly to something"],
-  ["Candid", "Truthful and straightforward"],
-  ["Profound", "Very great or intense"],
-  ["Versatile", "Able to adapt to many functions"],
-  ["Zealous", "Having great energy or enthusiasm"],
-  ["Astute", "Having sharp judgment"],
-  ["Concise", "Giving information clearly and briefly"],
-  ["Futile", "Incapable of producing any result"],
-  ["Lucid", "Expressed clearly; easy to understand"],
-  ["Obscure", "Not discovered or known about"],
-];
 
 function generateVocabCards(count: number): Card[] {
   const shuffled = [...VOCAB].sort(() => Math.random() - 0.5);

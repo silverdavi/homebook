@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Check, X } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Check, X, ChevronRight } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -9,6 +9,7 @@ import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/component
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
@@ -20,6 +21,47 @@ interface Problem {
   b: number;
   answer: number;
   choices: number[];
+}
+
+// ── Adaptive → multiplication params mapping ──
+
+interface MultParams {
+  /** Which tables to include */
+  tables: number[];
+  /** Max multiplier (b value) */
+  maxMultiplier: number;
+  /** Whether to include "reverse" problems (e.g., _ × 7 = 49) */
+  allowReverse: boolean;
+}
+
+function getMultParams(level: number): MultParams {
+  const l = Math.max(1, Math.min(50, level));
+
+  // Level 1-5: tables 2-5, ×1-10
+  // Level 5-10: tables 2-9, ×1-12
+  // Level 10-20: tables 2-12, ×1-12
+  // Level 20-30: tables 2-15 (extended), ×1-15
+  // Level 30+: tables 2-20, ×1-20
+  let tables: number[];
+  if (l < 5) {
+    tables = [2, 3, 4, 5];
+  } else if (l < 10) {
+    tables = [2, 3, 4, 5, 6, 7, 8, 9];
+  } else if (l < 20) {
+    tables = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  } else if (l < 30) {
+    const max = Math.min(Math.floor(12 + (l - 20) * 0.3), 15);
+    tables = Array.from({ length: max - 1 }, (_, i) => i + 2);
+  } else {
+    const max = Math.min(Math.floor(15 + (l - 30) * 0.25), 20);
+    tables = Array.from({ length: max - 1 }, (_, i) => i + 2);
+  }
+
+  return {
+    tables,
+    maxMultiplier: l < 5 ? 10 : l < 15 ? 12 : Math.min(Math.floor(12 + (l - 15) * 0.2), 20),
+    allowReverse: l >= 15,
+  };
 }
 
 // ── Grid visualization for multiplication ──
@@ -52,12 +94,12 @@ function MultGrid({ a, b, highlight, color }: { a: number; b: number; highlight:
 
 // ── Problem generation ──
 
-function generateProblem(tables: number[], usedPairs: Set<string>): Problem {
+function generateProblem(tables: number[], usedPairs: Set<string>, maxMultiplier = 12): Problem {
   let a: number, b: number;
   let attempts = 0;
   do {
     a = tables[Math.floor(Math.random() * tables.length)];
-    b = Math.floor(Math.random() * 12) + 1;
+    b = Math.floor(Math.random() * maxMultiplier) + 1;
     attempts++;
   } while (usedPairs.has(`${a}x${b}`) && attempts < 50);
   usedPairs.add(`${a}x${b}`);
@@ -167,6 +209,16 @@ export function TimesTableGame() {
   const [countdownVal, setCountdownVal] = useState(COUNTDOWN_SECS);
   const SURVIVAL_LIVES = 3;
 
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceWaiting, setPracticeWaiting] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+  const problemStartRef = useRef(0);
+
   // Keep refs in sync with state
   useEffect(() => { streakRef.current = streak; }, [streak]);
   useEffect(() => { solvedRef.current = solved; }, [solved]);
@@ -183,7 +235,7 @@ export function TimesTableGame() {
 
   useEffect(() => {
     if (phase !== "complete") return;
-    const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsed * 5 - wrong * 50) : score;
+    const finalScore = !practiceMode && mode === "sprint" ? Math.max(1, 1000 - elapsed * 5 - wrong * 50) : score;
     trackGamePlayed("times-table", finalScore);
     const profile = getProfile();
     const newOnes = checkAchievements(
@@ -197,6 +249,13 @@ export function TimesTableGame() {
   // Countdown
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      // Skip countdown in practice mode
+      sfxCountdownGo();
+      setPhase("playing");
+      startRef.current = Date.now();
+      return;
+    }
     if (countdownVal <= 0) {
       sfxCountdownGo();
       setPhase("playing");
@@ -206,42 +265,72 @@ export function TimesTableGame() {
     sfxCountdown();
     const t = setTimeout(() => setCountdownVal((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, countdownVal]);
+  }, [phase, countdownVal, practiceMode]);
 
-  // Timer
+  // Timer (not in practice mode)
   useEffect(() => {
-    if (phase !== "playing") return;
+    if (phase !== "playing" || practiceMode) return;
     timerRef.current = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
     }, 250);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase]);
+  }, [phase, practiceMode]);
+
+  // Track problem start for "fast" detection
+  useEffect(() => {
+    if (phase === "playing" && problem) problemStartRef.current = Date.now();
+  }, [phase, problem]);
+
+  // Derive adaptive tables for problem generation
+  const adaptiveParams = getMultParams(adaptive.level);
 
   const nextProblem = useCallback(() => {
-    setProblem(generateProblem(tables, usedPairs));
+    const params = getMultParams(adaptive.level);
+    // Merge user-selected tables with adaptive tables
+    // Use adaptive tables as the primary source, but respect user's base selection direction
+    setProblem(generateProblem(params.tables, usedPairs, params.maxMultiplier));
     setFeedback(null);
     setSelectedAnswer(null);
+    setPracticeWaiting(false);
     setPhase("playing");
-  }, [tables, usedPairs]);
+  }, [usedPairs, adaptive.level]);
 
   const finishGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     sfxLevelUp();
     setPhase("complete");
-    const finalScore = mode === "sprint" ? Math.max(1, 1000 - elapsedRef.current * 5 - wrongRef.current * 50) : scoreRef.current;
+    const finalScore = !practiceMode && mode === "sprint" ? Math.max(1, 1000 - elapsedRef.current * 5 - wrongRef.current * 50) : scoreRef.current;
     scoreRef.current = finalScore;
     setScore(finalScore);
-    if (finalScore > highScoreRef.current) {
+    if (!practiceMode && finalScore > highScoreRef.current) {
       highScoreRef.current = finalScore;
       setHighScore(finalScore);
       setLocalHighScore("timesTable_highScore", finalScore);
     }
-  }, [mode]);
+  }, [mode, practiceMode]);
 
   const handleAnswer = useCallback(
     (choice: number) => {
-      if (phase !== "playing" || !problem) return;
+      if (phase !== "playing" || !problem || practiceWaiting) return;
       setSelectedAnswer(choice);
+      const answerTime = (Date.now() - problemStartRef.current) / 1000;
+
+      if (practiceMode) {
+        // Practice mode: no lives/score, show grid explanation, wait for "Next"
+        setPracticeTotal((t) => t + 1);
+        if (choice === problem.answer) {
+          sfxCorrect();
+          setPracticeCorrect((c) => c + 1);
+          setFeedback("correct");
+          setAdaptive(prev => adaptiveUpdate(prev, true, false));
+        } else {
+          sfxWrong();
+          setFeedback("wrong");
+          setAdaptive(prev => adaptiveUpdate(prev, false, false));
+        }
+        setPracticeWaiting(true);
+        return;
+      }
 
       if (choice === problem.answer) {
         const newStreak = streakRef.current + 1;
@@ -263,6 +352,9 @@ export function TimesTableGame() {
           setTimeout(() => setShowHeartRecovery(false), 1500);
           setLives((l) => Math.min(SURVIVAL_LIVES, l + 1));
         }
+        // Adaptive: fast = answered in < 3s
+        const wasFast = answerTime < 3;
+        setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
 
         setTimeout(() => {
           if (mode === "sprint" && solvedRef.current >= sprintCount) {
@@ -280,6 +372,7 @@ export function TimesTableGame() {
         wrongRef.current += 1;
         setWrong((w) => w + 1);
         setFeedback("wrong");
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
 
         if (mode === "survival") {
           const newLives = lives - 1;
@@ -296,7 +389,7 @@ export function TimesTableGame() {
         }, 800);
       }
     },
-    [phase, problem, mode, lives, sprintCount, nextProblem, finishGame]
+    [phase, problem, mode, lives, sprintCount, nextProblem, finishGame, practiceMode, practiceWaiting]
   );
 
   const startGame = useCallback((m: GameMode) => {
@@ -316,13 +409,18 @@ export function TimesTableGame() {
     setElapsed(0);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setPracticeWaiting(false);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
+    setAdaptive(createAdaptiveState(1));
     usedPairs.clear();
-    setProblem(generateProblem(tables, usedPairs));
+    const params = getMultParams(1); // start at level 1
+    setProblem(generateProblem(params.tables, usedPairs, params.maxMultiplier));
     setFeedback(null);
     setSelectedAnswer(null);
     setCountdownVal(COUNTDOWN_SECS);
     setPhase("countdown");
-  }, [tables, usedPairs]);
+  }, [usedPairs]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -342,6 +440,14 @@ export function TimesTableGame() {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const accuracy = solved + wrong > 0 ? Math.round((solved / (solved + wrong)) * 100) : 100;
+
+  // Get current adaptive table description for display
+  const adaptiveTableDesc = (() => {
+    const p = adaptiveParams;
+    const min = Math.min(...p.tables);
+    const max = Math.max(...p.tables);
+    return `${min}-${max}`;
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-violet-950 to-slate-950 flex flex-col items-center">
@@ -365,7 +471,7 @@ export function TimesTableGame() {
 
             {/* Table range picker */}
             <div className="space-y-2">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">Which tables?</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">Starting tables (adapts as you play!)</div>
               <div className="grid grid-cols-2 gap-2">
                 {TABLE_GROUPS.map((g, i) => (
                   <button
@@ -382,48 +488,78 @@ export function TimesTableGame() {
             </div>
 
             {/* Sprint problems slider */}
-            <div className="max-w-xs mx-auto">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-slate-400">Sprint problems</span>
-                <span className="text-xs font-bold text-amber-400 tabular-nums">{sprintCount}</span>
+            {!practiceMode && (
+              <div className="max-w-xs mx-auto">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-slate-400">Sprint problems</span>
+                  <span className="text-xs font-bold text-amber-400 tabular-nums">{sprintCount}</span>
+                </div>
+                <input type="range" min={5} max={50} step={5} value={sprintCount}
+                  onChange={(e) => setSprintCount(Number(e.target.value))}
+                  className="w-full accent-amber-500" />
+                <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                  <span>Quick 5</span><span>Endurance 50</span>
+                </div>
               </div>
-              <input type="range" min={5} max={50} step={5} value={sprintCount}
-                onChange={(e) => setSprintCount(Number(e.target.value))}
-                className="w-full accent-amber-500" />
-              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
-                <span>Quick 5</span><span>Endurance 50</span>
-              </div>
+            )}
+
+            {/* Toggles */}
+            <div className="space-y-2 max-w-xs mx-auto">
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <span className="text-xs text-slate-400">Show visual grid</span>
+                <input type="checkbox" checked={showGrid} onChange={() => setShowGrid(!showGrid)} className="rounded accent-amber-500 w-4 h-4" />
+              </label>
+
+              {/* Practice mode toggle */}
+              <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer">
+                <div className="text-left">
+                  <span className="text-xs text-slate-400">Practice mode</span>
+                  <div className="text-[10px] text-slate-600">No timer, grid explanations, learn at your own pace</div>
+                </div>
+                <input type="checkbox" checked={practiceMode} onChange={(e) => setPracticeMode(e.target.checked)}
+                  className="rounded accent-violet-500 w-4 h-4" />
+              </label>
             </div>
 
-            {/* Toggle */}
-            <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer max-w-xs mx-auto">
-              <span className="text-xs text-slate-400">Show visual grid</span>
-              <input type="checkbox" checked={showGrid} onChange={() => setShowGrid(!showGrid)} className="rounded accent-amber-500 w-4 h-4" />
-            </label>
+            {/* Mode picker (hidden in practice mode — practice is its own mode) */}
+            {practiceMode ? (
+              <div className="space-y-2">
+                <button
+                  onClick={() => startGame("survival")}
+                  className="w-full py-3 px-4 rounded-xl border border-violet-400/30 bg-violet-500/10 hover:bg-violet-500/20 transition-all flex items-center gap-3 active:scale-[0.98]"
+                >
+                  <span className="text-2xl">📖</span>
+                  <div className="text-left flex-1">
+                    <div className="text-white font-bold text-sm">Start Practice</div>
+                    <div className="text-slate-500 text-xs">No timer, no lives — just learn</div>
+                  </div>
+                  <span className="text-slate-600">→</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs text-slate-500 uppercase tracking-wider">Game mode</div>
+                {(["sprint", "survival", "target"] as GameMode[]).map((m) => {
+                  const mc = MODES[m];
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => startGame(m)}
+                      className="w-full py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all flex items-center gap-3 active:scale-[0.98]"
+                    >
+                      <span className="text-2xl">{mc.emoji}</span>
+                      <div className="text-left flex-1">
+                        <div className="text-white font-bold text-sm">{mc.label}</div>
+                        <div className="text-slate-500 text-xs">{mc.description}</div>
+                      </div>
+                      <span className="text-slate-600">→</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Mode picker */}
-            <div className="space-y-2">
-              <div className="text-xs text-slate-500 uppercase tracking-wider">Game mode</div>
-              {(["sprint", "survival", "target"] as GameMode[]).map((m) => {
-                const mc = MODES[m];
-                return (
-                  <button
-                    key={m}
-                    onClick={() => startGame(m)}
-                    className="w-full py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all flex items-center gap-3 active:scale-[0.98]"
-                  >
-                    <span className="text-2xl">{mc.emoji}</span>
-                    <div className="text-left flex-1">
-                      <div className="text-white font-bold text-sm">{mc.label}</div>
-                      <div className="text-slate-500 text-xs">{mc.description}</div>
-                    </div>
-                    <span className="text-slate-600">→</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {highScore > 0 && (
+            {highScore > 0 && !practiceMode && (
               <div className="flex items-center justify-center gap-1.5 text-yellow-400/70 text-xs">
                 <Trophy className="w-3 h-3" /> Best: {highScore}
               </div>
@@ -446,36 +582,68 @@ export function TimesTableGame() {
             {/* HUD */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-3">
-                {mode === "survival" && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: SURVIVAL_LIVES }).map((_, i) => (
-                        <span key={i} className={`text-lg transition-all ${i < lives ? "" : "opacity-20"}`}>❤️</span>
-                      ))}
-                    </div>
-                    <HeartRecovery show={showHeartRecovery} />
+                {practiceMode ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-400 font-medium">Practice</span>
+                    <span className="text-slate-400 tabular-nums">
+                      {practiceCorrect}/{practiceTotal}
+                    </span>
                   </div>
-                )}
-                {mode === "sprint" && (
-                  <span className="text-slate-400 tabular-nums">{solved}/{sprintCount}</span>
-                )}
-                {mode === "target" && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${Math.min(100, (score / TARGET_SCORE) * 100)}%` }} />
-                    </div>
-                    <span className="text-xs text-slate-400">{score}/{TARGET_SCORE}</span>
-                  </div>
+                ) : (
+                  <>
+                    {mode === "survival" && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: SURVIVAL_LIVES }).map((_, i) => (
+                            <span key={i} className={`text-lg transition-all ${i < lives ? "" : "opacity-20"}`}>❤️</span>
+                          ))}
+                        </div>
+                        <HeartRecovery show={showHeartRecovery} />
+                      </div>
+                    )}
+                    {mode === "sprint" && (
+                      <span className="text-slate-400 tabular-nums">{solved}/{sprintCount}</span>
+                    )}
+                    {mode === "target" && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${Math.min(100, (score / TARGET_SCORE) * 100)}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-400">{score}/{TARGET_SCORE}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-3">
                 <StreakBadge streak={streak} />
-                <span className="text-white font-bold tabular-nums">{formatTime(elapsed)}</span>
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.emoji} {dl.label}
+                      </div>
+                      {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                        <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                          {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {!practiceMode && <span className="text-white font-bold tabular-nums">{formatTime(elapsed)}</span>}
               </div>
             </div>
 
+            {/* Adaptive table range indicator */}
+            <div className="text-center text-[10px] text-slate-600">
+              Tables {adaptiveTableDesc} · ×1-{adaptiveParams.maxMultiplier}
+            </div>
+
             {/* Multiplication tip */}
-            {!feedback && (
+            {!feedback && !practiceWaiting && (
               <div className="text-center text-[11px] text-slate-500 italic px-4">
                 💡 {MULT_TIPS[multTipIdx]}
               </div>
@@ -490,7 +658,7 @@ export function TimesTableGame() {
               {/* Visual grid */}
               {showGrid && (
                 <div className="mb-4 flex justify-center">
-                  <MultGrid a={problem.a} b={problem.b} highlight={feedback === "correct"} color={TABLE_GROUPS[tableIdx].color} />
+                  <MultGrid a={problem.a} b={problem.b} highlight={feedback === "correct"} color={TABLE_GROUPS[Math.min(tableIdx, TABLE_GROUPS.length - 1)].color} />
                 </div>
               )}
 
@@ -510,40 +678,73 @@ export function TimesTableGame() {
               )}
             </div>
 
-            {/* Choices */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {problem.choices.map((choice, i) => {
-                const isSelected = selectedAnswer === choice;
-                const isCorrect = choice === problem.answer;
-                const showResult = feedback !== null;
-                return (
-                  <button
-                    key={`${choice}-${i}`}
-                    onClick={() => handleAnswer(choice)}
-                    disabled={feedback !== null}
-                    className={`py-4 rounded-xl text-xl sm:text-2xl font-bold transition-all duration-200 min-h-[56px] shadow-md ${
-                      showResult && isCorrect
-                        ? "bg-green-500/20 border-2 border-green-400 text-green-400 shadow-green-500/20"
-                        : showResult && isSelected && !isCorrect
-                        ? "bg-red-500/20 border-2 border-red-400 text-red-400 shadow-red-500/20"
-                        : showResult
-                        ? "bg-white/5 border border-white/5 text-slate-600"
-                        : "bg-white/10 border border-white/10 text-white hover:bg-violet-500/20 hover:border-violet-400/40 hover:shadow-lg hover:shadow-violet-500/20 active:scale-95"
-                    }`}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Choices (hidden when practice is waiting) */}
+            {!practiceWaiting && (
+              <div className="grid grid-cols-2 gap-2.5">
+                {problem.choices.map((choice, i) => {
+                  const isSelected = selectedAnswer === choice;
+                  const isCorrect = choice === problem.answer;
+                  const showResult = feedback !== null;
+                  return (
+                    <button
+                      key={`${choice}-${i}`}
+                      onClick={() => handleAnswer(choice)}
+                      disabled={feedback !== null}
+                      className={`py-4 rounded-xl text-xl sm:text-2xl font-bold transition-all duration-200 min-h-[56px] shadow-md ${
+                        showResult && isCorrect
+                          ? "bg-green-500/20 border-2 border-green-400 text-green-400 shadow-green-500/20"
+                          : showResult && isSelected && !isCorrect
+                          ? "bg-red-500/20 border-2 border-red-400 text-red-400 shadow-red-500/20"
+                          : showResult
+                          ? "bg-white/5 border border-white/5 text-slate-600"
+                          : "bg-white/10 border border-white/10 text-white hover:bg-violet-500/20 hover:border-violet-400/40 hover:shadow-lg hover:shadow-violet-500/20 active:scale-95"
+                      }`}
+                    >
+                      {choice}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Stats footer */}
-            <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
-              <span>{accuracy}% accuracy</span>
-              <span>·</span>
-              <span>{solved} correct</span>
-              {wrong > 0 && <><span>·</span><span className="text-red-400/70">{wrong} wrong</span></>}
-            </div>
+            {/* Practice mode: explanation + grid + next button */}
+            {practiceMode && practiceWaiting && (
+              <div className="space-y-3">
+                <div className={`rounded-xl border p-4 text-center ${feedback === "correct" ? "border-green-400/30 bg-green-500/10" : "border-red-400/30 bg-red-500/10"}`}>
+                  <div className={`text-lg font-bold ${feedback === "correct" ? "text-green-400" : "text-red-400"}`}>
+                    {feedback === "correct" ? "Correct!" : `Wrong — answer: ${problem.answer}`}
+                  </div>
+                </div>
+                {/* Grid explanation */}
+                <div className="bg-white/5 rounded-lg px-4 py-3 border border-white/10">
+                  <div className="text-xs text-slate-400 mb-2 text-center">
+                    {problem.a} × {problem.b} = {problem.a} groups of {problem.b}
+                  </div>
+                  <div className="flex justify-center mb-2">
+                    <MultGrid a={problem.a} b={problem.b} highlight={true} color={TABLE_GROUPS[Math.min(tableIdx, TABLE_GROUPS.length - 1)].color} />
+                  </div>
+                  <div className="text-xs text-slate-500 text-center">
+                    Count all the dots: {problem.a} rows × {problem.b} columns = <span className="text-white font-bold">{problem.answer}</span>
+                  </div>
+                </div>
+                <div className="flex justify-center">
+                  <button onClick={nextProblem}
+                    className="px-6 py-3 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Stats footer (not in practice mode) */}
+            {!practiceMode && (
+              <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+                <span>{accuracy}% accuracy</span>
+                <span>·</span>
+                <span>{solved} correct</span>
+                {wrong > 0 && <><span>·</span><span className="text-red-400/70">{wrong} wrong</span></>}
+              </div>
+            )}
           </div>
         )}
 
@@ -552,26 +753,48 @@ export function TimesTableGame() {
           <div className="text-center space-y-4">
             <Star className="w-14 h-14 text-yellow-400 fill-yellow-400 mx-auto animate-bounce" />
             <h3 className="text-2xl font-bold text-white">
-              {mode === "survival" && lives <= 0 ? "Game Over" : "Complete!"}
+              {!practiceMode && mode === "survival" && lives <= 0 ? "Game Over" : practiceMode ? "Practice Complete" : "Complete!"}
             </h3>
 
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div><div className="text-2xl font-bold text-white">{solved}</div><div className="text-[10px] text-slate-500 uppercase">Solved</div></div>
-              <div><div className="text-2xl font-bold text-green-400">{accuracy}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
-              <div><div className="text-2xl font-bold text-cyan-400">{formatTime(elapsed)}</div><div className="text-[10px] text-slate-500 uppercase">Time</div></div>
+              <div><div className="text-2xl font-bold text-white">{practiceMode ? practiceCorrect : solved}</div><div className="text-[10px] text-slate-500 uppercase">Solved</div></div>
+              <div><div className="text-2xl font-bold text-green-400">{practiceMode ? (practiceTotal > 0 ? Math.round((practiceCorrect / practiceTotal) * 100) : 100) : accuracy}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
+              {!practiceMode ? (
+                <div><div className="text-2xl font-bold text-cyan-400">{formatTime(elapsed)}</div><div className="text-[10px] text-slate-500 uppercase">Time</div></div>
+              ) : (
+                <div><div className="text-2xl font-bold text-cyan-400">{practiceTotal}</div><div className="text-[10px] text-slate-500 uppercase">Attempted</div></div>
+              )}
             </div>
 
             {bestStreak >= 3 && (
               <p className="text-yellow-400/70 text-sm">Best streak: x{bestStreak}</p>
             )}
 
-            {score >= highScore && score > 0 && (
+            {/* Final adaptive level */}
+            <div>
+              {(() => {
+                const dl = getDifficultyLabel(adaptive.level);
+                return (
+                  <p className="text-sm text-slate-400">
+                    Final difficulty:{" "}
+                    <span className="font-bold" style={{ color: dl.color }}>
+                      {dl.emoji} {dl.label} ({adaptive.level.toFixed(1)})
+                    </span>
+                  </p>
+                );
+              })()}
+            </div>
+
+            {!practiceMode && score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
 
-            <ScoreSubmit game="times-table" score={score} level={tableIdx + 1} stats={{ mode, solved, accuracy: `${accuracy}%`, time: formatTime(elapsed) }} />
+            {!practiceMode && (
+              <ScoreSubmit game="times-table" score={score} level={Math.round(adaptive.level)}
+                stats={{ mode, solved, accuracy: `${accuracy}%`, time: formatTime(elapsed), finalLevel: adaptive.level.toFixed(1) }} />
+            )}
 
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

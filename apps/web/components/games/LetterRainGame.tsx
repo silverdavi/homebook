@@ -10,6 +10,7 @@ import { StreakBadge, HeartRecovery, BonusToast, getMultiplierFromStreak } from 
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 
 // ── Types ──
@@ -98,6 +99,19 @@ const TIPS = [
   "Regular practice improves both reading speed and accuracy",
 ];
 
+/** Map adaptive level (1-50) to sentence difficulty */
+function getAdaptiveSentenceDifficulty(level: number): "easy" | "medium" | "hard" {
+  if (level < 4) return "easy";
+  if (level < 8) return "medium";
+  return "hard";
+}
+
+/** Map adaptive level to fall-speed multiplier: low = slow, high = fast */
+function getAdaptiveSpeedMult(level: number): number {
+  // Level 1 → 0.78x, Level 10 → 1.05x, Level 25 → 1.50x, Level 50 → 2.25x
+  return Math.max(0.7, 0.75 + level * 0.03);
+}
+
 // ── Component ──
 
 export function LetterRainGame() {
@@ -143,6 +157,10 @@ export function LetterRainGame() {
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
 
+  // ── Adaptive difficulty ──
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const adaptiveLevelRef = useRef(1);
+
   // ── Settings (toggles) ──
   const [speed, setSpeed] = useState(4); // 1-10
   const [caseSensitive, setCaseSensitive] = useState(false);
@@ -155,6 +173,7 @@ export function LetterRainGame() {
   useEffect(() => { livesRef.current = lives; }, [lives]);
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
+  useEffect(() => { adaptiveLevelRef.current = adaptive.level; }, [adaptive]);
 
   // Tip rotation
   useEffect(() => {
@@ -241,8 +260,8 @@ export function LetterRainGame() {
 
   const startLevel = useCallback(
     (lvl: number) => {
-      // Pick difficulty bucket based on speed for sentence selection
-      const diffBucket = speed <= 2 ? "easy" : speed <= 4 ? "medium" : "hard";
+      // Pick difficulty bucket based on adaptive level
+      const diffBucket = getAdaptiveSentenceDifficulty(adaptiveLevelRef.current);
       const { sentence: picked, index } = pickSentence(diffBucket as "easy" | "medium" | "hard", usedSentences, selectedCategory);
       usedSentences.add(index);
       setSentence(picked.text);
@@ -337,6 +356,10 @@ export function LetterRainGame() {
         setBestCombo((bc) => Math.max(bc, newCombo));
         setTotalCaught((c) => c + 1);
 
+        // Adaptive: caught letter, "fast" if in top 40% of screen
+        const wasFastCatch = letter.spawned ? letter.y < GAME_HEIGHT * 0.4 : true;
+        setAdaptive(prev => adaptiveUpdate(prev, true, wasFastCatch));
+
         // SFX
         if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
         else sfxCorrect();
@@ -382,6 +405,7 @@ export function LetterRainGame() {
         setCombo(0);
         setScore((s) => Math.max(0, s - 5));
         setTotalMissed((m) => m + 1);
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
         setFlash("bad");
         setTimeout(() => setFlash(null), 200);
       }
@@ -427,11 +451,14 @@ export function LetterRainGame() {
         const now = performance.now();
 
         // Mark letter as caught in state
+        let caughtLetterY = GAME_HEIGHT;
         setLetters((prev) => {
           const letter = prev.find(
             (l) => l.sentenceIndex === expectedIdx && !l.caught && !l.missed
           );
           if (!letter) return prev;
+
+          caughtLetterY = letter.spawned ? letter.y : 0;
 
           // Spawn splash at letter position (use center if not yet spawned)
           const lx = letter.spawned ? letter.x : GAME_WIDTH / 2 - LETTER_SIZE / 2;
@@ -453,6 +480,9 @@ export function LetterRainGame() {
         setCombo(newCombo);
         setBestCombo((bc) => Math.max(bc, newCombo));
         setTotalCaught((c) => c + 1);
+
+        // Adaptive: "fast" if letter was in top 40% of screen
+        setAdaptive(prev => adaptiveUpdate(prev, true, caughtLetterY < GAME_HEIGHT * 0.4));
 
         // SFX
         if (newCombo > 1 && newCombo % 5 === 0) sfxCombo(newCombo);
@@ -499,6 +529,7 @@ export function LetterRainGame() {
         setCombo(0);
         setScore((s) => Math.max(0, s - 5));
         setTotalMissed((m) => m + 1);
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
         setFlash("bad");
         setTimeout(() => setFlash(null), 200);
       }
@@ -511,9 +542,15 @@ export function LetterRainGame() {
   // ── Game loop ──
   useEffect(() => {
     if (phase !== "playing") return;
-    const config = getSpeedConfig(speed, level);
 
     function gameLoop(time: number) {
+      // Compute speed config each frame so adaptive multiplier is always current
+      const rawConfig = getSpeedConfig(speed, level);
+      const aMult = getAdaptiveSpeedMult(adaptiveLevelRef.current);
+      const config = {
+        baseSpeed: rawConfig.baseSpeed * aMult,
+        spawnInterval: Math.max(150, rawConfig.spawnInterval / Math.max(0.5, aMult * 0.6)),
+      };
       const dt = Math.min(time - lastTimeRef.current, 50);
       lastTimeRef.current = time;
 
@@ -555,6 +592,7 @@ export function LetterRainGame() {
       if (lostLife) {
         spawnRipple(missX);
         setTotalMissed((m) => m + 1);
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
         setLives((lv) => lv - 1);
         const newLives = livesRef.current - 1;
         livesRef.current = newLives;
@@ -596,6 +634,7 @@ export function LetterRainGame() {
     setShowHeartRecovery(false); setShowPerfectToast(false); setAchievementQueue([]); setShowAchievementIndex(0);
     comboRef.current = 0; levelRef.current = 1;
     livesRef.current = INITIAL_LIVES; scoreRef.current = 0;
+    setAdaptive(createAdaptiveState(speed)); adaptiveLevelRef.current = speed;
     usedSentences.clear();
     startLevel(1);
   };
@@ -605,6 +644,7 @@ export function LetterRainGame() {
   const accuracy = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
   const lpm = elapsedSecs > 0 ? Math.round((totalCaught / elapsedSecs) * 60) : 0;
   const { lps } = getSpeedConfig(speed, level);
+  const dl = getDifficultyLabel(adaptive.level);
 
   // Compute which char index is the next expected letter
   const nextExpectedIdx = (() => {
@@ -740,10 +780,21 @@ export function LetterRainGame() {
             {/* HUD */}
             {phase !== "menu" && phase !== "countdown" && (
               <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-2.5 z-20">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: INITIAL_LIVES }).map((_, i) => (
-                    <Heart key={i} className={`w-4.5 h-4.5 transition-all duration-300 ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
-                  ))}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: INITIAL_LIVES }).map((_, i) => (
+                      <Heart key={i} className={`w-4.5 h-4.5 transition-all duration-300 ${i < lives ? "text-red-400 fill-red-400" : "text-slate-800 scale-75"}`} />
+                    ))}
+                  </div>
+                  {/* Adaptive difficulty badge */}
+                  <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                    {dl.emoji} {dl.label}
+                  </div>
+                  {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                    <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                      {adaptive.lastAdjust === "up" ? "↑" : "↓"}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <StreakBadge streak={combo} />
@@ -944,10 +995,11 @@ export function LetterRainGame() {
                   <div><div className="text-xl font-bold text-cyan-400">{lpm}</div><div className="text-[9px] text-slate-500 uppercase">LPM</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
                 </div>
+                <p className="text-slate-400 mb-2 text-xs">Final difficulty: <span className="text-white font-bold">{adaptive.level.toFixed(1)}</span> {dl.emoji} {dl.label}</p>
                 {score >= highScore && score > 0 && (
                   <p className="text-yellow-400 text-sm font-medium mb-1.5 flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> New High Score!</p>
                 )}
-                <div className="mb-2 w-full max-w-xs"><ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, lpm, bestCombo, perfectLevels }} /></div>
+                <div className="mb-2 w-full max-w-xs"><ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, lpm, bestCombo, perfectLevels, finalDifficulty: adaptive.level.toFixed(1) }} /></div>
                 <div className="flex gap-3">
                   <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm">
                     <RotateCcw className="w-3.5 h-3.5" /> Again

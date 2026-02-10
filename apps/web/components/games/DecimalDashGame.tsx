@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Timer, Star, Hash } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Timer, Star, Hash, ChevronRight } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -12,6 +12,7 @@ import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
   sfxCountdown, sfxCountdownGo, sfxClick,
 } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 
 // ── Types ──
@@ -27,6 +28,39 @@ interface Problem {
   /** For number line: the range [min, max] and target value */
   numberLineRange?: [number, number];
   numberLineTarget?: number;
+  /** Explanation for practice mode */
+  explanation?: string;
+}
+
+// ── Adaptive → decimal params mapping ──
+
+interface DecimalParams {
+  /** Number of decimal places (1-3) */
+  decimalPlaces: number;
+  /** Max value for generated numbers */
+  maxValue: number;
+  /** Whether to include division in operations */
+  allowDivision: boolean;
+  /** Whether to include harder conversions */
+  allowHardConversions: boolean;
+  /** Multiplier range for multiplication (higher = harder) */
+  multRange: number;
+}
+
+function getDecimalParams(level: number): DecimalParams {
+  const l = Math.max(1, Math.min(50, level));
+  return {
+    // Level 1-8: tenths, 8-20: hundredths, 20+: thousandths
+    decimalPlaces: l < 8 ? 1 : l < 20 ? 2 : 3,
+    // Higher levels use bigger numbers
+    maxValue: Math.min(Math.floor(10 + l * 2), 100),
+    // Division operations above level 12
+    allowDivision: l >= 12,
+    // Harder conversions (mixed decimals, repeating) above level 15
+    allowHardConversions: l >= 15,
+    // Wider multiplier range at higher levels
+    multRange: Math.min(Math.floor(2 + l * 0.3), 12),
+  };
 }
 
 // ── Problem generation ──
@@ -71,35 +105,49 @@ function generateNumberLineProblem(places: number): Problem {
     mode: "numberline",
     numberLineRange: [start, end],
     numberLineTarget: target,
+    explanation: `The number line goes from ${start} to ${end}. Each small tick mark represents ${roundDec(step, places + 1)}. Count ${steps} ticks from ${start} to get ${target}.`,
   };
 }
 
-function generateOperationsProblem(places: number): Problem {
-  const ops = ["+", "−", "×"] as const;
+function generateOperationsProblem(places: number, params?: DecimalParams): Problem {
+  const ops = params?.allowDivision ? ["+", "−", "×", "÷"] as const : ["+", "−", "×"] as const;
   const op = ops[Math.floor(Math.random() * ops.length)];
-  let a: number, b: number, answer: number, question: string;
+  const maxVal = params?.maxValue ?? 50;
+  const multMax = params?.multRange ?? 9;
+  let a: number, b: number, answer: number, question: string, explanation: string;
 
   switch (op) {
     case "+": {
-      a = randomDecimal(places, 50);
-      b = randomDecimal(places, 50);
+      a = randomDecimal(places, maxVal);
+      b = randomDecimal(places, maxVal);
       answer = roundDec(a + b, places);
       question = `${a} + ${b}`;
+      explanation = `Line up the decimal points:\n  ${a}\n+ ${b}\n= ${answer}\n\nAdd each column from right to left, carrying when needed.`;
       break;
     }
     case "−": {
-      a = randomDecimal(places, 50);
+      a = randomDecimal(places, maxVal);
       b = randomDecimal(places, a);
       if (b > a) [a, b] = [b, a];
       answer = roundDec(a - b, places);
       question = `${a} − ${b}`;
+      explanation = `Line up the decimal points:\n  ${a}\n− ${b}\n= ${answer}\n\nSubtract each column from right to left, borrowing when needed.`;
       break;
     }
     case "×": {
       a = randomDecimal(places, 10);
-      b = Math.floor(Math.random() * 9) + 2;
+      b = Math.floor(Math.random() * (multMax - 1)) + 2;
       answer = roundDec(a * b, places);
       question = `${a} × ${b}`;
+      explanation = `Multiply ${a} × ${b}:\nIgnore the decimal, compute ${Math.round(a * Math.pow(10, places))} × ${b} = ${Math.round(a * Math.pow(10, places)) * b}.\nThen place the decimal point ${places} place${places > 1 ? "s" : ""} from the right → ${answer}.`;
+      break;
+    }
+    case "÷": {
+      b = Math.floor(Math.random() * 4) + 2;
+      answer = randomDecimal(places, 10);
+      a = roundDec(answer * b, places);
+      question = `${a} ÷ ${b}`;
+      explanation = `Divide ${a} by ${b}:\n${a} ÷ ${b} = ${answer}\n\nYou can think: what times ${b} equals ${a}? The answer is ${answer}.`;
       break;
     }
   }
@@ -117,6 +165,7 @@ function generateOperationsProblem(places: number): Problem {
     answer,
     choices: [...wrongSet, answer].sort(() => Math.random() - 0.5),
     mode: "operations",
+    explanation,
   };
 }
 
@@ -125,6 +174,9 @@ function generateCompareProblem(places: number): Problem {
   let b = randomDecimal(places, 10);
   while (Math.abs(a - b) < 0.0001) b = randomDecimal(places, 10);
 
+  const larger = a > b ? a : b;
+  const smaller = a > b ? b : a;
+
   return {
     question: `Which is larger?`,
     answer: a > b ? "left" : "right",
@@ -132,15 +184,19 @@ function generateCompareProblem(places: number): Problem {
     mode: "compare",
     // Piggyback the actual values
     numberLineRange: [a, b],
+    explanation: `Compare digit by digit from left to right:\n${a} vs ${b}\n\n${larger} > ${smaller}\n\nTip: If the whole number parts are equal, compare the tenths, then hundredths, etc.`,
   };
 }
 
-function generateConvertProblem(places: number): Problem {
-  const types = ["frac2dec", "dec2pct", "pct2dec"] as const;
+function generateConvertProblem(places: number, params?: DecimalParams): Problem {
+  const types = params?.allowHardConversions
+    ? ["frac2dec", "dec2pct", "pct2dec", "dec2frac"] as const
+    : ["frac2dec", "dec2pct", "pct2dec"] as const;
   const type = types[Math.floor(Math.random() * types.length)];
 
   let question: string;
   let answer: string;
+  let explanation: string;
   const choices: string[] = [];
 
   switch (type) {
@@ -151,6 +207,7 @@ function generateConvertProblem(places: number): Problem {
       const decimal = roundDec(numer / denom, 3);
       question = `Convert ${numer}/${denom} to a decimal`;
       answer = String(decimal);
+      explanation = `To convert ${numer}/${denom} to a decimal, divide ${numer} by ${denom}:\n${numer} ÷ ${denom} = ${decimal}`;
       // Generate wrong answers
       const wrongs = new Set<string>();
       while (wrongs.size < 3) {
@@ -166,6 +223,7 @@ function generateConvertProblem(places: number): Problem {
       const pct = Math.round(decimal * 100);
       question = `Convert ${decimal} to a percentage`;
       answer = `${pct}%`;
+      explanation = `To convert a decimal to a percentage, multiply by 100:\n${decimal} × 100 = ${pct}%\n\nPercent means "per hundred."`;
       const wrongs = new Set<string>();
       while (wrongs.size < 3) {
         const wrong = pct + Math.floor((Math.random() - 0.5) * 30);
@@ -179,12 +237,29 @@ function generateConvertProblem(places: number): Problem {
       const decimal = roundDec(pct / 100, 2);
       question = `Convert ${pct}% to a decimal`;
       answer = String(decimal);
+      explanation = `To convert a percentage to a decimal, divide by 100:\n${pct}% = ${pct} ÷ 100 = ${decimal}\n\nJust move the decimal point two places to the left.`;
       const wrongs = new Set<string>();
       while (wrongs.size < 3) {
         const wrong = roundDec(decimal + (Math.random() - 0.5) * 0.3, 2);
         if (String(wrong) !== answer && wrong > 0 && wrong < 1.5) wrongs.add(String(wrong));
       }
       choices.push(...wrongs, answer);
+      break;
+    }
+    case "dec2frac": {
+      const fracs: [number, number, string][] = [
+        [0.5, 1, "1/2"], [0.25, 1, "1/4"], [0.75, 1, "3/4"], [0.2, 1, "1/5"],
+        [0.4, 1, "2/5"], [0.6, 1, "3/5"], [0.8, 1, "4/5"], [0.125, 1, "1/8"],
+        [0.375, 1, "3/8"], [0.625, 1, "5/8"], [0.875, 1, "7/8"],
+      ];
+      const pick = fracs[Math.floor(Math.random() * fracs.length)];
+      question = `Convert ${pick[0]} to a fraction`;
+      answer = pick[2];
+      explanation = `${pick[0]} = ${pick[2]}\n\nCommon decimal-to-fraction conversions are worth memorizing!`;
+      const wrongFracs = ["1/3", "2/3", "1/6", "5/6", "1/7", "3/7", "2/9", "5/12"];
+      const wrongPool = wrongFracs.filter(f => f !== answer);
+      const selected = wrongPool.sort(() => Math.random() - 0.5).slice(0, 3);
+      choices.push(...selected, answer);
       break;
     }
   }
@@ -194,16 +269,17 @@ function generateConvertProblem(places: number): Problem {
     answer,
     choices: choices.sort(() => Math.random() - 0.5),
     mode: "convert",
+    explanation,
   };
 }
 
-function generateProblem(modes: DecimalMode[], places: number): Problem {
+function generateProblem(modes: DecimalMode[], places: number, params?: DecimalParams): Problem {
   const mode = modes[Math.floor(Math.random() * modes.length)];
   switch (mode) {
     case "numberline": return generateNumberLineProblem(places);
-    case "operations": return generateOperationsProblem(places);
+    case "operations": return generateOperationsProblem(places, params);
     case "compare": return generateCompareProblem(places);
-    case "convert": return generateConvertProblem(places);
+    case "convert": return generateConvertProblem(places, params);
   }
 }
 
@@ -246,6 +322,16 @@ export function DecimalDashGame() {
   const [decimalPlaces, setDecimalPlaces] = useState(1);
   const [enabledModes, setEnabledModes] = useState<DecimalMode[]>(["numberline", "operations", "compare", "convert"]);
 
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceWaiting, setPracticeWaiting] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+  const [lastAnswer, setLastAnswer] = useState<{ correct: boolean; problem: Problem } | null>(null);
+
   const toggleMode = (mode: DecimalMode) => {
     setEnabledModes((prev) => {
       if (prev.includes(mode)) {
@@ -256,16 +342,29 @@ export function DecimalDashGame() {
     });
   };
 
+  // ── Derive decimal places from adaptive level ──
+  const adaptiveParams = getDecimalParams(adaptive.level);
+  const effectivePlaces = phase === "playing" || phase === "gameOver" ? adaptiveParams.decimalPlaces : decimalPlaces;
+
   // ── Countdown ──
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      // Skip countdown in practice mode
+      sfxCountdownGo();
+      const params = getDecimalParams(adaptive.level);
+      setPhase("playing");
+      setProblem(generateProblem(enabledModes, params.decimalPlaces, params));
+      return;
+    }
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
           sfxCountdownGo();
           setTimeout(() => {
+            const params = getDecimalParams(adaptive.level);
             setPhase("playing");
-            setProblem(generateProblem(enabledModes, decimalPlaces));
+            setProblem(generateProblem(enabledModes, params.decimalPlaces, params));
           }, 0);
           return 0;
         }
@@ -282,9 +381,9 @@ export function DecimalDashGame() {
     if (phase === "playing" && problem) problemStartRef.current = Date.now();
   }, [phase, problem]);
 
-  // ── Game timer ──
+  // ── Game timer (not in practice mode) ──
   useEffect(() => {
-    if (phase !== "playing") return;
+    if (phase !== "playing" || practiceMode) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -305,7 +404,7 @@ export function DecimalDashGame() {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase]);
+  }, [phase, practiceMode]);
 
   // ── Game over effects ──
   useEffect(() => {
@@ -339,14 +438,39 @@ export function DecimalDashGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const nextPracticeProblem = useCallback(() => {
+    const params = getDecimalParams(adaptive.level);
+    setProblem(generateProblem(enabledModes, params.decimalPlaces, params));
+    setPracticeWaiting(false);
+    setLastAnswer(null);
+    setFlash(null);
+  }, [enabledModes, adaptive.level]);
+
   const handleAnswer = useCallback(
     (choice: number | string) => {
-      if (phase !== "playing" || !problem) return;
+      if (phase !== "playing" || !problem || practiceWaiting) return;
 
       const isCorrect =
         typeof choice === "number" && typeof problem.answer === "number"
           ? Math.abs(choice - problem.answer) < 0.0001
           : String(choice) === String(problem.answer);
+
+      if (practiceMode) {
+        // Practice mode: no score, show explanation, wait for "Next"
+        setPracticeTotal((t) => t + 1);
+        if (isCorrect) {
+          sfxCorrect();
+          setPracticeCorrect((c) => c + 1);
+          setFlash("correct");
+        } else {
+          sfxWrong();
+          setFlash("wrong");
+        }
+        setAdaptive(prev => adaptiveUpdate(prev, isCorrect, false));
+        setLastAnswer({ correct: isCorrect, problem });
+        setPracticeWaiting(true);
+        return;
+      }
 
       if (isCorrect) {
         const newStreak = streak + 1;
@@ -361,18 +485,23 @@ export function DecimalDashGame() {
         setFlash("correct");
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
         else sfxCorrect();
+        // Adaptive: fast = answered in < 50% of timer (< 5s for a 10s window)
+        const wasFast = elapsed < (duration * 0.5 / (duration / 10));
+        setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
       } else {
         sfxWrong();
         setStreak(0);
         setWrong((w) => w + 1);
         setFlash("wrong");
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
       }
 
       setTimeout(() => setFlash(null), 200);
-      setProblem(generateProblem(enabledModes, decimalPlaces));
+      const params = getDecimalParams(adaptive.level);
+      setProblem(generateProblem(enabledModes, params.decimalPlaces, params));
       setTipIdx(Math.floor(Math.random() * DECIMAL_TIPS.length));
     },
-    [phase, problem, streak, enabledModes, decimalPlaces],
+    [phase, problem, streak, enabledModes, duration, adaptive.level, practiceMode, practiceWaiting],
   );
 
   const startGame = () => {
@@ -385,6 +514,11 @@ export function DecimalDashGame() {
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setPracticeWaiting(false);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
+    setLastAnswer(null);
+    setAdaptive(createAdaptiveState(1));
     setPhase("countdown");
   };
 
@@ -392,7 +526,7 @@ export function DecimalDashGame() {
   const timerBarWidth = (timeLeft / duration) * 100;
   const total = solved + wrong;
   const accuracy = total > 0 ? Math.round((solved / total) * 100) : 0;
-  const placesLabel = decimalPlaces === 1 ? "Tenths" : decimalPlaces === 2 ? "Hundredths" : "Thousandths";
+  const placesLabel = effectivePlaces === 1 ? "Tenths" : effectivePlaces === 2 ? "Hundredths" : "Thousandths";
 
   // ── Number line SVG renderer ──
   const renderNumberLine = (problem: Problem) => {
@@ -471,39 +605,52 @@ export function DecimalDashGame() {
               </div>
             </div>
 
-            {/* Duration slider */}
-            <div className="max-w-xs mx-auto mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-slate-400">Duration</span>
-                <span className="text-xs font-bold text-pink-400 tabular-nums">{duration >= 60 ? `${Math.floor(duration / 60)}m${duration % 60 ? ` ${duration % 60}s` : ""}` : `${duration}s`}</span>
+            {/* Practice mode toggle */}
+            <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 cursor-pointer max-w-xs mx-auto mb-4">
+              <div className="text-left">
+                <span className="text-xs text-slate-400">Practice mode</span>
+                <div className="text-[10px] text-slate-600">No timer, detailed explanations, learn at your own pace</div>
               </div>
-              <input type="range" min={30} max={300} step={30} value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full accent-pink-500" />
-              <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
-                <span>30s sprint</span><span>5 min marathon</span>
-              </div>
-            </div>
+              <input type="checkbox" checked={practiceMode} onChange={(e) => setPracticeMode(e.target.checked)}
+                className="rounded accent-pink-500 w-4 h-4" />
+            </label>
 
-            {/* Decimal places slider */}
+            {/* Duration slider (hidden in practice mode) */}
+            {!practiceMode && (
+              <div className="max-w-xs mx-auto mb-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-slate-400">Duration</span>
+                  <span className="text-xs font-bold text-pink-400 tabular-nums">{duration >= 60 ? `${Math.floor(duration / 60)}m${duration % 60 ? ` ${duration % 60}s` : ""}` : `${duration}s`}</span>
+                </div>
+                <input type="range" min={30} max={300} step={30} value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="w-full accent-pink-500" />
+                <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
+                  <span>30s sprint</span><span>5 min marathon</span>
+                </div>
+              </div>
+            )}
+
+            {/* Decimal places slider (info only — adaptive controls this) */}
             <div className="max-w-xs mx-auto mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-slate-400">Decimal Places</span>
-                <span className="text-xs font-bold text-pink-400">{decimalPlaces} ({placesLabel})</span>
+                <span className="text-xs text-slate-400">Starting Difficulty</span>
+                <span className="text-xs font-bold text-pink-400">{decimalPlaces} ({decimalPlaces === 1 ? "Tenths" : decimalPlaces === 2 ? "Hundredths" : "Thousandths"})</span>
               </div>
               <input type="range" min={1} max={3} step={1} value={decimalPlaces}
                 onChange={(e) => setDecimalPlaces(Number(e.target.value))}
                 className="w-full accent-pink-500" />
               <div className="flex justify-between text-[9px] text-slate-600 mt-0.5">
-                <span>0.1</span><span>0.001</span>
+                <span>0.1 (Easy)</span><span>0.001 (Hard)</span>
               </div>
+              <div className="text-[9px] text-slate-600 text-center mt-1">Difficulty adapts as you play!</div>
             </div>
 
             <button onClick={startGame}
               className="px-10 py-4 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-pink-500/30">
-              Start
+              {practiceMode ? "Start Practice" : "Start"}
             </button>
-            {highScore > 0 && (
+            {highScore > 0 && !practiceMode && (
               <div className="mt-4 flex items-center justify-center gap-2 text-yellow-400 text-sm">
                 <Trophy className="w-4 h-4" /> Best: {highScore}
               </div>
@@ -523,32 +670,67 @@ export function DecimalDashGame() {
         {/* ── PLAYING ── */}
         {phase === "playing" && problem && (
           <div className="w-full space-y-4">
-            {/* Timer bar */}
-            <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
-              <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
-                style={{ width: `${timerBarWidth}%`, background: timeLeft > 20 ? "#ec4899" : timeLeft > 10 ? "#f59e0b" : "#ef4444" }} />
-            </div>
+            {/* Timer bar (not in practice mode) */}
+            {!practiceMode && (
+              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${timerBarWidth}%`, background: timeLeft > 20 ? "#ec4899" : timeLeft > 10 ? "#f59e0b" : "#ef4444" }} />
+              </div>
+            )}
 
             {/* Tip */}
-            <div className="text-center text-[11px] text-slate-500 italic px-4">
-              💡 {DECIMAL_TIPS[tipIdx % DECIMAL_TIPS.length]}
-            </div>
+            {!practiceWaiting && (
+              <div className="text-center text-[11px] text-slate-500 italic px-4">
+                💡 {DECIMAL_TIPS[tipIdx % DECIMAL_TIPS.length]}
+              </div>
+            )}
 
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Timer className={`w-5 h-5 ${timerColor}`} />
-                <span className={`text-2xl font-bold tabular-nums ${timerColor}`}>{timeLeft}s</span>
+                {practiceMode ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-400 font-medium">Practice</span>
+                    <span className="text-slate-400 tabular-nums">
+                      {practiceCorrect}/{practiceTotal}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Timer className={`w-5 h-5 ${timerColor}`} />
+                    <span className={`text-2xl font-bold tabular-nums ${timerColor}`}>{timeLeft}s</span>
+                  </>
+                )}
               </div>
-              <StreakBadge streak={streak} />
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
-                <div className="text-xs text-slate-400">{solved} solved</div>
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.emoji} {dl.label}
+                      </div>
+                      {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                        <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                          {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
+              {!practiceMode && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
+                  <div className="text-xs text-slate-400">{solved} solved</div>
+                </div>
+              )}
             </div>
 
             {/* Flash */}
-            {flash && (
+            {flash && !practiceWaiting && (
               <div className={`fixed inset-0 pointer-events-none z-50 ${flash === "correct" ? "bg-green-500/10" : "bg-red-500/15"}`} />
             )}
 
@@ -557,6 +739,7 @@ export function DecimalDashGame() {
               <span className="text-[10px] uppercase tracking-wider text-pink-400/70 font-bold">
                 {problem.mode === "numberline" ? "Number Line" : problem.mode === "operations" ? "Operations" : problem.mode === "compare" ? "Compare" : "Convert"}
               </span>
+              <span className="text-[10px] text-slate-600 ml-2">({placesLabel})</span>
             </div>
 
             {/* ── Number Line mode ── */}
@@ -568,14 +751,16 @@ export function DecimalDashGame() {
                     What value is at the marker?
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {problem.choices.map((choice, i) => (
-                    <button key={i} onClick={() => handleAnswer(choice)}
-                      className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
-                      {choice}
-                    </button>
-                  ))}
-                </div>
+                {!practiceWaiting && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {problem.choices.map((choice, i) => (
+                      <button key={i} onClick={() => handleAnswer(choice)}
+                        className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
+                        {choice}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -586,14 +771,16 @@ export function DecimalDashGame() {
                   <div className="text-4xl font-bold text-white mb-2 tracking-wide">{problem.question}</div>
                   <div className="text-lg text-slate-400">= ?</div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {problem.choices.map((choice, i) => (
-                    <button key={i} onClick={() => handleAnswer(choice)}
-                      className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
-                      {choice}
-                    </button>
-                  ))}
-                </div>
+                {!practiceWaiting && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {problem.choices.map((choice, i) => (
+                      <button key={i} onClick={() => handleAnswer(choice)}
+                        className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
+                        {choice}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -601,16 +788,27 @@ export function DecimalDashGame() {
             {problem.mode === "compare" && problem.numberLineRange && (
               <div className="space-y-4">
                 <div className="text-center text-lg font-bold text-white">Which is larger?</div>
-                <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => handleAnswer("left")}
-                    className="py-8 bg-white/[0.06] hover:bg-pink-500/20 border border-white/10 hover:border-pink-400/40 rounded-2xl text-3xl font-bold text-white transition-all active:scale-95">
-                    {problem.numberLineRange[0]}
-                  </button>
-                  <button onClick={() => handleAnswer("right")}
-                    className="py-8 bg-white/[0.06] hover:bg-pink-500/20 border border-white/10 hover:border-pink-400/40 rounded-2xl text-3xl font-bold text-white transition-all active:scale-95">
-                    {problem.numberLineRange[1]}
-                  </button>
-                </div>
+                {!practiceWaiting ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => handleAnswer("left")}
+                      className="py-8 bg-white/[0.06] hover:bg-pink-500/20 border border-white/10 hover:border-pink-400/40 rounded-2xl text-3xl font-bold text-white transition-all active:scale-95">
+                      {problem.numberLineRange[0]}
+                    </button>
+                    <button onClick={() => handleAnswer("right")}
+                      className="py-8 bg-white/[0.06] hover:bg-pink-500/20 border border-white/10 hover:border-pink-400/40 rounded-2xl text-3xl font-bold text-white transition-all active:scale-95">
+                      {problem.numberLineRange[1]}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={`py-8 rounded-2xl text-3xl font-bold text-center border ${lastAnswer?.problem.answer === "left" ? "border-green-400/40 bg-green-500/10 text-green-400" : "border-white/10 bg-white/[0.03] text-slate-500"}`}>
+                      {problem.numberLineRange[0]}
+                    </div>
+                    <div className={`py-8 rounded-2xl text-3xl font-bold text-center border ${lastAnswer?.problem.answer === "right" ? "border-green-400/40 bg-green-500/10 text-green-400" : "border-white/10 bg-white/[0.03] text-slate-500"}`}>
+                      {problem.numberLineRange[1]}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -620,13 +818,37 @@ export function DecimalDashGame() {
                 <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-center shadow-lg">
                   <div className="text-2xl font-bold text-white">{problem.question}</div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {problem.choices.map((choice, i) => (
-                    <button key={i} onClick={() => handleAnswer(choice)}
-                      className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
-                      {choice}
-                    </button>
-                  ))}
+                {!practiceWaiting && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {problem.choices.map((choice, i) => (
+                      <button key={i} onClick={() => handleAnswer(choice)}
+                        className="py-4 bg-white/10 hover:bg-pink-500/25 border border-white/10 hover:border-pink-400/40 rounded-xl text-xl font-bold text-white transition-all active:scale-95">
+                        {choice}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Practice mode: feedback + explanation + next button */}
+            {practiceMode && practiceWaiting && lastAnswer && (
+              <div className="space-y-3">
+                <div className={`rounded-xl border p-4 text-center ${lastAnswer.correct ? "border-green-400/30 bg-green-500/10" : "border-red-400/30 bg-red-500/10"}`}>
+                  <div className={`text-lg font-bold ${lastAnswer.correct ? "text-green-400" : "text-red-400"}`}>
+                    {lastAnswer.correct ? "Correct!" : `Wrong — answer: ${lastAnswer.problem.answer}`}
+                  </div>
+                </div>
+                {lastAnswer.problem.explanation && (
+                  <div className="text-xs text-slate-400 whitespace-pre-line text-left bg-white/5 rounded-lg px-4 py-3 border border-white/10">
+                    {lastAnswer.problem.explanation}
+                  </div>
+                )}
+                <div className="flex justify-center">
+                  <button onClick={nextPracticeProblem}
+                    className="px-6 py-3 bg-pink-500 hover:bg-pink-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             )}
@@ -637,21 +859,43 @@ export function DecimalDashGame() {
         {phase === "gameOver" && (
           <div className="text-center">
             <Hash className="w-16 h-16 text-pink-400 mx-auto mb-4" />
-            <h3 className="text-3xl font-bold text-white mb-2">Time&apos;s Up!</h3>
-            <div className="text-5xl font-bold text-pink-400 mb-2">{score}</div>
-            <div className="text-slate-400 space-y-1 mb-6">
-              <p>{solved} solved, {wrong} wrong ({accuracy}%)</p>
-              <p>Best streak: x{bestStreak}</p>
+            <h3 className="text-3xl font-bold text-white mb-2">{practiceMode ? "Practice Complete" : "Time\u2019s Up!"}</h3>
+            {!practiceMode && <div className="text-5xl font-bold text-pink-400 mb-2">{score}</div>}
+            <div className="text-slate-400 space-y-1 mb-2">
+              {practiceMode ? (
+                <p>{practiceCorrect}/{practiceTotal} correct</p>
+              ) : (
+                <>
+                  <p>{solved} solved, {wrong} wrong ({accuracy}%)</p>
+                  <p>Best streak: x{bestStreak}</p>
+                </>
+              )}
             </div>
-            {score >= highScore && score > 0 && (
+            {/* Final adaptive level */}
+            <div className="mb-4">
+              {(() => {
+                const dl = getDifficultyLabel(adaptive.level);
+                return (
+                  <p className="text-sm text-slate-400">
+                    Final difficulty:{" "}
+                    <span className="font-bold" style={{ color: dl.color }}>
+                      {dl.emoji} {dl.label} ({adaptive.level.toFixed(1)})
+                    </span>
+                  </p>
+                );
+              })()}
+            </div>
+            {!practiceMode && score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="decimal-dash" score={score} level={decimalPlaces}
-                stats={{ solved, wrong, accuracy: `${accuracy}%`, bestStreak }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="decimal-dash" score={score} level={Math.round(adaptive.level)}
+                  stats={{ solved, wrong, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}

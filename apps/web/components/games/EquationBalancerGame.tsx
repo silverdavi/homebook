@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Timer, Star, Plus, Minus, CheckCircle2, FlaskConical } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Timer, Star, Plus, Minus, CheckCircle2, FlaskConical, BookOpen, ChevronRight } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -12,6 +12,7 @@ import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
   sfxCountdown, sfxCountdownGo, sfxClick,
 } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import Link from "next/link";
 
 // ── Types ──
@@ -81,14 +82,16 @@ const EQUATIONS: Equation[] = [
   { reactants: [makeCompound("SiO2"), makeCompound("C")], products: [makeCompound("Si"), makeCompound("CO")], solution: [1, 2, 1, 2], difficulty: "hard" },
 ];
 
-function getEquationsByDifficulty(difficulty: number): Equation[] {
-  if (difficulty <= 3) return EQUATIONS.filter((e) => e.difficulty === "easy");
-  if (difficulty <= 7) return EQUATIONS.filter((e) => e.difficulty === "easy" || e.difficulty === "medium");
-  return EQUATIONS;
+/** Map adaptive level (1-50) → which equation difficulties to include */
+function getEquationsByAdaptiveLevel(level: number): Equation[] {
+  if (level < 4) return EQUATIONS.filter((e) => e.difficulty === "easy");
+  if (level < 8) return EQUATIONS.filter((e) => e.difficulty === "easy" || e.difficulty === "medium");
+  if (level < 14) return EQUATIONS.filter((e) => e.difficulty === "medium" || e.difficulty === "hard");
+  return EQUATIONS.filter((e) => e.difficulty === "hard");
 }
 
-function pickEquation(difficulty: number, usedIndices: Set<number>): { eq: Equation; idx: number } {
-  const pool = getEquationsByDifficulty(difficulty);
+function pickEquation(adaptiveLevel: number, usedIndices: Set<number>): { eq: Equation; idx: number } {
+  const pool = getEquationsByAdaptiveLevel(adaptiveLevel);
   const globalIndices = pool.map((eq) => EQUATIONS.indexOf(eq)).filter((i) => !usedIndices.has(i));
   const candidates = globalIndices.length > 0 ? globalIndices : pool.map((eq) => EQUATIONS.indexOf(eq));
   const idx = candidates[Math.floor(Math.random() * candidates.length)];
@@ -147,6 +150,21 @@ function FormulaDisplay({ formula, className = "" }: { formula: string; classNam
   return <span className={className}>{parts}</span>;
 }
 
+/** Generate a human-readable explanation of the solution */
+function getSolutionExplanation(eq: Equation): string {
+  const allCompounds = [...eq.reactants, ...eq.products];
+  const coeffLabels = eq.solution.map((c, i) => `${c}${allCompounds[i].formula}`);
+  const leftSide = coeffLabels.slice(0, eq.reactants.length).join(" + ");
+  const rightSide = coeffLabels.slice(eq.reactants.length).join(" + ");
+
+  const left = sumAtoms(eq.reactants, eq.solution.slice(0, eq.reactants.length));
+  const right = sumAtoms(eq.products, eq.solution.slice(eq.reactants.length));
+  const elements = Object.keys(left).sort();
+  const counts = elements.map((el) => `${el}: ${left[el]} = ${right[el]}`).join(", ");
+
+  return `${leftSide} → ${rightSide}\nAtom check: ${counts}`;
+}
+
 // ── Constants ──
 
 const CHEMISTRY_TIPS = [
@@ -161,10 +179,6 @@ const CHEMISTRY_TIPS = [
 ];
 
 const COUNTDOWN_SECS = 3;
-const DIFFICULTY_LABELS = [
-  "", "Novice", "Novice+", "Apprentice", "Apprentice+", "Chemist",
-  "Chemist+", "Scientist", "Scientist+", "Expert", "Master",
-];
 
 export function EquationBalancerGame() {
   useGameMusic();
@@ -198,7 +212,14 @@ export function EquationBalancerGame() {
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [secsPerEquation, setSecsPerEquation] = useState(30);
 
-  const diffLabel = DIFFICULTY_LABELS[difficulty] || "Master";
+  // ── Adaptive difficulty ──
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
+  // ── Practice mode ──
+  const [isPractice, setIsPractice] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+  const [waitingForNext, setWaitingForNext] = useState(false);
 
   // ── Countdown ──
   useEffect(() => {
@@ -223,7 +244,7 @@ export function EquationBalancerGame() {
 
   // ── Timer ──
   useEffect(() => {
-    if (phase !== "playing" || !timerEnabled) return;
+    if (phase !== "playing" || !timerEnabled || isPractice) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -237,13 +258,14 @@ export function EquationBalancerGame() {
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, timerEnabled, round]);
+  }, [phase, timerEnabled, round, isPractice]);
 
   const handleTimerExpired = useCallback(() => {
     sfxWrong();
     setStreak(0);
     setFlash("wrong");
     setShowResult("wrong");
+    setAdaptive(prev => adaptiveUpdate(prev, false, false));
     setTimeout(() => {
       setFlash(null);
       setShowResult(null);
@@ -281,7 +303,7 @@ export function EquationBalancerGame() {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Enter" && phase === "menu") {
         e.preventDefault();
-        startGame();
+        startGame(false);
       }
       if (e.key === "Escape" && phase !== "menu") {
         e.preventDefault();
@@ -293,16 +315,17 @@ export function EquationBalancerGame() {
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadNextEquation = useCallback(() => {
-    const { eq, idx } = pickEquation(difficulty, usedEquationsRef.current);
+    const { eq, idx } = pickEquation(adaptive.level, usedEquationsRef.current);
     usedEquationsRef.current.add(idx);
     setCurrentEq(eq);
     setCoefficients(new Array(eq.reactants.length + eq.products.length).fill(1));
     setTimeLeft(secsPerEquation);
     setShowResult(null);
+    setWaitingForNext(false);
     roundStartRef.current = Date.now();
     setTipIdx(Math.floor(Math.random() * CHEMISTRY_TIPS.length));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficulty, secsPerEquation]);
+  }, [adaptive.level, secsPerEquation]);
 
   const endGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -324,10 +347,22 @@ export function EquationBalancerGame() {
     if (!currentEq || showResult) return;
     if (timerRef.current) clearInterval(timerRef.current);
 
+    const elapsed = (Date.now() - roundStartRef.current) / 1000;
+    const wasFast = timerEnabled ? elapsed < secsPerEquation * 0.5 : elapsed < 15;
+
     if (isBalanced(currentEq, coefficients)) {
+      if (isPractice) {
+        sfxCorrect();
+        setPracticeCorrect((c) => c + 1);
+        setPracticeTotal((t) => t + 1);
+        setShowResult("correct");
+        setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
+        setWaitingForNext(true);
+        return;
+      }
+
       const newStreak = streak + 1;
       const { mult } = getMultiplierFromStreak(newStreak);
-      const elapsed = (Date.now() - roundStartRef.current) / 1000;
       const timeBonus = timerEnabled ? Math.max(0, Math.round((secsPerEquation - elapsed) * 2)) : 0;
       const diffBonus = difficulty * 5;
       const points = Math.round((20 + timeBonus + diffBonus) * mult);
@@ -338,28 +373,47 @@ export function EquationBalancerGame() {
       setSolved((s) => s + 1);
       setFlash("correct");
       setShowResult("correct");
+      setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
       if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
       else sfxCorrect();
     } else {
+      if (isPractice) {
+        sfxWrong();
+        setPracticeTotal((t) => t + 1);
+        setShowResult("wrong");
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
+        setWaitingForNext(true);
+        return;
+      }
+
       sfxWrong();
       setStreak(0);
       setFlash("wrong");
       setShowResult("wrong");
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
     }
 
-    setTimeout(() => {
-      setFlash(null);
-      setShowResult(null);
-      if (round + 1 >= totalRounds) {
-        endGame();
-      } else {
-        setRound((r) => r + 1);
-        loadNextEquation();
-      }
-    }, 1500);
+    if (!isPractice) {
+      setTimeout(() => {
+        setFlash(null);
+        setShowResult(null);
+        if (round + 1 >= totalRounds) {
+          endGame();
+        } else {
+          setRound((r) => r + 1);
+          loadNextEquation();
+        }
+      }, 1500);
+    }
   };
 
-  const startGame = () => {
+  const practiceNext = () => {
+    setShowResult(null);
+    setWaitingForNext(false);
+    loadNextEquation();
+  };
+
+  const startGame = (practice: boolean) => {
     setScore(0);
     setStreak(0);
     setBestStreak(0);
@@ -368,8 +422,26 @@ export function EquationBalancerGame() {
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setIsPractice(practice);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
+    setWaitingForNext(false);
     usedEquationsRef.current.clear();
-    setPhase("countdown");
+    setAdaptive(createAdaptiveState(practice ? 1 : difficulty));
+
+    if (practice) {
+      // Skip countdown in practice mode
+      setPhase("playing");
+      // Need to load after state settles
+      setTimeout(() => loadNextEquation(), 0);
+    } else {
+      setPhase("countdown");
+    }
+  };
+
+  const endPractice = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setPhase("menu");
   };
 
   // ── Render helpers ──
@@ -433,9 +505,10 @@ export function EquationBalancerGame() {
     );
   };
 
-  const timerBarWidth = timerEnabled && secsPerEquation > 0 ? (timeLeft / secsPerEquation) * 100 : 100;
+  const timerBarWidth = timerEnabled && secsPerEquation > 0 && !isPractice ? (timeLeft / secsPerEquation) * 100 : 100;
   const timerColor = timeLeft > 15 ? "text-green-400" : timeLeft > 7 ? "text-yellow-400" : "text-red-400";
   const accuracy = totalRounds > 0 && phase === "gameOver" ? Math.round((solved / totalRounds) * 100) : 0;
+  const dl = getDifficultyLabel(adaptive.level);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-cyan-950 to-slate-950 flex flex-col items-center">
@@ -461,8 +534,8 @@ export function EquationBalancerGame() {
             {/* Difficulty slider */}
             <div className="max-w-xs mx-auto mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-slate-400">Difficulty</span>
-                <span className="text-xs font-bold text-cyan-400">{diffLabel}</span>
+                <span className="text-xs text-slate-400">Starting Difficulty</span>
+                <span className="text-xs font-bold text-cyan-400">{getDifficultyLabel(difficulty).label}</span>
               </div>
               <input type="range" min={1} max={10} step={1} value={difficulty}
                 onChange={(e) => setDifficulty(Number(e.target.value))}
@@ -512,10 +585,16 @@ export function EquationBalancerGame() {
               </div>
             )}
 
-            <button onClick={startGame}
-              className="px-10 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-cyan-500/30 mt-2">
-              Start
-            </button>
+            <div className="flex gap-3 justify-center mt-2">
+              <button onClick={() => startGame(false)}
+                className="px-10 py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-cyan-500/30">
+                Start
+              </button>
+              <button onClick={() => startGame(true)}
+                className="px-6 py-4 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 hover:border-emerald-400/50 text-emerald-400 font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                <BookOpen className="w-5 h-5" /> Practice
+              </button>
+            </div>
             {highScore > 0 && (
               <div className="mt-4 flex items-center justify-center gap-2 text-yellow-400 text-sm">
                 <Trophy className="w-4 h-4" /> Best: {highScore}
@@ -537,7 +616,7 @@ export function EquationBalancerGame() {
         {phase === "playing" && currentEq && (
           <div className="w-full space-y-4">
             {/* Timer bar */}
-            {timerEnabled && (
+            {timerEnabled && !isPractice && (
               <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
                 <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
                   style={{ width: `${timerBarWidth}%`, background: timeLeft > 15 ? "#06b6d4" : timeLeft > 7 ? "#f59e0b" : "#ef4444" }} />
@@ -552,22 +631,52 @@ export function EquationBalancerGame() {
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {timerEnabled && (
+                {timerEnabled && !isPractice && (
                   <>
                     <Timer className={`w-5 h-5 ${timerColor}`} />
                     <span className={`text-xl font-bold tabular-nums ${timerColor}`}>{timeLeft}s</span>
                   </>
                 )}
-                <span className="text-sm text-slate-400">
-                  {round + 1}/{totalRounds}
-                </span>
+                {isPractice ? (
+                  <span className="text-sm text-emerald-400 font-medium">
+                    Practice {practiceTotal > 0 ? `${practiceCorrect}/${practiceTotal}` : ""}
+                  </span>
+                ) : (
+                  <span className="text-sm text-slate-400">
+                    {round + 1}/{totalRounds}
+                  </span>
+                )}
               </div>
-              <StreakBadge streak={streak} />
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
-                <div className="text-xs text-slate-400">{solved} balanced</div>
+
+              {/* Adaptive difficulty badge */}
+              <div className="flex items-center gap-1.5">
+                <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                  {dl.emoji} {dl.label}
+                </div>
+                {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
               </div>
+
+              {!isPractice && <StreakBadge streak={streak} />}
+              {!isPractice && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
+                  <div className="text-xs text-slate-400">{solved} balanced</div>
+                </div>
+              )}
             </div>
+
+            {/* Practice mode: End button */}
+            {isPractice && (
+              <div className="flex justify-end">
+                <button onClick={endPractice} className="text-xs text-slate-500 hover:text-white transition-colors underline">
+                  End Practice
+                </button>
+              </div>
+            )}
 
             {/* Flash overlay */}
             {flash && (
@@ -612,11 +721,29 @@ export function EquationBalancerGame() {
               {renderAtomCounts()}
             </div>
 
-            {/* Check button */}
+            {/* Practice mode explanation */}
+            {isPractice && showResult && currentEq && (
+              <div className="bg-white/[0.04] rounded-xl border border-white/10 p-4">
+                <div className="text-xs text-slate-500 font-medium mb-2">Solution Explanation</div>
+                <div className="text-sm text-white font-mono whitespace-pre-wrap">
+                  {getSolutionExplanation(currentEq)}
+                </div>
+              </div>
+            )}
+
+            {/* Check button / Next button */}
             {!showResult && (
               <button onClick={checkAnswer}
                 className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-5 h-5" /> Check Balance
+              </button>
+            )}
+
+            {/* Practice mode: Next button */}
+            {isPractice && waitingForNext && (
+              <button onClick={practiceNext}
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl text-base transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                Next <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -628,10 +755,11 @@ export function EquationBalancerGame() {
             <FlaskConical className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Lab Complete!</h3>
             <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
-            <div className="text-slate-400 space-y-1 mb-6">
+            <div className="text-slate-400 space-y-1 mb-2">
               <p>{solved}/{totalRounds} equations balanced ({accuracy}%)</p>
               <p>Best streak: x{bestStreak}</p>
             </div>
+            <p className="text-slate-400 mb-6 text-sm">Final difficulty: <span className="text-white font-bold">{adaptive.level.toFixed(1)}</span> {dl.emoji} {dl.label}</p>
             {score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
@@ -639,7 +767,7 @@ export function EquationBalancerGame() {
             )}
             <div className="mb-3">
               <ScoreSubmit game="equation-balancer" score={score} level={difficulty}
-                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak }} />
+                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalDifficulty: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
@@ -652,7 +780,7 @@ export function EquationBalancerGame() {
               />
             )}
             <div className="flex gap-3 justify-center">
-              <button onClick={startGame}
+              <button onClick={() => startGame(false)}
                 className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Play Again
               </button>
