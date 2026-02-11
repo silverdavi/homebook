@@ -286,7 +286,7 @@ export function AlgorithmArenaGame() {
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-lg mx-auto gap-6">
           <div className="text-center">
-            <div className="text-6xl mb-4">{"\u26A1"}</div>
+            <div className="text-6xl mb-4">⚡</div>
             <h2 className="text-3xl font-extrabold mb-2">
               Master Algorithms!
             </h2>
@@ -300,14 +300,14 @@ export function AlgorithmArenaGame() {
               Skills You&apos;ll Learn
             </h3>
             <div className="grid grid-cols-2 gap-1.5 text-xs text-white/70">
-              <div>{"\uD83D\uDFE2"} Sorting basics</div>
-              <div>{"\uD83D\uDFE1"} Bubble sort</div>
-              <div>{"\uD83D\uDFE0"} Selection sort</div>
-              <div>{"\uD83D\uDD34"} Binary search</div>
-              <div>{"\uD83D\uDCA5"} Algorithm comparison</div>
-              <div>{"\uD83D\uDD25"} Big-O notation</div>
-              <div>{"\u26A1"} Merge sort</div>
-              <div>{"\uD83D\uDC51"} Advanced algorithms</div>
+              <div>🟢 Sorting basics</div>
+              <div>🟡 Bubble sort</div>
+              <div>🟠 Selection sort</div>
+              <div>🔴 Binary search</div>
+              <div>💥 Algorithm comparison</div>
+              <div>🔥 Big-O notation</div>
+              <div>⚡ Merge sort</div>
+              <div>👑 Advanced algorithms</div>
             </div>
           </div>
           <div className="w-full space-y-2">
@@ -402,7 +402,7 @@ export function AlgorithmArenaGame() {
           <span
             className={`text-xs font-bold animate-bounce ${adjustAnim === "up" ? "text-green-400" : "text-red-400"}`}
           >
-            {adjustAnim === "up" ? "\u25B2" : "\u25BC"}
+            {adjustAnim === "up" ? "▲" : "▼"}
           </span>
         )}
       </div>
@@ -495,10 +495,10 @@ export function AlgorithmArenaGame() {
                   </span>
                   {ch}
                   {isCor && (
-                    <span className="ml-2 text-emerald-400">{"\u2713"}</span>
+                    <span className="ml-2 text-emerald-400">✓</span>
                   )}
                   {isSel && !isCor && (
-                    <span className="ml-2 text-red-400">{"\u2717"}</span>
+                    <span className="ml-2 text-red-400">✗</span>
                   )}
                 </div>
               );
@@ -518,7 +518,7 @@ export function AlgorithmArenaGame() {
           >
             {currentIdx + 1 >= questions.length
               ? "See Results"
-              : "Next Question \u2192"}
+              : "Next Question →"}
           </button>
         </div>
       </div>
@@ -589,7 +589,7 @@ export function AlgorithmArenaGame() {
                   <span
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${r.correct ? "bg-emerald-600/30 text-emerald-400" : "bg-red-600/30 text-red-400"}`}
                   >
-                    {r.correct ? "\u2713" : "\u2717"}
+                    {r.correct ? "✓" : "✗"}
                   </span>
                   <span className="text-white/60 truncate flex-1">
                     {r.question.question}

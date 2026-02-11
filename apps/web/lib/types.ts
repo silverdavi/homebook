@@ -1,4 +1,4 @@
-export type Subject = "math" | "chemistry" | "biology" | "reading";
+export type Subject = "math" | "chemistry" | "biology" | "reading" | "physics" | "earth-science";
 
 export type Difficulty = "easy" | "medium" | "hard" | "mixed";
 

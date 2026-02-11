@@ -343,7 +343,7 @@ export function PatternMachineGame() {
           <ArrowLeft size={16} /> Back
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
-          \u2699\ufe0f Pattern Machine
+          ⚙️ Pattern Machine
         </h1>
         <AudioToggles />
       </div>
@@ -367,14 +367,14 @@ export function PatternMachineGame() {
           <div className="mb-6 text-sm text-slate-500 max-w-md mx-auto">
             <p className="mb-2 font-semibold text-slate-300">What you&apos;ll learn:</p>
             <div className="grid grid-cols-2 gap-1 text-xs text-left">
-              <span>\ud83d\udd34 Color/shape patterns</span>
-              <span>\ud83d\udd22 Number sequences</span>
-              <span>\u2699\ufe0f Function machines</span>
-              <span>\ud83d\udd01 Loop detection</span>
-              <span>\ud83d\udd00 Conditional rules</span>
-              <span>\ud83c\udf1f Famous sequences</span>
-              <span>\ud83d\udcc8 Growth patterns</span>
-              <span>\ud83e\udde9 Complex recurrences</span>
+              <span>🔴 Color/shape patterns</span>
+              <span>🔢 Number sequences</span>
+              <span>⚙️ Function machines</span>
+              <span>🔁 Loop detection</span>
+              <span>🔀 Conditional rules</span>
+              <span>🌟 Famous sequences</span>
+              <span>📈 Growth patterns</span>
+              <span>🧩 Complex recurrences</span>
             </div>
           </div>
 
@@ -423,7 +423,7 @@ export function PatternMachineGame() {
             </span>
             {showDiffChange && (
               <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
-                {adaptive.lastAdjust === "up" ? "\u2191 Harder!" : "\u2193 Easier"}
+                {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
               </span>
             )}
           </div>
@@ -474,8 +474,8 @@ export function PatternMachineGame() {
                   disabled={phase === "feedback"}
                   className={classes}
                 >
-                  {phase === "feedback" && isCorrectAnswer && "\u2713 "}
-                  {phase === "feedback" && isSelected && !isCorrectAnswer && "\u2717 "}
+                  {phase === "feedback" && isCorrectAnswer && "✓ "}
+                  {phase === "feedback" && isSelected && !isCorrectAnswer && "✗ "}
                   {opt}
                 </button>
               );
@@ -492,7 +492,7 @@ export function PatternMachineGame() {
                 onClick={nextQuestion}
                 className="w-full py-3 rounded-lg font-bold text-lg bg-violet-600 hover:bg-violet-500 text-white transition-colors"
               >
-                {currentIdx + 1 >= QUESTIONS_PER_SESSION ? "See Results" : "Next Question \u2192"}
+                {currentIdx + 1 >= QUESTIONS_PER_SESSION ? "See Results" : "Next Question →"}
               </button>
             </div>
           )}
@@ -502,7 +502,7 @@ export function PatternMachineGame() {
               onClick={() => setPhase("menu")}
               className="w-full mt-4 py-2 text-sm text-slate-400 hover:text-white"
             >
-              \u2190 Quit
+              ← Quit
             </button>
           )}
 
@@ -515,7 +515,7 @@ export function PatternMachineGame() {
       {/* Complete */}
       {phase === "complete" && (
         <div className="text-center py-8">
-          <div className="text-5xl mb-4">{accuracy >= 80 ? "\ud83c\udfc6" : accuracy >= 50 ? "\u2699\ufe0f" : "\ud83d\udcaa"}</div>
+          <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "⚙️" : "💪"}</div>
           <h2 className="text-3xl font-bold mb-2 text-violet-400">Session Complete!</h2>
 
           <div className="text-slate-300 space-y-1 mb-4">

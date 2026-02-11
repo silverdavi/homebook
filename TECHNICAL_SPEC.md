@@ -848,7 +848,7 @@ homebook/
 │       ├── app/
 │       │   ├── page.tsx                  # Landing page
 │       │   ├── generate/page.tsx         # Worksheet generator UI
-│       │   ├── games/                    # Game Arena (27 games)
+│       │   ├── games/                    # Game Arena (37 games)
 │       │   │   ├── fraction-lab/         # Fraction curriculum
 │       │   │   ├── math-blitz/           # Arithmetic speed
 │       │   │   ├── times-table/          # Multiplication
@@ -935,7 +935,7 @@ homebook/
 
 ### Overview
 
-The Game Arena is a collection of 27 interactive educational games built as React components within the Next.js frontend. Games share common infrastructure for adaptive difficulty, achievements, scoring, and optional user profiles.
+The Game Arena is a collection of 37 interactive educational games (plus Daily Challenge) built as React components within the Next.js frontend. Games span 7 sections: Math, Science, Language & Logic, Puzzle & Creative, Data & Media Literacy, Computer Science, and Design. Games share common infrastructure for adaptive difficulty, achievements, scoring, and optional user profiles.
 
 ### Adaptive Difficulty Engine
 
@@ -967,7 +967,7 @@ Optional profiles use kid-friendly access codes (e.g., `BLUE-FOX-73`) instead of
 
 ### Achievement System
 
-Bronze/Silver/Gold tiers with categories: Score Master, Streak Master, Speed Demon, Polymath (play all 27 games), Daily Player, Perfectionist. Additional tiers (Unstoppable, Immortal, Legendary) for extreme performance.
+Bronze/Silver/Gold tiers with categories: Score Master, Streak Master, Speed Demon, Polymath (play all 38 games), Daily Player, Perfectionist. Additional tiers (Unstoppable, Immortal, Legendary) for extreme performance.
 
 ### Audio
 

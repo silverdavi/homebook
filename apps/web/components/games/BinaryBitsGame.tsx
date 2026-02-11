@@ -377,7 +377,7 @@ export function BinaryBitsGame() {
           <ArrowLeft size={16} /> Back
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
-          \U0001f4bb Binary & Bits
+          💻 Binary &amp; Bits
         </h1>
         <AudioToggles />
       </div>
@@ -401,14 +401,14 @@ export function BinaryBitsGame() {
           <div className="mb-6 text-sm text-slate-500 max-w-md mx-auto">
             <p className="mb-2 font-semibold text-slate-300">What you&apos;ll learn:</p>
             <div className="grid grid-cols-2 gap-1 text-xs text-left">
-              <span>\U0001f4a1 Binary counting</span>
-              <span>\ud83d\udd22 Decimal conversion</span>
-              <span>\U0001f3a8 Hex & color codes</span>
-              <span>\u26a1 Logic gates</span>
-              <span>\U0001f500 XOR & NAND</span>
-              <span>\U0001f4bb ASCII encoding</span>
-              <span>\u2796 Two\u2019s complement</span>
-              <span>\u2699\ufe0f Bitwise operations</span>
+              <span>💡 Binary counting</span>
+              <span>🔢 Decimal conversion</span>
+              <span>🎨 Hex &amp; color codes</span>
+              <span>⚡ Logic gates</span>
+              <span>🔀 XOR &amp; NAND</span>
+              <span>💻 ASCII encoding</span>
+              <span>➖ Two&apos;s complement</span>
+              <span>⚙️ Bitwise operations</span>
             </div>
           </div>
 
@@ -551,7 +551,7 @@ export function BinaryBitsGame() {
       {/* Complete */}
       {phase === "complete" && (
         <div className="text-center py-8">
-          <div className="text-5xl mb-4">{accuracy >= 80 ? "\ud83c\udfc6" : accuracy >= 50 ? "\U0001f4bb" : "\ud83d\udcaa"}</div>
+          <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "💻" : "💪"}</div>
           <h2 className="text-3xl font-bold mb-2 text-cyan-400">Session Complete!</h2>
 
           <div className="text-slate-300 space-y-1 mb-4">

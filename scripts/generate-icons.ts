@@ -59,13 +59,25 @@ const ICONS: IconDef[] = [
   { id: "number-puzzle", prompt: "A sliding tile puzzle with numbered tiles and one empty space, on a slate-to-gray gradient background" },
   { id: "daily-challenge", prompt: "A calendar page with a flame/fire icon on it, on an orange-to-red gradient background" },
 
-  // ─── 6 Category Icons ───────────────────────────────────────────
+  // ─── 8 New Game Icons (CS + Design) ────────────────────────────
+  { id: "pattern-machine", prompt: "Colorful gears and cogs forming a repeating pattern sequence, with arrows showing the cycle, on a violet-to-fuchsia gradient background" },
+  { id: "binary-bits", prompt: "Glowing 1s and 0s forming a stream, with a light switch toggling ON/OFF, on a cyan-to-blue gradient background" },
+  { id: "debug-detective", prompt: "A magnifying glass examining a ladybug/bug on a code scroll, detective hat, on an amber-to-yellow gradient background" },
+  { id: "algorithm-arena", prompt: "Colorful bar chart bars being sorted by arrows, with a stopwatch, on a violet-to-purple gradient background" },
+  { id: "design-eye", prompt: "A large stylized eye with a ruler/grid reflected in the iris, alignment guides around it, on a pink-to-rose gradient background" },
+  { id: "font-explorer", prompt: "A large letter A shown in different font styles (serif, sans-serif, bold, italic) overlapping, on a purple-to-violet gradient background" },
+  { id: "layout-lab", prompt: "A grid/layout wireframe with boxes being arranged, alignment rulers and guides, on an orange-to-amber gradient background" },
+  { id: "color-harmony", prompt: "A color wheel with palette swatches fanning out, paint drops, on a teal-to-cyan gradient background" },
+
+  // ─── 8 Category Icons ───────────────────────────────────────────
   { id: "cat-language", prompt: "An open book with letters floating out of it, magical glow, on an amber-to-orange gradient background" },
   { id: "cat-math", prompt: "A colorful abacus with calculation symbols floating around, on an emerald-to-cyan gradient background" },
   { id: "cat-science", prompt: "A microscope with colorful molecules floating around it, on a blue-to-violet gradient background" },
   { id: "cat-history", prompt: "A globe with a compass and ancient map elements, on a purple-to-pink gradient background" },
   { id: "cat-touch", prompt: "A hand holding a stylus drawing on a tablet screen, on a pink-to-rose gradient background" },
   { id: "cat-ereader", prompt: "An e-reader device showing content on screen with high contrast, on a slate-to-gray gradient background" },
+  { id: "cat-cs", prompt: "A terminal/code window with angle brackets and curly braces, glowing cursor, on a cyan-to-blue gradient background" },
+  { id: "cat-design", prompt: "A paint palette with a ruler, pen tool cursor, and grid lines, on a rose-to-purple gradient background" },
 
   // ─── 3 Medal Icons ──────────────────────────────────────────────
   { id: "medal-bronze", prompt: "A shiny bronze medal with a ribbon, engraved star pattern, warm bronze metallic finish, on a warm brown-to-amber gradient background" },

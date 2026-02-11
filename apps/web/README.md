@@ -1,6 +1,6 @@
 # teacher.ninja — Frontend
 
-The Next.js frontend for [teacher.ninja](https://teacher.ninja), an educational platform with a worksheet generator and 27 interactive learning games.
+The Next.js frontend for [teacher.ninja](https://teacher.ninja), an educational platform with a worksheet generator and 38 interactive learning games across 7 sections (Math, Science, Language, Puzzle, Data Literacy, Computer Science, Design).
 
 ## Getting Started
 
@@ -19,13 +19,14 @@ Open [http://localhost:3000](http://localhost:3000).
 app/
   page.tsx              # Landing page
   generate/             # Worksheet generator
-  games/                # Game Arena (27 games)
+  games/                # Game Arena (38 games in 7 sections)
     fraction-lab/       # Fraction curriculum (grade 1-11)
     math-blitz/         # Arithmetic speed challenge
-    times-table/        # Multiplication trainer
-    science-study/      # Science quiz (4 subjects)
-    geography/          # Geography challenge
-    ...                 # 22 more game routes
+    pattern-machine/    # CS: Computational patterns
+    binary-bits/        # CS: Binary, hex, logic gates
+    design-eye/         # Design: Spot visual flaws
+    layout-lab/         # Design: Alignment & composition
+    ...                 # 31 more game routes
     progress/           # Player profile & achievements
   api/
     profiles/           # User profile CRUD (SQLite)

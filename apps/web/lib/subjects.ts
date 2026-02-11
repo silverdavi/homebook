@@ -26,6 +26,20 @@ export const SUBJECT_OPTIONS: Record<string, (keyof WorksheetOptions)[]> = {
     "numberProblems",
     "includeIntroPage",
   ],
+  physics: [
+    "includeAnswerKey",
+    "showHints",
+    "showWorkedExamples",
+    "numberProblems",
+    "includeIntroPage",
+  ],
+  "earth-science": [
+    "includeAnswerKey",
+    "showHints",
+    "showWorkedExamples",
+    "numberProblems",
+    "includeIntroPage",
+  ],
   reading: ["includeAnswerKey", "showHints", "includeIntroPage"],
 };
 
@@ -95,6 +109,17 @@ export const FRACTION_SUBTOPICS = [
   { id: "compare-fractions", label: "Compare fractions", grade: "3-4" },
   { id: "multiply-fractions", label: "Multiply fractions", grade: "5-6" },
   { id: "divide-fractions", label: "Divide fractions", grade: "5-6" },
+  { id: "multiply-by-whole", label: "Multiply by whole number", grade: "4" },
+  { id: "divide-by-whole", label: "Divide by whole number", grade: "5" },
+  { id: "fraction-of-set", label: "Fraction of a set", grade: "3-4" },
+  { id: "ordering-fractions", label: "Order fractions", grade: "3-4" },
+  { id: "mixed-to-improper", label: "Mixed to improper", grade: "4-5" },
+  { id: "improper-to-mixed", label: "Improper to mixed", grade: "4-5" },
+  {
+    id: "mixed-number-operations",
+    label: "Mixed number add/subtract",
+    grade: "5-6",
+  },
   {
     id: "word-problems",
     label: "Word Problems",
@@ -126,6 +151,28 @@ export const ARITHMETIC_SUBTOPICS = [
   { id: "mixed", label: "Mixed Operations", grade: "2-6" },
 ] as const;
 
+export const PHYSICS_SUBTOPICS = [
+  { id: "force-and-motion", label: "Force & Motion", grade: "6-8" },
+  { id: "speed-velocity", label: "Speed & Velocity", grade: "6-8" },
+  { id: "newtons-laws", label: "Newton's Laws", grade: "7-9" },
+  { id: "work-and-energy", label: "Work & Energy", grade: "8-10" },
+  { id: "simple-circuits", label: "Simple Circuits", grade: "6-8" },
+  { id: "ohms-law", label: "Ohm's Law", grade: "8-10" },
+  { id: "waves-and-sound", label: "Waves & Sound", grade: "7-9" },
+  { id: "light-and-optics", label: "Light & Optics", grade: "7-9" },
+] as const;
+
+export const EARTH_SCIENCE_SUBTOPICS = [
+  { id: "rock-cycle", label: "Rock Cycle", grade: "5-7" },
+  { id: "plate-tectonics", label: "Plate Tectonics", grade: "6-8" },
+  { id: "weather-and-climate", label: "Weather & Climate", grade: "5-7" },
+  { id: "water-cycle", label: "Water Cycle", grade: "4-6" },
+  { id: "solar-system", label: "Solar System", grade: "4-6" },
+  { id: "earth-layers", label: "Earth's Layers", grade: "5-7" },
+  { id: "erosion-weathering", label: "Erosion & Weathering", grade: "5-7" },
+  { id: "natural-resources", label: "Natural Resources", grade: "5-7" },
+] as const;
+
 export const DECIMALS_SUBTOPICS = [
   { id: "decimal-addition", label: "Decimal Addition", grade: "4-6" },
   { id: "decimal-subtraction", label: "Decimal Subtraction", grade: "4-6" },
@@ -152,7 +199,7 @@ export const SUBJECTS: Record<string, SubjectConfig> = {
       fractions: {
         id: "fractions",
         name: "Fractions",
-        grades: ["3", "4", "5", "6"],
+        grades: ["3", "4", "5", "6", "7"],
         subtopics: [...FRACTION_SUBTOPICS],
       },
       arithmetic: {
@@ -199,6 +246,94 @@ export const SUBJECTS: Record<string, SubjectConfig> = {
       },
     },
   },
+  physics: {
+    id: "physics",
+    name: "Physics",
+    icon: "Zap",
+    color: "subject-physics",
+    enabled: true,
+    topics: {
+      mechanics: {
+        id: "mechanics",
+        name: "Forces & Motion",
+        grades: ["6", "7", "8", "9", "10"],
+        subtopics: [
+          ...PHYSICS_SUBTOPICS.filter((s) =>
+            ["force-and-motion", "speed-velocity", "newtons-laws", "work-and-energy"].includes(s.id)
+          ),
+        ],
+      },
+      electricity: {
+        id: "electricity",
+        name: "Electricity & Circuits",
+        grades: ["6", "7", "8", "9", "10"],
+        subtopics: [
+          ...PHYSICS_SUBTOPICS.filter((s) =>
+            ["simple-circuits", "ohms-law"].includes(s.id)
+          ),
+        ],
+      },
+      waves: {
+        id: "waves",
+        name: "Waves, Sound & Light",
+        grades: ["7", "8", "9"],
+        subtopics: [
+          ...PHYSICS_SUBTOPICS.filter((s) =>
+            ["waves-and-sound", "light-and-optics"].includes(s.id)
+          ),
+        ],
+      },
+    },
+  },
+  "earth-science": {
+    id: "earth-science",
+    name: "Earth Science",
+    icon: "Globe",
+    color: "subject-earth",
+    enabled: true,
+    topics: {
+      geology: {
+        id: "geology",
+        name: "Geology",
+        grades: ["5", "6", "7", "8"],
+        subtopics: [
+          ...EARTH_SCIENCE_SUBTOPICS.filter((s) =>
+            ["rock-cycle", "plate-tectonics", "earth-layers", "erosion-weathering"].includes(s.id)
+          ),
+        ],
+      },
+      atmosphere: {
+        id: "atmosphere",
+        name: "Weather & Water",
+        grades: ["4", "5", "6", "7"],
+        subtopics: [
+          ...EARTH_SCIENCE_SUBTOPICS.filter((s) =>
+            ["weather-and-climate", "water-cycle"].includes(s.id)
+          ),
+        ],
+      },
+      space: {
+        id: "space",
+        name: "Space & Solar System",
+        grades: ["4", "5", "6"],
+        subtopics: [
+          ...EARTH_SCIENCE_SUBTOPICS.filter((s) =>
+            ["solar-system"].includes(s.id)
+          ),
+        ],
+      },
+      resources: {
+        id: "resources",
+        name: "Natural Resources",
+        grades: ["5", "6", "7"],
+        subtopics: [
+          ...EARTH_SCIENCE_SUBTOPICS.filter((s) =>
+            ["natural-resources"].includes(s.id)
+          ),
+        ],
+      },
+    },
+  },
   reading: {
     id: "reading",
     name: "Reading",
@@ -219,6 +354,8 @@ export const GRADE_LEVELS = [
   { value: "6", label: "6th Grade" },
   { value: "7", label: "7th Grade" },
   { value: "8", label: "8th Grade" },
+  { value: "9", label: "9th Grade" },
+  { value: "10", label: "10th Grade" },
 ] as const;
 
 export const DIFFICULTY_LEVELS = [
