@@ -18,6 +18,16 @@ COLORS = {
 }
 
 
+def _format_label(frac: Fraction) -> str:
+    """Format a Fraction as a display label.
+
+    Returns '1' instead of '1/1', '3' instead of '3/1', etc.
+    """
+    if frac.denominator == 1:
+        return str(frac.numerator)
+    return f"{frac.numerator}/{frac.denominator}"
+
+
 def create_fraction_bar(
     fraction: Fraction,
     width: int = 200,
@@ -41,10 +51,10 @@ def create_fraction_bar(
     num = fraction.numerator
     den = fraction.denominator
 
-    # Handle whole numbers
+    # Handle whole numbers — show as a fully filled bar
     if den == 1:
-        den = num
-        num = num  # fully filled
+        den = max(num, 1)
+        num = den  # fully filled
 
     segment_width = width / den
     padding = 2
@@ -67,7 +77,7 @@ def create_fraction_bar(
         )
 
     # Label below
-    label = f"{fraction.numerator}/{fraction.denominator}"
+    label = _format_label(fraction)
     parts.append(
         f'<text x="{width / 2 + padding}" y="{height + 15}" '
         f'text-anchor="middle" font-size="12" '
@@ -139,7 +149,7 @@ def create_addition_visual(
     parts.append(
         f'<text x="{label_x}" y="{y_offset + bar_height / 2 + 5}" '
         f'font-size="14" font-family="sans-serif" fill="{COLORS["text"]}">'
-        f'{frac1.numerator}/{frac1.denominator}</text>'
+        f'{_format_label(frac1)}</text>'
     )
 
     # Plus sign
@@ -164,7 +174,7 @@ def create_addition_visual(
     parts.append(
         f'<text x="{label_x}" y="{y_offset + bar_height / 2 + 5}" '
         f'font-size="14" font-family="sans-serif" fill="{COLORS["text"]}">'
-        f'{frac2.numerator}/{frac2.denominator}</text>'
+        f'{_format_label(frac2)}</text>'
     )
 
     # Equals line
@@ -178,22 +188,42 @@ def create_addition_visual(
     # --- Row 3: Result on LCD ---
     y_offset = row_height * 2
     result_num = eq1.numerator + eq2.numerator
-    segment_w = width / lcd
-    for i in range(lcd):
-        x = padding + i * segment_w
-        if i < eq1.numerator:
-            fill = COLORS["filled"]
-        elif i < result_num:
-            fill = COLORS["filled_alt"]
-        else:
-            fill = COLORS["empty"]
-        parts.append(
-            f'<rect x="{x:.1f}" y="{y_offset}" '
-            f'width="{segment_w:.1f}" height="{bar_height}" '
-            f'fill="{fill}" stroke="{COLORS["border"]}" stroke-width="1"/>'
-        )
 
-    result_label = f"{result.numerator}/{result.denominator}"
+    # If result is a whole number, show it as a fully filled bar
+    if result.denominator == 1:
+        # Whole number result — show as N segments all filled
+        display_den = max(lcd, result.numerator)
+        segment_w = width / display_den
+        for i in range(display_den):
+            x = padding + i * segment_w
+            if i < eq1.numerator:
+                fill = COLORS["filled"]
+            elif i < result_num:
+                fill = COLORS["filled_alt"]
+            else:
+                fill = COLORS["empty"]
+            parts.append(
+                f'<rect x="{x:.1f}" y="{y_offset}" '
+                f'width="{segment_w:.1f}" height="{bar_height}" '
+                f'fill="{fill}" stroke="{COLORS["border"]}" stroke-width="1"/>'
+            )
+    else:
+        segment_w = width / lcd
+        for i in range(lcd):
+            x = padding + i * segment_w
+            if i < eq1.numerator:
+                fill = COLORS["filled"]
+            elif i < result_num:
+                fill = COLORS["filled_alt"]
+            else:
+                fill = COLORS["empty"]
+            parts.append(
+                f'<rect x="{x:.1f}" y="{y_offset}" '
+                f'width="{segment_w:.1f}" height="{bar_height}" '
+                f'fill="{fill}" stroke="{COLORS["border"]}" stroke-width="1"/>'
+            )
+
+    result_label = _format_label(result)
     parts.append(
         f'<text x="{label_x}" y="{y_offset + bar_height / 2 + 5}" '
         f'font-size="14" font-weight="bold" font-family="sans-serif" '
@@ -248,7 +278,7 @@ def create_comparison_visual(
     parts.append(
         f'<text x="{label_x}" y="{bar_height / 2 + 5}" '
         f'font-size="14" font-family="sans-serif" fill="{COLORS["text"]}">'
-        f'{frac1.numerator}/{frac1.denominator}</text>'
+        f'{_format_label(frac1)}</text>'
     )
 
     # Bar 2
@@ -265,7 +295,7 @@ def create_comparison_visual(
     parts.append(
         f'<text x="{label_x}" y="{y2 + bar_height / 2 + 5}" '
         f'font-size="14" font-family="sans-serif" fill="{COLORS["text"]}">'
-        f'{frac2.numerator}/{frac2.denominator}</text>'
+        f'{_format_label(frac2)}</text>'
     )
 
     parts.append("</svg>")
