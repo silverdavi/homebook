@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, BookOpen, FlaskConical, Dna } from "lucide-react";
+import { Calculator, BookOpen, FlaskConical, Dna, Zap, Globe } from "lucide-react";
 import clsx from "clsx";
 import { SUBJECTS } from "@/lib/subjects";
 import type { Subject } from "@/lib/types";
@@ -11,12 +11,16 @@ const ICONS: Record<string, React.ElementType> = {
   Flask: FlaskConical,
   FlaskConical,
   Dna,
+  Zap,
+  Globe,
 };
 
 const SUBJECT_COLORS: Record<string, { border: string; bg: string; text: string }> = {
   math: { border: "border-subject-math", bg: "bg-subject-math-light", text: "text-subject-math" },
   chemistry: { border: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-600" },
   biology: { border: "border-purple-500", bg: "bg-purple-50", text: "text-purple-600" },
+  physics: { border: "border-cyan-500", bg: "bg-cyan-50", text: "text-cyan-600" },
+  "earth-science": { border: "border-teal-500", bg: "bg-teal-50", text: "text-teal-600" },
   reading: { border: "border-amber-500", bg: "bg-amber-50", text: "text-amber-600" },
 };
 
@@ -31,7 +35,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
       <label className="block text-sm font-medium text-slate-700">
         Subject
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {Object.values(SUBJECTS).map((subject) => {
           const Icon = ICONS[subject.icon];
           const isSelected = value === subject.id;

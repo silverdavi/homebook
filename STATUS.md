@@ -122,14 +122,16 @@
 
 ## Worksheet Generator
 
-### Subjects & Generators
+### Subjects & Generators (7 generators, 55+ subtopics)
 | Subject | Generator | Subtopics |
 |---------|-----------|-----------|
-| **Math: Fractions** | `fractions.py` | Add/subtract (same/diff denom), multiply, divide, mixed, simplify, compare |
-| **Math: Arithmetic** | `arithmetic.py` | Addition, subtraction, multiplication, division, mixed, order of operations |
-| **Math: Decimals** | `decimals.py` | 12 subtopics: add/sub/mul/div, rounding, comparing, fractions/decimals/percentages |
-| **Chemistry** | `chemistry.py` | Balancing equations |
-| **Biology** | `biology.py` | Mendelian genetics |
+| **Math: Fractions** | `fractions.py` | 17 subtopics: add/subtract (same/unlike denom), multiply, divide, multiply/divide by whole, equivalent, simplify, compare, order, fraction of set, mixed↔improper, mixed number operations, word problems |
+| **Math: Arithmetic** | `arithmetic.py` | 5 subtopics: addition, subtraction, multiplication, division, mixed operations |
+| **Math: Decimals** | `decimals.py` | 12 subtopics: add/sub/mul/div, decimal↔fraction, percent operations, percent increase/decrease |
+| **Chemistry** | `chemistry.py` | 5 subtopics: synthesis, decomposition, combustion, single/double replacement equations |
+| **Biology** | `biology.py` | 5 subtopics: monohybrid, dihybrid, test cross, incomplete dominance, pedigree analysis |
+| **Physics** | `physics.py` | 8 subtopics: force & motion, speed & velocity, Newton's laws, work & energy, circuits, Ohm's law, waves & sound, light & optics |
+| **Earth Science** | `earth_science.py` | 8 subtopics: rock cycle, plate tectonics, weather & climate, water cycle, solar system, earth layers, erosion & weathering, natural resources |
 
 ### Features
 - Difficulty levels (easy, medium, hard, mixed)

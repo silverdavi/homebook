@@ -30,12 +30,16 @@ def _auto_register() -> None:
     from .biology import MendelianGeneticsGenerator
     from .arithmetic import ArithmeticGenerator
     from .decimals import DecimalsGenerator
+    from .physics import PhysicsGenerator
+    from .earth_science import EarthScienceGenerator
 
     register(FractionGenerator())
     register(BalancingEquationsGenerator())
     register(MendelianGeneticsGenerator())
     register(ArithmeticGenerator())
     register(DecimalsGenerator())
+    register(PhysicsGenerator())
+    register(EarthScienceGenerator())
 
 
 _auto_register()
