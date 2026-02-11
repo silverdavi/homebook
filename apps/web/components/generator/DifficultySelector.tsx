@@ -26,14 +26,14 @@ export function DifficultySelector({
             className={clsx(
               "rounded-lg border px-3 py-2 text-left transition-all duration-150",
               value === level.value
-                ? "border-subject-math bg-subject-math-light"
+                ? "border-blue-400/40 bg-blue-50"
                 : "border-slate-200 bg-white hover:border-slate-300"
             )}
           >
             <div
               className={clsx(
                 "text-sm font-medium",
-                value === level.value ? "text-subject-math" : "text-slate-700"
+                value === level.value ? "text-blue-700" : "text-slate-700"
               )}
             >
               {level.label}

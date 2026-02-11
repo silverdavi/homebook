@@ -35,7 +35,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
       <label className="block text-sm font-medium text-slate-700">
         Subject
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         {Object.values(SUBJECTS).map((subject) => {
           const Icon = ICONS[subject.icon];
           const isSelected = value === subject.id;
@@ -48,7 +48,7 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
               onClick={() => isEnabled && onChange(subject.id)}
               disabled={!isEnabled}
               className={clsx(
-                "relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200",
+                "relative flex flex-col items-center gap-1.5 rounded-lg border-2 p-2.5 transition-all duration-200",
                 isEnabled
                   ? "cursor-pointer"
                   : "cursor-not-allowed opacity-50",
@@ -60,21 +60,21 @@ export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
               )}
             >
               {!isEnabled && (
-                <span className="absolute top-1.5 right-1.5 text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                <span className="absolute top-1 right-1 text-[9px] font-medium text-slate-400 bg-slate-100 px-1 py-0.5 rounded-full">
                   Soon
                 </span>
               )}
               {Icon && (
                 <Icon
                   className={clsx(
-                    "w-6 h-6",
+                    "w-5 h-5",
                     isSelected ? colors.text : "text-slate-400"
                   )}
                 />
               )}
               <span
                 className={clsx(
-                  "text-xs font-medium",
+                  "text-[11px] font-medium leading-tight text-center",
                   isSelected ? colors.text : "text-slate-600"
                 )}
               >

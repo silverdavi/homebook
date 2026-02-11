@@ -11,7 +11,9 @@ export type GradeLevel =
   | "5"
   | "6"
   | "7"
-  | "8";
+  | "8"
+  | "9"
+  | "10";
 
 export interface Subtopic {
   id: string;

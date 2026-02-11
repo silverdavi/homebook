@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getOptionsForSelection } from "@/lib/subjects";
 import type { Subject, WorksheetOptions, WordProblemContext } from "@/lib/types";
@@ -13,23 +13,23 @@ interface OptionsPanelProps {
   subtopicIds?: string[];
 }
 
-const OPTION_LABELS: { key: keyof WorksheetOptions; label: string; hint?: string }[] = [
+const OPTION_LABELS: { key: keyof WorksheetOptions; label: string }[] = [
   { key: "includeAnswerKey", label: "Include answer key" },
   { key: "showHints", label: "Show hints" },
-  { key: "includeVisualModels", label: "Include visual models", hint: "Fraction bar diagrams for addition & subtraction" },
   { key: "showWorkedExamples", label: "Show worked examples" },
   { key: "numberProblems", label: "Number problems" },
-  { key: "showLcdGcfReference", label: "Show LCD/GCF reference", hint: "For unlike denominators & simplification" },
-  { key: "includeIntroPage", label: "Include intro page (AI-generated)" },
-  { key: "includeWordProblems", label: "Include word problems", hint: "Convert some problems into real-world stories" },
+  { key: "includeVisualModels", label: "Include fraction bar visuals" },
+  { key: "showLcdGcfReference", label: "Show LCD/GCF reference table" },
+  { key: "includeIntroPage", label: "Include intro page (AI)" },
+  { key: "includeWordProblems", label: "Include word problems (AI)" },
 ];
 
-const WORD_PROBLEM_CONTEXTS: { value: WordProblemContext; label: string; description: string }[] = [
-  { value: "mixed", label: "Mixed (Varied scenarios)", description: "A mix of different real-world contexts" },
-  { value: "cooking", label: "Cooking & Recipes", description: "Measuring ingredients and recipe scaling" },
-  { value: "sports", label: "Sports & Games", description: "Scores, statistics, and game scenarios" },
-  { value: "shopping", label: "Shopping & Money", description: "Prices, discounts, and purchases" },
-  { value: "school", label: "School & Classroom", description: "Supplies, students, and classroom activities" },
+const WORD_PROBLEM_CONTEXTS: { value: WordProblemContext; label: string }[] = [
+  { value: "mixed", label: "Mixed (varied)" },
+  { value: "cooking", label: "Cooking & Recipes" },
+  { value: "sports", label: "Sports & Games" },
+  { value: "shopping", label: "Shopping & Money" },
+  { value: "school", label: "School & Classroom" },
 ];
 
 export function OptionsPanel({
@@ -39,34 +39,41 @@ export function OptionsPanel({
   topicId,
   subtopicIds = [],
 }: OptionsPanelProps) {
-  // Get applicable options for the current subject + topic + subtopic combination
-  const applicableOptions = subject && topicId 
-    ? getOptionsForSelection(subject, topicId, subtopicIds) 
-    : null;
+  // Memoize applicable options so the array reference is stable
+  const applicableKey = `${subject}|${topicId}|${subtopicIds.join(",")}`;
+  const applicableOptions = useMemo(() => {
+    if (!subject || !topicId) return null;
+    return getOptionsForSelection(subject, topicId, subtopicIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applicableKey]);
 
   // Auto-reset boolean options that are checked but no longer applicable
-  const RESETTABLE_BOOLEANS: (keyof WorksheetOptions)[] = [
-    "includeVisualModels",
-    "showLcdGcfReference",
-    "includeWordProblems",
-  ];
-  const prevApplicableRef = useRef<(keyof WorksheetOptions)[] | null>(null);
+  const prevApplicableRef = useRef<string>("");
 
   useEffect(() => {
     if (!applicableOptions) return;
+    const key = applicableOptions.join(",");
     const prev = prevApplicableRef.current;
-    prevApplicableRef.current = applicableOptions;
-    if (!prev) return;
+    prevApplicableRef.current = key;
+    if (!prev || prev === key) return;
 
-    // If an option was visible before but isn't now, and it's checked → uncheck it
-    for (const key of RESETTABLE_BOOLEANS) {
-      if (prev.includes(key) && !applicableOptions.includes(key) && options[key]) {
-        onOptionChange(key, false);
+    const prevSet = new Set(prev.split(","));
+    const currSet = new Set(applicableOptions);
+
+    const resettable: (keyof WorksheetOptions)[] = [
+      "includeVisualModels",
+      "showLcdGcfReference",
+      "includeWordProblems",
+    ];
+
+    for (const opt of resettable) {
+      if (prevSet.has(opt) && !currSet.has(opt) && options[opt]) {
+        onOptionChange(opt, false);
       }
     }
   }, [applicableOptions, options, onOptionChange]);
 
-  // Filter options but exclude word problem sub-options (ratio and context) from main list
+  // Filter to only show applicable options (excluding word problem sub-options)
   const filteredOptions = applicableOptions
     ? OPTION_LABELS.filter(({ key }) =>
         applicableOptions.includes(key) &&
@@ -78,57 +85,46 @@ export function OptionsPanel({
         key !== "wordProblemContext"
       );
 
-  // Check if word problems are applicable to this subject
-  const showWordProblemOptions = applicableOptions?.includes("includeWordProblems");
+  const wordProblemsAvailable = applicableOptions?.includes("includeWordProblems") ?? false;
 
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-slate-700">
         Options
       </label>
-      <div className="space-y-2.5">
-        {filteredOptions.map(({ key, label, hint }) => (
+      <div className="space-y-2">
+        {filteredOptions.map(({ key, label }) => (
           <div key={key}>
-            <div>
-              <Checkbox
-                id={`option-${key}`}
-                label={label}
-                checked={options[key] as boolean}
-                onChange={(checked) => onOptionChange(key, checked)}
-              />
-              {hint && (
-                <p className="text-[11px] text-slate-400 ml-7 -mt-0.5">{hint}</p>
-              )}
-            </div>
+            <Checkbox
+              id={`option-${key}`}
+              label={label}
+              checked={options[key] as boolean}
+              onChange={(checked) => onOptionChange(key, checked)}
+            />
 
-            {/* Word Problem Settings - only show when includeWordProblems is checked */}
-            {key === "includeWordProblems" && showWordProblemOptions && options.includeWordProblems && (
-              <div className="pl-4 border-l-2 border-blue-200 space-y-4 mt-3 ml-6">
-                {/* Context Type Selector */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Word Problem Context
+            {/* Word Problem sub-settings — expand when toggled ON */}
+            {key === "includeWordProblems" && wordProblemsAvailable && options.includeWordProblems && (
+              <div className="pl-4 border-l-2 border-blue-200 space-y-3 mt-2 ml-6">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Context
                   </label>
                   <select
                     value={options.wordProblemContext}
-                    onChange={(e) => onOptionChange('wordProblemContext', e.target.value as WordProblemContext)}
-                    className="w-full rounded-md border border-slate-200 p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => onOptionChange("wordProblemContext", e.target.value as WordProblemContext)}
+                    className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {WORD_PROBLEM_CONTEXTS.map(({ value, label }) => (
+                    {WORD_PROBLEM_CONTEXTS.map(({ value, label: ctxLabel }) => (
                       <option key={value} value={value}>
-                        {label}
+                        {ctxLabel}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-500">
-                    {WORD_PROBLEM_CONTEXTS.find(c => c.value === options.wordProblemContext)?.description}
-                  </p>
                 </div>
 
-                {/* Ratio Slider */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Word Problem Ratio: {Math.round(options.wordProblemRatio * 100)}%
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Ratio: {Math.round(options.wordProblemRatio * 100)}% word problems
                   </label>
                   <input
                     type="range"
@@ -136,12 +132,9 @@ export function OptionsPanel({
                     max="1.0"
                     step="0.1"
                     value={options.wordProblemRatio}
-                    onChange={(e) => onOptionChange('wordProblemRatio', parseFloat(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    onChange={(e) => onOptionChange("wordProblemRatio", parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />
-                  <p className="text-xs text-slate-500">
-                    {Math.round(options.wordProblemRatio * 100)}% word problems, {Math.round((1 - options.wordProblemRatio) * 100)}% computational
-                  </p>
                 </div>
               </div>
             )}
