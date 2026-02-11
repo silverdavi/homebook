@@ -15,6 +15,8 @@ import {
   sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver,
   sfxCountdown, sfxCountdownGo, sfxClick, sfxAchievement, sfxCombo,
 } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { getPointerPos, type Point } from "@/lib/games/canvas-utils";
 
 // ── Types ──
@@ -37,6 +39,23 @@ const GAME_HEIGHT = 600;
 const CANVAS_PADDING = 80;
 const ITEMS_PER_ROUND = 8;
 const COUNTDOWN_SECS = 3;
+
+// ── Adaptive difficulty parameter mapping ──
+
+interface TraceDiffParams {
+  category: Category;
+  tolerance: number;
+  label: string;
+}
+
+function getTraceDiffParams(level: number): TraceDiffParams {
+  const l = Math.round(Math.max(1, Math.min(50, level)));
+  if (l <= 5) return { category: "letters", tolerance: 80 + (5 - l) * 4, label: "Uppercase, loose" };
+  if (l <= 10) return { category: "letters", tolerance: 60 + (10 - l) * 4, label: "Lowercase, moderate" };
+  if (l <= 15) return { category: "numbers", tolerance: 40 + (15 - l) * 4, label: "Numbers + letters, tighter" };
+  if (l <= 20) return { category: "math", tolerance: 30 + (20 - l) * 2, label: "Words/symbols, strict" };
+  return { category: "shapes", tolerance: Math.max(15, 30 - (l - 21)), label: "Shapes, very strict" };
+}
 
 const CATEGORY_COLORS: Record<Category, string> = {
   letters: "#818cf8",
@@ -361,7 +380,9 @@ export function TraceLearnGame() {
   const [bestCombo, setBestCombo] = useState(0);
   const [level, setLevel] = useState(1);
   const [category, setCategory] = useState<Category>("letters");
-  const [difficulty, setDifficulty] = useState(5);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const traceStartTimeRef = useRef(Date.now());
   const [targets, setTargets] = useState<TraceTarget[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roundAccuracies, setRoundAccuracies] = useState<number[]>([]);
@@ -403,6 +424,14 @@ export function TraceLearnGame() {
     const t = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 8000);
     return () => clearInterval(t);
   }, [phase]);
+
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -524,7 +553,8 @@ export function TraceLearnGame() {
   // Start game
   const startGame = useCallback(() => {
     sfxClick();
-    const newTargets = getTargets(category, ITEMS_PER_ROUND);
+    const params = getTraceDiffParams(adaptive.level);
+    const newTargets = getTargets(params.category, ITEMS_PER_ROUND);
     setTargets(newTargets);
     setCurrentIndex(0);
     setScore(0);
@@ -538,15 +568,20 @@ export function TraceLearnGame() {
     setPhase("countdown");
     setAchievementQueue([]);
     setShowAchievementIndex(0);
-  }, [category]);
+    traceStartTimeRef.current = Date.now();
+  }, [adaptive.level]);
 
   // Submit current trace
   const submitTrace = useCallback(() => {
     if (targets.length === 0) return;
     const userPts = userPointsRef.current;
-    const tolerance = 15 + (10 - difficulty) * 5; // easier = more tolerance
+    const params = getTraceDiffParams(adaptive.level);
+    const tolerance = params.tolerance;
     const acc = calculateAccuracy(userPts, guidePath, tolerance);
     setLastAccuracy(acc);
+
+    const elapsed = Date.now() - traceStartTimeRef.current;
+    const fast = elapsed < 8000; // completed trace quickly
 
     const { mult } = getMultiplierFromStreak(combo);
     const points = Math.round(acc * mult);
@@ -554,12 +589,14 @@ export function TraceLearnGame() {
 
     if (acc >= 70) {
       sfxCorrect();
+      setAdaptive(prev => adaptiveUpdate(prev, true, fast));
       const newCombo = combo + 1;
       setCombo(newCombo);
       if (newCombo > bestCombo) setBestCombo(newCombo);
       if (newCombo >= 5 && newCombo % 5 === 0) sfxCombo(newCombo);
     } else {
       sfxWrong();
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
       setCombo(0);
     }
 
@@ -576,6 +613,7 @@ export function TraceLearnGame() {
     }
 
     setRoundAccuracies((prev) => [...prev, acc]);
+    traceStartTimeRef.current = Date.now();
 
     // Next target or finish
     if (currentIndex + 1 >= targets.length) {
@@ -586,20 +624,22 @@ export function TraceLearnGame() {
       setCurrentIndex((i) => i + 1);
       userPointsRef.current = [];
     }
-  }, [targets, guidePath, difficulty, combo, bestCombo, currentIndex]);
+  }, [targets, guidePath, adaptive.level, combo, bestCombo, currentIndex]);
 
   // Continue to next round
   const nextRound = useCallback(() => {
     sfxClick();
     setLevel((l) => l + 1);
-    const newTargets = getTargets(category, ITEMS_PER_ROUND);
+    const params = getTraceDiffParams(adaptive.level);
+    const newTargets = getTargets(params.category, ITEMS_PER_ROUND);
     setTargets(newTargets);
     setCurrentIndex(0);
     setRoundAccuracies([]);
     setLastAccuracy(null);
     userPointsRef.current = [];
+    traceStartTimeRef.current = Date.now();
     setPhase("playing");
-  }, [category]);
+  }, [adaptive.level]);
 
   // End game from result screen
   const finishGame = useCallback(() => {
@@ -665,7 +705,8 @@ export function TraceLearnGame() {
   // Stats
   const avgAccuracy = roundAccuracies.length > 0 ? Math.round(roundAccuracies.reduce((a, b) => a + b, 0) / roundAccuracies.length) : 0;
   const currentTarget = targets[currentIndex];
-  const diffLabel = difficulty <= 3 ? "Easy" : difficulty <= 6 ? "Medium" : "Strict";
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#060612] via-[#0a0e2a] to-[#060612] flex flex-col items-center">
@@ -689,9 +730,21 @@ export function TraceLearnGame() {
               <span className="font-bold text-lg" style={{ color: CATEGORY_COLORS[currentTarget.category] }}>
                 {currentTarget.label}
               </span>
+              <div
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+              >
+                {diffLabel.emoji} {diffLabel.label}
+              </div>
+              <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+              {adjustAnim && (
+                <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                  {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-slate-400">
-              <span>Lv {level}</span>
+              <span>Lv {Math.round(adaptive.level)}</span>
               {lastAccuracy !== null && <span className="text-green-400">{lastAccuracy}%</span>}
               <StreakBadge streak={combo} />
               <span className="text-lg font-bold text-white">{score.toLocaleString()}</span>
@@ -739,32 +792,20 @@ export function TraceLearnGame() {
                   </div>
                 )}
 
-                {/* Category selector */}
-                <div className="w-full max-w-xs mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-slate-400">Category</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(["letters", "numbers", "math", "shapes"] as const).map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => { setCategory(c); sfxClick(); }}
-                        className={`py-2 rounded-lg text-xs font-medium transition-all capitalize ${category === c ? "text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}
-                        style={category === c ? { backgroundColor: CATEGORY_COLORS[c] + "40", color: CATEGORY_COLORS[c] } : {}}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Difficulty slider */}
+                {/* Adaptive difficulty info */}
                 <div className="w-full max-w-xs mb-5">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-slate-400">Strictness</span>
-                    <span className="text-xs font-bold text-indigo-400">{diffLabel} ({difficulty}/10)</span>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div
+                      className="text-xs font-bold px-3 py-1 rounded-full border"
+                      style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+                    >
+                      {diffLabel.emoji} {diffLabel.label} (Lv {Math.round(adaptive.level)})
+                    </div>
+                    <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
                   </div>
-                  <input type="range" min={1} max={10} step={1} value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} className="w-full accent-indigo-500" />
+                  <p className="text-[10px] text-slate-500 text-center">
+                    Difficulty adapts automatically. Category: {getTraceDiffParams(adaptive.level).category}
+                  </p>
                 </div>
 
                 <button onClick={startGame} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
@@ -845,7 +886,7 @@ export function TraceLearnGame() {
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
                 </div>
                 <div className="mb-2 w-full max-w-xs">
-                  <ScoreSubmit game="trace-learn" score={score} level={level} stats={{ accuracy: `${avgAccuracy}%`, category, bestCombo }} />
+                  <ScoreSubmit game="trace-learn" score={score} level={Math.round(adaptive.level)} stats={{ accuracy: `${avgAccuracy}%`, category, bestCombo }} />
                 </div>
                 <div className="flex gap-3 mt-2">
                   <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">

@@ -10,6 +10,8 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp } from "@/lib/games/audio";
 import Link from "next/link";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── Types ──
 
@@ -149,6 +151,28 @@ const TIPS: Record<GameMode, string[]> = {
 
 const COUNTDOWN_SECS = 3;
 
+// ── Adaptive → graph plotter params ──
+
+function getAdaptiveGridRange(level: number): number {
+  if (level <= 10) return 5;
+  if (level <= 20) return 10;
+  if (level <= 30) return 15;
+  return 20;
+}
+
+function getAdaptiveModes(level: number): GameMode[] {
+  if (level <= 10) return ["plot"];
+  if (level <= 20) return ["plot", "slope"];
+  return ["plot", "slope", "line"];
+}
+
+function getAdaptiveGraphTimer(level: number): number {
+  if (level <= 10) return 90;
+  if (level <= 20) return 75;
+  if (level <= 30) return 60;
+  return 45;
+}
+
 export function GraphPlotterGame() {
   useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -174,11 +198,27 @@ export function GraphPlotterGame() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const problemStartRef = useRef(0);
 
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
   // ── Settings ──
   const [mode, setMode] = useState<GameMode>("plot");
   const [gridRange, setGridRange] = useState(5);
   const [showGridLines, setShowGridLines] = useState(true);
   const [gameDuration, setGameDuration] = useState(60);
+
+  // Get adaptive-derived current mode
+  const pickAdaptiveMode = useCallback((): GameMode => {
+    const modes = getAdaptiveModes(adaptive.level);
+    return modes[Math.floor(Math.random() * modes.length)];
+  }, [adaptive.level]);
+
+  // Keep gridRange in sync with adaptive level during gameplay
+  useEffect(() => {
+    if (phase === "playing" || phase === "countdown") {
+      setGridRange(getAdaptiveGridRange(adaptive.level));
+    }
+  }, [adaptive.level, phase]);
 
   // Countdown
   useEffect(() => {
@@ -189,7 +229,9 @@ export function GraphPlotterGame() {
           sfxCountdownGo();
           setTimeout(() => {
             setPhase("playing");
-            const p = generateProblem(mode, gridRange);
+            const startMode = pickAdaptiveMode();
+            const startRange = getAdaptiveGridRange(adaptive.level);
+            const p = generateProblem(startMode, startRange);
             setProblem(p);
             problemStartRef.current = Date.now();
           }, 0);
@@ -200,7 +242,7 @@ export function GraphPlotterGame() {
       });
     }, 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown, mode, gridRange]);
+  }, [phase, countdown, adaptive.level, pickAdaptiveMode]);
 
   // Timer
   useEffect(() => {
@@ -474,39 +516,49 @@ export function GraphPlotterGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Get adaptive-derived current mode and grid range
+  const adaptiveGridRange = getAdaptiveGridRange(adaptive.level);
+  const adaptiveModes = getAdaptiveModes(adaptive.level);
+
   const handleProblemResult = useCallback((correct: boolean) => {
     setTotalProblems((t) => t + 1);
+    const elapsed = (Date.now() - problemStartRef.current) / 1000;
     if (correct) {
       const newStreak = streak + 1;
       setStreak(newStreak);
       setBestStreak((b) => Math.max(b, newStreak));
       setSolved((s) => s + 1);
       const { mult } = getMultiplierFromStreak(newStreak);
-      const timeBonus = Math.max(0, 5 - Math.floor((Date.now() - problemStartRef.current) / 1000));
+      const timeBonus = Math.max(0, 5 - Math.floor(elapsed));
       const points = Math.round((15 + timeBonus) * mult);
       setScore((s) => s + points);
       setShowResult("correct");
       setFlash("correct");
       if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
       else sfxCorrect();
+      // Adaptive: fast = answered in < 50% of 10 seconds (5s)
+      setAdaptive(prev => adaptiveUpdate(prev, true, elapsed < 5));
     } else {
       sfxWrong();
       setStreak(0);
       setShowResult("wrong");
       setFlash("wrong");
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
     }
     setTimeout(() => setFlash(null), 200);
     setTimeout(() => {
       setShowResult(null);
       setPlacedPoints([]);
       setSlopeAnswer("");
-      const p = generateProblem(mode, gridRange);
+      const nextMode = pickAdaptiveMode();
+      const nextRange = getAdaptiveGridRange(adaptive.level);
+      const p = generateProblem(nextMode, nextRange);
       setProblem(p);
       setProblemNumber((n) => n + 1);
-      setTipIdx(Math.floor(Math.random() * TIPS[mode].length));
+      setTipIdx(Math.floor(Math.random() * TIPS[nextMode].length));
       problemStartRef.current = Date.now();
     }, 800);
-  }, [streak, mode, gridRange]);
+  }, [streak, adaptive.level, pickAdaptiveMode]);
 
   // Handle canvas click (for plot and line modes)
   const handleCanvasPointer = useCallback(
@@ -602,7 +654,9 @@ export function GraphPlotterGame() {
     setBestStreak(0);
     setSolved(0);
     setTotalProblems(0);
-    setTimeLeft(gameDuration);
+    setAdaptive(createAdaptiveState(1));
+    const dur = getAdaptiveGraphTimer(1);
+    setTimeLeft(dur);
     setCountdown(COUNTDOWN_SECS);
     setPlacedPoints([]);
     setSlopeAnswer("");
@@ -744,7 +798,22 @@ export function GraphPlotterGame() {
                 <Timer className={`w-4 h-4 ${timerColor}`} />
                 <span className={`text-lg font-bold tabular-nums ${timerColor}`}>{timeLeft}s</span>
               </div>
-              <StreakBadge streak={streak} />
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.label} (Lvl {Math.round(adaptive.level)})
+                      </span>
+                      <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{solved} correct</div>
@@ -831,6 +900,18 @@ export function GraphPlotterGame() {
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Time&apos;s Up!</h3>
             <div className="text-5xl font-bold text-teal-400 mb-2">{score}</div>
+            {/* Final adaptive level */}
+            {(() => {
+              const dl = getDifficultyLabel(adaptive.level);
+              const gradeInfo = getGradeForLevel(adaptive.level);
+              return (
+                <div className="text-sm text-slate-400 mb-2">
+                  Final difficulty:{" "}
+                  <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                  {" — "}<span>{gradeInfo.label}</span>
+                </div>
+              );
+            })()}
             <div className="text-slate-400 space-y-1 mb-6">
               <p>{solved}/{totalProblems} correct</p>
               <p>Accuracy: {totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0}%</p>
@@ -842,7 +923,7 @@ export function GraphPlotterGame() {
               </p>
             )}
             <div className="mb-3">
-              <ScoreSubmit game="graph-plotter" score={score} level={gridRange} stats={{ solved, totalProblems, bestStreak, accuracy: totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0 }} />
+              <ScoreSubmit game="graph-plotter" score={score} level={Math.round(adaptive.level)} stats={{ solved, totalProblems, bestStreak, accuracy: totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

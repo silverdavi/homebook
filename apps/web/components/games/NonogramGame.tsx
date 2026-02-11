@@ -14,6 +14,9 @@ import type { NewAchievement } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 
 // ── E-ink utilities ─────────────────────────────────────────────────
 
@@ -487,6 +490,9 @@ export function NonogramGame() {
   const [newAchievements, setNewAchievements] = useState<NewAchievement[]>([]);
   const [countdown, setCountdown] = useState(3);
   const [tipIndex, setTipIndex] = useState(0);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [puzzleStartTime, setPuzzleStartTime] = useState(Date.now());
 
   useGameMusic();
 
@@ -521,6 +527,14 @@ export function NonogramGame() {
     setBestScore(getLocalHighScore(hsKey(gridSize)));
   }, [gridSize]);
 
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
+
   const startPresetGame = useCallback(
     (idx?: number) => {
       const puzzles = getPuzzlesForSize(gridSize);
@@ -541,6 +555,7 @@ export function NonogramGame() {
       setPuzzleMode("preset");
       setCountdown(3);
       setPhase("countdown");
+      setPuzzleStartTime(Date.now());
       sfxClick();
     },
     [gridSize, puzzleIndex]
@@ -561,6 +576,7 @@ export function NonogramGame() {
     setPuzzleMode("random");
     setCountdown(3);
     setPhase("countdown");
+    setPuzzleStartTime(Date.now());
     sfxClick();
   }, [gridSize, density, symmetry]);
 
@@ -585,6 +601,9 @@ export function NonogramGame() {
     if (checkSolutionByClues(board, clues)) {
       sfxCorrect();
       sfxGameOver();
+      const solveTime = (Date.now() - puzzleStartTime) / 1000;
+      const fast = solveTime < (gridSize === 5 ? 120 : 300);
+      setAdaptive(prev => adaptiveUpdate(prev, true, fast));
       // Save player's actual board for completion display
       setPlayerBoard(board.map((row) => [...row]));
       const finalScore = calculateScore(gridSize, elapsed, moves);
@@ -645,6 +664,8 @@ export function NonogramGame() {
     0
   );
 
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
   const cellSize = gridSize === 5 ? (eink ? 52 : 48) : Math.max(36, eink ? 34 : 32);
   const clueFs = gridSize === 5 ? 16 : 12;
   const puzzles = getPuzzlesForSize(gridSize);
@@ -960,8 +981,22 @@ export function NonogramGame() {
                   {formatTime(elapsed)}
                 </span>
               </div>
-              <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
-                {puzzleLabel} ({gridSize}×{gridSize})
+              <div className="flex items-center gap-2">
+                <span className={cx(eink, "font-bold text-lg", "text-gray-300")}>
+                  {puzzleLabel} ({gridSize}×{gridSize})
+                </span>
+                <div
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                  style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+                >
+                  {diffLabel.emoji} Lv {Math.round(adaptive.level)}
+                </div>
+                <span className={cx(eink, "text-xs font-bold", "text-[10px] text-slate-500")}>{gradeInfo.label}</span>
+                {adjustAnim && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1316,6 +1351,10 @@ export function NonogramGame() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="max-w-xs mx-auto mb-4">
+              <ScoreSubmit game="nonogram" score={score} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
             </div>
 
             <div className="flex justify-center gap-3 flex-wrap">

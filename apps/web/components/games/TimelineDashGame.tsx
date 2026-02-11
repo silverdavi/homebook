@@ -9,6 +9,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { TIMELINE_EVENTS as EXPANDED_EVENTS } from "@/lib/games/data/timeline-events";
 import { TIMELINE_EVENTS_2 as EXPANDED_EVENTS_2 } from "@/lib/games/data/timeline-events-2";
 import Link from "next/link";
@@ -538,9 +539,8 @@ export function TimelineDashGame() {
 
             {/* Adaptive badge */}
             <div className="flex items-center justify-center gap-2">
-              <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}>
-                {diffLabel.emoji} {diffLabel.label}
-              </div>
+              <span className="text-xs font-bold" style={{ color: diffLabel.color }}>{diffLabel.emoji} {diffLabel.label}</span>
+              <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
               {showDiffChange && (
                 <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                   {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
@@ -677,9 +677,8 @@ export function TimelineDashGame() {
 
             {/* Adaptive badge in result */}
             <div className="flex items-center justify-center gap-2">
-              <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}>
-                {diffLabel.emoji} {diffLabel.label}
-              </div>
+              <span className="text-xs font-bold" style={{ color: diffLabel.color }}>{diffLabel.emoji} {diffLabel.label}</span>
+              <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
               {showDiffChange && (
                 <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                   {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
@@ -744,7 +743,7 @@ export function TimelineDashGame() {
               <div className="text-lg font-bold" style={{ color: diffLabel.color }}>
                 {diffLabel.emoji} {diffLabel.label}
               </div>
-              <div className="text-xs text-slate-500">Level {adaptive.level.toFixed(1)}</div>
+              <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</div>
             </div>
 
             {!practiceMode && score >= highScore && score > 0 && (

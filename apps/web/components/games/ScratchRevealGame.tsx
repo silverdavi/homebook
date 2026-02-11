@@ -10,6 +10,8 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import Link from "next/link";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { FLASHCARDS } from "@/lib/games/data/vocabulary-data";
 import { FLASHCARDS_2 } from "@/lib/games/data/vocabulary-data-2";
 
@@ -25,40 +27,87 @@ interface Card {
 
 // ── Question Banks (from expanded data file + procedural math) ──
 
-function generateMathCards(count: number): Card[] {
+function generateMathCards(count: number, level: number = 15): Card[] {
   const cards: Card[] = [];
   for (let i = 0; i < count; i++) {
-    const type = Math.floor(Math.random() * 4);
     let q: string, a: string;
-    switch (type) {
-      case 0: { // addition
-        const x = Math.floor(Math.random() * 50) + 10;
-        const y = Math.floor(Math.random() * 50) + 10;
+
+    if (level <= 10) {
+      // Level 1-10: Simple addition/subtraction
+      const type = Math.floor(Math.random() * 2);
+      if (type === 0) {
+        const x = Math.floor(Math.random() * 20) + 1;
+        const y = Math.floor(Math.random() * 20) + 1;
         q = `${x} + ${y} = ?`;
         a = `${x + y}`;
-        break;
-      }
-      case 1: { // subtraction
-        const x = Math.floor(Math.random() * 50) + 30;
-        const y = Math.floor(Math.random() * (x - 5)) + 5;
+      } else {
+        const x = Math.floor(Math.random() * 20) + 10;
+        const y = Math.floor(Math.random() * (x - 1)) + 1;
         q = `${x} − ${y} = ?`;
         a = `${x - y}`;
-        break;
       }
-      case 2: { // multiplication
-        const x = Math.floor(Math.random() * 10) + 2;
-        const y = Math.floor(Math.random() * 10) + 2;
+    } else if (level <= 20) {
+      // Level 11-20: Multiplication/division
+      const type = Math.floor(Math.random() * 2);
+      if (type === 0) {
+        const x = Math.floor(Math.random() * 12) + 2;
+        const y = Math.floor(Math.random() * 12) + 2;
         q = `${x} × ${y} = ?`;
         a = `${x * y}`;
-        break;
+      } else {
+        const b = Math.floor(Math.random() * 10) + 2;
+        const ans = Math.floor(Math.random() * 10) + 1;
+        q = `${b * ans} ÷ ${b} = ?`;
+        a = `${ans}`;
       }
-      default: { // fractions
+    } else if (level <= 30) {
+      // Level 21-30: Fractions and decimals
+      const type = Math.floor(Math.random() * 2);
+      if (type === 0) {
         const num = Math.floor(Math.random() * 5) + 1;
         const den = Math.floor(Math.random() * 4) + 2;
         const num2 = Math.floor(Math.random() * 5) + 1;
         q = `${num}/${den} + ${num2}/${den} = ?`;
         a = `${num + num2}/${den}`;
-        break;
+      } else {
+        const x = Math.floor(Math.random() * 90 + 10) / 10;
+        const y = Math.floor(Math.random() * 90 + 10) / 10;
+        q = `${x} + ${y} = ?`;
+        a = `${(x + y).toFixed(1)}`;
+      }
+    } else {
+      // Level 31+: Mixed advanced
+      const type = Math.floor(Math.random() * 4);
+      switch (type) {
+        case 0: {
+          const x = Math.floor(Math.random() * 50) + 10;
+          const y = Math.floor(Math.random() * 50) + 10;
+          q = `${x} + ${y} = ?`;
+          a = `${x + y}`;
+          break;
+        }
+        case 1: {
+          const x = Math.floor(Math.random() * 15) + 2;
+          const y = Math.floor(Math.random() * 15) + 2;
+          q = `${x} × ${y} = ?`;
+          a = `${x * y}`;
+          break;
+        }
+        case 2: {
+          const num = Math.floor(Math.random() * 5) + 1;
+          const den = Math.floor(Math.random() * 4) + 2;
+          const num2 = Math.floor(Math.random() * 5) + 1;
+          q = `${num}/${den} + ${num2}/${den} = ?`;
+          a = `${num + num2}/${den}`;
+          break;
+        }
+        default: {
+          const x = Math.floor(Math.random() * 50) + 30;
+          const y = Math.floor(Math.random() * (x - 5)) + 5;
+          q = `${x} − ${y} = ?`;
+          a = `${x - y}`;
+          break;
+        }
       }
     }
     cards.push({ question: q, answer: a });
@@ -105,9 +154,9 @@ function generateVocabCards(count: number): Card[] {
   }));
 }
 
-function generateCards(subject: Subject, count: number): Card[] {
+function generateCards(subject: Subject, count: number, level: number = 15): Card[] {
   switch (subject) {
-    case "math": return generateMathCards(count);
+    case "math": return generateMathCards(count, level);
     case "science": return generateScienceCards(count);
     case "history": return generateHistoryCards(count);
     case "vocabulary": return generateVocabCards(count);
@@ -167,6 +216,9 @@ export function ScratchRevealGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scratchDataRef = useRef<boolean[]>([]);
   const isDrawingRef = useRef(false);
+
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
 
   // ── Settings ──
   const [subject, setSubject] = useState<Subject>("math");
@@ -358,11 +410,13 @@ export function ScratchRevealGame() {
       setFlash("correct");
       if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
       else sfxCorrect();
+      setAdaptive(prev => adaptiveUpdate(prev, true, false));
     } else {
       sfxWrong();
       setStreak(0);
       setWrong((w) => w + 1);
       setFlash("wrong");
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
     }
     setTimeout(() => setFlash(null), 200);
 
@@ -408,7 +462,9 @@ export function ScratchRevealGame() {
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startGame = () => {
-    const newCards = generateCards(subject, cardCount);
+    const startingLevel = 1;
+    setAdaptive(createAdaptiveState(startingLevel));
+    const newCards = generateCards(subject, cardCount, startingLevel);
     setCards(newCards);
     setCardIndex(0);
     setScore(0);
@@ -543,7 +599,22 @@ export function ScratchRevealGame() {
                   <span className="text-sm text-slate-400">Card {cardIndex + 1}/{cards.length}</span>
                 )}
               </div>
-              <StreakBadge streak={streak} />
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.label} (Lvl {Math.round(adaptive.level)})
+                      </span>
+                      <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{correct}✓ {wrong}✗</div>
@@ -637,6 +708,18 @@ export function ScratchRevealGame() {
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Session Complete!</h3>
             <div className="text-5xl font-bold text-violet-400 mb-2">{score}</div>
+            {/* Final adaptive level */}
+            {(() => {
+              const dl = getDifficultyLabel(adaptive.level);
+              const gradeInfo = getGradeForLevel(adaptive.level);
+              return (
+                <div className="text-sm text-slate-400 mb-2">
+                  Final difficulty:{" "}
+                  <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                  {" — "}<span>{gradeInfo.label}</span>
+                </div>
+              );
+            })()}
             <div className="text-slate-400 space-y-1 mb-6">
               <p>{correct}/{cards.length} correct</p>
               <p>Accuracy: {cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0}%</p>
@@ -648,7 +731,7 @@ export function ScratchRevealGame() {
               </p>
             )}
             <div className="mb-3">
-              <ScoreSubmit game="scratch-reveal" score={score} level={1} stats={{ correct, wrong, bestStreak, accuracy: cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0 }} />
+              <ScoreSubmit game="scratch-reveal" score={score} level={Math.round(adaptive.level)} stats={{ correct, wrong, bestStreak, accuracy: cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

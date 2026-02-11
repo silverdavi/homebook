@@ -10,6 +10,8 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp } from "@/lib/games/audio";
 import Link from "next/link";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── Types ──
 
@@ -273,6 +275,71 @@ const TIPS = [
 
 const COUNTDOWN_SECS = 3;
 
+// ── Adaptive procedural dot generation ──
+
+function generateAdaptiveDotSet(level: number): DotSet {
+  const count = Math.min(6 + Math.floor(level / 5), 12);
+  const dots: Dot[] = [];
+
+  // Place dots in a rough circle/shape
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count - Math.PI / 2;
+    const r = 0.3 + Math.random() * 0.1;
+    dots.push({
+      x: 0.5 + Math.cos(angle) * r,
+      y: 0.5 + Math.sin(angle) * r,
+      label: "",
+    });
+  }
+
+  if (level <= 5) {
+    // Sequential numbers 1-20
+    const start = Math.floor(Math.random() * 10) + 1;
+    dots.forEach((d, i) => { d.label = `${start + i}`; });
+    return { name: `Count ${start}–${start + count - 1}`, dots, category: "counting", description: "Connect numbers in order" };
+  } else if (level <= 10) {
+    // Count by 2s or 5s
+    const step = Math.random() > 0.5 ? 2 : 5;
+    const start = step;
+    dots.forEach((d, i) => { d.label = `${start + i * step}`; });
+    return { name: `Count by ${step}s`, dots, category: "counting", description: `Skip counting by ${step}` };
+  } else if (level <= 15) {
+    // Count by 3s or primes
+    if (Math.random() > 0.5) {
+      const step = 3;
+      dots.forEach((d, i) => { d.label = `${step + i * step}`; });
+      return { name: "Count by 3s", dots, category: "counting", description: "Skip counting by 3" };
+    } else {
+      const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
+      dots.forEach((d, i) => { d.label = `${primes[i % primes.length]}`; });
+      return { name: "Prime Numbers", dots, category: "counting", description: "Connect primes in order" };
+    }
+  } else if (level <= 20) {
+    // Math answer dots (e.g., 2+3=? for dot 5)
+    dots.forEach((d, i) => {
+      const val = (i + 1) * 2;
+      const a = Math.floor(Math.random() * val);
+      const b = val - a;
+      d.label = `${a}+${b}`;
+    });
+    return { name: "Math Dots", dots, category: "counting", description: "Solve each sum to find the order" };
+  } else {
+    // Harder math, more dots
+    dots.forEach((d, i) => {
+      const val = (i + 1) * 3;
+      const type = Math.floor(Math.random() * 2);
+      if (type === 0) {
+        const a = Math.floor(Math.random() * val) + 1;
+        d.label = `${a}+${val - a}`;
+      } else {
+        const a = val + Math.floor(Math.random() * 10) + 1;
+        d.label = `${a}−${a - val}`;
+      }
+    });
+    return { name: "Hard Math Dots", dots, category: "counting", description: "Solve to find connection order" };
+  }
+}
+
 export function ConnectDotsGame() {
   useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -297,6 +364,9 @@ export function ConnectDotsGame() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartRef = useRef(0);
   const setsQueueRef = useRef<DotSet[]>([]);
+
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
 
   // ── Settings ──
   const [category, setCategory] = useState<Category>("counting");
@@ -447,8 +517,17 @@ export function ConnectDotsGame() {
   }, [drawCanvas]);
 
   const loadNextSet = useCallback(() => {
-    if (setsQueueRef.current.length === 0) return;
-    const next = setsQueueRef.current.shift()!;
+    let next: DotSet;
+    if (setsQueueRef.current.length > 0) {
+      next = setsQueueRef.current.shift()!;
+    } else {
+      // Fallback: generate adaptive set
+      next = generateAdaptiveDotSet(adaptive.level);
+    }
+    // For counting category, regenerate adaptive sets using current level
+    if (next.category === "counting" && next.name.startsWith("Count") && adaptive.level > 1) {
+      next = generateAdaptiveDotSet(adaptive.level);
+    }
     setCurrentSet(next);
     setConnectedCount(0);
     setShapeRevealed(false);
@@ -456,7 +535,7 @@ export function ConnectDotsGame() {
     // Reset per-round timer so time bonus is calculated per round
     roundStartRef.current = Date.now();
     setTimeElapsed(0);
-  }, []);
+  }, [adaptive.level]);
 
   const handleCanvasPointer = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -481,6 +560,7 @@ export function ConnectDotsGame() {
         const newStreak = streak + 1;
         setStreak(newStreak);
         setBestStreak((b) => Math.max(b, newStreak));
+        setAdaptive(prev => adaptiveUpdate(prev, true, timeElapsed < 5));
 
         if (newCount >= currentSet.dots.length) {
           // Set complete — reveal shape
@@ -528,6 +608,7 @@ export function ConnectDotsGame() {
           setMistakes((m) => m + 1);
           setFlash("wrong");
           setTimeout(() => setFlash(null), 200);
+          setAdaptive(prev => adaptiveUpdate(prev, false, false));
           return;
         }
       }
@@ -536,12 +617,18 @@ export function ConnectDotsGame() {
   );
 
   const startGame = useCallback(() => {
+    setAdaptive(createAdaptiveState(1));
     const sets = getSetsForCategory(category);
-    // Shuffle and pick roundCount sets (with repeats if needed)
+    // Shuffle and pick roundCount sets — mix in adaptive-generated sets for counting
     const shuffled = [...sets].sort(() => Math.random() - 0.5);
     const queue: DotSet[] = [];
     for (let i = 0; i < roundCount; i++) {
-      queue.push(shuffled[i % shuffled.length]);
+      if (category === "counting" && i % 2 === 1) {
+        // Every other round, use an adaptive-generated set
+        queue.push(generateAdaptiveDotSet(1));
+      } else {
+        queue.push(shuffled[i % shuffled.length]);
+      }
     }
     setsQueueRef.current = queue;
     setTotalRounds(roundCount);
@@ -676,7 +763,22 @@ export function ConnectDotsGame() {
                 <Timer className="w-4 h-4 text-slate-400" />
                 <span className="text-lg font-bold tabular-nums text-slate-300">{timeElapsed}s</span>
               </div>
-              <StreakBadge streak={streak} />
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.label} (Lvl {Math.round(adaptive.level)})
+                      </span>
+                      <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{roundIndex + 1}/{totalRounds}</div>
@@ -734,6 +836,18 @@ export function ConnectDotsGame() {
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Complete!</h3>
             <div className="text-5xl font-bold text-indigo-400 mb-2">{score}</div>
+            {/* Final adaptive level */}
+            {(() => {
+              const dl = getDifficultyLabel(adaptive.level);
+              const gradeInfo = getGradeForLevel(adaptive.level);
+              return (
+                <div className="text-sm text-slate-400 mb-2">
+                  Final difficulty:{" "}
+                  <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                  {" — "}<span>{gradeInfo.label}</span>
+                </div>
+              );
+            })()}
             <div className="text-slate-400 space-y-1 mb-6">
               <p>{totalRounds} shapes connected</p>
               <p>Best streak: x{bestStreak}</p>
@@ -745,7 +859,7 @@ export function ConnectDotsGame() {
               </p>
             )}
             <div className="mb-3">
-              <ScoreSubmit game="connect-dots" score={score} level={roundCount} stats={{ solved: totalRounds, bestStreak, mistakes }} />
+              <ScoreSubmit game="connect-dots" score={score} level={Math.round(adaptive.level)} stats={{ solved: totalRounds, bestStreak, mistakes, finalLevel: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

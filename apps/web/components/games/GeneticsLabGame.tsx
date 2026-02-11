@@ -13,6 +13,8 @@ import {
   sfxCountdown, sfxCountdownGo, sfxClick,
 } from "@/lib/games/audio";
 import Link from "next/link";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── Types ──
 
@@ -126,6 +128,14 @@ const COUNTDOWN_SECS = 3;
 
 const RATIO_OPTIONS = ["4:0", "3:1", "1:1", "1:3", "0:4"];
 
+// ── Adaptive → genetics modes ──
+
+function getAdaptiveGeneticsModes(level: number): GameMode[] {
+  if (level <= 10) return ["fill"];
+  if (level <= 20) return ["fill", "ratio"];
+  return ["fill", "ratio", "parents"];
+}
+
 export function GeneticsLabGame() {
   useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -141,6 +151,9 @@ export function GeneticsLabGame() {
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
   const [showHints, setShowHints] = useState(true);
+
+  // Adaptive difficulty (starting at 5 — assumes some biology knowledge)
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(5));
 
   // Problem state
   const [problem, setProblem] = useState<PunnettProblem | null>(null);
@@ -218,8 +231,15 @@ export function GeneticsLabGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const pickAdaptiveMode = useCallback((): GameMode => {
+    const modes = getAdaptiveGeneticsModes(adaptive.level);
+    return modes[Math.floor(Math.random() * modes.length)];
+  }, [adaptive.level]);
+
   const loadNextProblem = useCallback(() => {
-    const prob = generateProblem(gameMode);
+    const mode = pickAdaptiveMode();
+    setGameMode(mode);
+    const prob = generateProblem(mode);
     setProblem(prob);
     setGridAnswers([null, null, null, null]);
     setSelectedCell(null);
@@ -229,7 +249,7 @@ export function GeneticsLabGame() {
     setShowResult(null);
     roundStartRef.current = Date.now();
     setTipIdx(Math.floor(Math.random() * GENETICS_TIPS.length));
-  }, [gameMode]);
+  }, [pickAdaptiveMode]);
 
   const endGame = useCallback(() => {
     setPhase("gameOver");
@@ -250,6 +270,8 @@ export function GeneticsLabGame() {
     setShowResult("correct");
     if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
     else sfxCorrect();
+    // Adaptive: fast = answered in < 50% of 30s (15s)
+    setAdaptive(prev => adaptiveUpdate(prev, true, elapsed < 15));
   };
 
   const handleWrongAnswer = () => {
@@ -257,6 +279,7 @@ export function GeneticsLabGame() {
     setStreak(0);
     setFlash("wrong");
     setShowResult("wrong");
+    setAdaptive(prev => adaptiveUpdate(prev, false, false));
   };
 
   const advanceRound = () => {
@@ -341,6 +364,7 @@ export function GeneticsLabGame() {
     setBestStreak(0);
     setRound(0);
     setSolved(0);
+    setAdaptive(createAdaptiveState(5));
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
@@ -470,7 +494,22 @@ export function GeneticsLabGame() {
             {/* HUD */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-400">{round + 1}/{totalRounds}</span>
-              <StreakBadge streak={streak} />
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.label} (Lvl {Math.round(adaptive.level)})
+                      </span>
+                      <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{solved} correct</div>
@@ -692,10 +731,21 @@ export function GeneticsLabGame() {
             <Dna className="w-16 h-16 text-purple-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Lab Complete!</h3>
             <div className="text-5xl font-bold text-purple-400 mb-2">{score}</div>
+            {/* Final adaptive level */}
+            {(() => {
+              const dl = getDifficultyLabel(adaptive.level);
+              const gradeInfo = getGradeForLevel(adaptive.level);
+              return (
+                <div className="text-sm text-slate-400 mb-2">
+                  Final difficulty:{" "}
+                  <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                  {" — "}<span>{gradeInfo.label}</span>
+                </div>
+              );
+            })()}
             <div className="text-slate-400 space-y-1 mb-6">
               <p>{solved}/{totalRounds} correct ({accuracy}%)</p>
               <p>Best streak: x{bestStreak}</p>
-              <p className="text-xs capitalize">Mode: {gameMode === "fill" ? "Fill Square" : gameMode === "ratio" ? "Predict Ratio" : "Find Parents"}</p>
             </div>
             {score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
@@ -703,8 +753,8 @@ export function GeneticsLabGame() {
               </p>
             )}
             <div className="mb-3">
-              <ScoreSubmit game="genetics-lab" score={score} level={1}
-                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, mode: gameMode }} />
+              <ScoreSubmit game="genetics-lab" score={score} level={Math.round(adaptive.level)}
+                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

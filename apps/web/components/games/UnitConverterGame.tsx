@@ -13,6 +13,8 @@ import {
   sfxCountdown, sfxCountdownGo,
 } from "@/lib/games/audio";
 import Link from "next/link";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── Types ──
 
@@ -168,6 +170,22 @@ const UNIT_TIPS = [
 
 const COUNTDOWN_SECS = 3;
 
+// ── Adaptive → unit converter params ──
+
+function getAdaptiveCategories(level: number): UnitCategory[] {
+  if (level <= 10) return ["length"];
+  if (level <= 20) return ["length", "mass"];
+  if (level <= 30) return ["length", "mass", "volume"];
+  return ["length", "mass", "volume", "temperature", "time"];
+}
+
+function getAdaptiveTimer(level: number): number {
+  if (level <= 10) return 20;
+  if (level <= 20) return 15;
+  if (level <= 30) return 12;
+  return 8;
+}
+
 export function UnitConverterGame() {
   useGameMusic();
   const [phase, setPhase] = useState<GamePhase>("menu");
@@ -189,6 +207,9 @@ export function UnitConverterGame() {
   const [questionTimeLeft, setQuestionTimeLeft] = useState(10);
   const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+
   // Settings
   const [enabledCategories, setEnabledCategories] = useState<UnitCategory[]>(["length", "mass", "volume", "temperature", "time"]);
   const [secsPerQuestion, setSecsPerQuestion] = useState(10);
@@ -203,6 +224,11 @@ export function UnitConverterGame() {
       return [...prev, cat];
     });
   };
+
+  // Compute effective timer per question from adaptive level
+  const effectiveTimer = useCallback((): number => {
+    return getAdaptiveTimer(adaptive.level);
+  }, [adaptive.level]);
 
   // ── Countdown ──
   useEffect(() => {
@@ -226,9 +252,10 @@ export function UnitConverterGame() {
   }, [phase, countdown]);
 
   // ── Question timer ──
+  const currentTimer = effectiveTimer();
   useEffect(() => {
     if (phase !== "playing" || !problem) return;
-    setQuestionTimeLeft(secsPerQuestion);
+    setQuestionTimeLeft(currentTimer);
     questionTimerRef.current = setInterval(() => {
       setQuestionTimeLeft((t) => {
         if (t <= 1) {
@@ -237,6 +264,7 @@ export function UnitConverterGame() {
           sfxWrong();
           setStreak(0);
           setFlash("wrong");
+          setAdaptive(prev => adaptiveUpdate(prev, false, false));
           setTimeout(() => {
             setFlash(null);
             if (round + 1 >= totalRounds) {
@@ -291,23 +319,31 @@ export function UnitConverterGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Compute effective categories: union of user picks and adaptive unlocks
+  const effectiveCategories = useCallback((): UnitCategory[] => {
+    const adaptiveCats = getAdaptiveCategories(adaptive.level);
+    const merged = new Set<UnitCategory>([...enabledCategories, ...adaptiveCats]);
+    return Array.from(merged);
+  }, [enabledCategories, adaptive.level]);
+
   const loadNextProblem = useCallback(() => {
-    const prob = generateProblem(enabledCategories);
+    const prob = generateProblem(effectiveCategories());
     setProblem(prob);
     problemStartRef.current = Date.now();
     setTipIdx(Math.floor(Math.random() * UNIT_TIPS.length));
-  }, [enabledCategories]);
+  }, [effectiveCategories]);
 
   const handleAnswer = useCallback(
     (choice: number) => {
       if (phase !== "playing" || !problem) return;
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+      const elapsed = (Date.now() - problemStartRef.current) / 1000;
+      const availableTime = currentTimer;
 
       if (Math.abs(choice - problem.answer) < 0.01) {
         const newStreak = streak + 1;
         const { mult } = getMultiplierFromStreak(newStreak);
-        const elapsed = (Date.now() - problemStartRef.current) / 1000;
-        const timeBonus = Math.max(0, Math.round((secsPerQuestion - elapsed) * 3));
+        const timeBonus = Math.max(0, Math.round((availableTime - elapsed) * 3));
         const points = Math.round((15 + timeBonus) * mult);
         setScore((s) => s + points);
         setStreak(newStreak);
@@ -316,10 +352,13 @@ export function UnitConverterGame() {
         setFlash("correct");
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
         else sfxCorrect();
+        // Adaptive: fast = answered in < 50% of available time
+        setAdaptive(prev => adaptiveUpdate(prev, true, elapsed < availableTime * 0.5));
       } else {
         sfxWrong();
         setStreak(0);
         setFlash("wrong");
+        setAdaptive(prev => adaptiveUpdate(prev, false, false));
       }
 
       setTimeout(() => {
@@ -332,7 +371,7 @@ export function UnitConverterGame() {
         }
       }, 600);
     },
-    [phase, problem, streak, round, totalRounds, secsPerQuestion, loadNextProblem],
+    [phase, problem, streak, round, totalRounds, currentTimer, loadNextProblem],
   );
 
   const startGame = () => {
@@ -341,13 +380,14 @@ export function UnitConverterGame() {
     setBestStreak(0);
     setRound(0);
     setSolved(0);
+    setAdaptive(createAdaptiveState(1));
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     setPhase("countdown");
   };
 
-  const questionTimerBarWidth = (questionTimeLeft / secsPerQuestion) * 100;
+  const questionTimerBarWidth = (questionTimeLeft / currentTimer) * 100;
   const accuracy = totalRounds > 0 && phase === "gameOver" ? Math.round((solved / totalRounds) * 100) : 0;
 
   return (
@@ -441,7 +481,7 @@ export function UnitConverterGame() {
               <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
                 style={{
                   width: `${questionTimerBarWidth}%`,
-                  background: questionTimeLeft > secsPerQuestion * 0.5 ? "#f97316" : questionTimeLeft > secsPerQuestion * 0.25 ? "#f59e0b" : "#ef4444",
+                  background: questionTimeLeft > currentTimer * 0.5 ? "#f97316" : questionTimeLeft > currentTimer * 0.25 ? "#f59e0b" : "#ef4444",
                 }} />
             </div>
 
@@ -453,13 +493,28 @@ export function UnitConverterGame() {
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Timer className={`w-5 h-5 ${questionTimeLeft > secsPerQuestion * 0.5 ? "text-orange-400" : questionTimeLeft > secsPerQuestion * 0.25 ? "text-yellow-400" : "text-red-400"}`} />
-                <span className={`text-xl font-bold tabular-nums ${questionTimeLeft > secsPerQuestion * 0.5 ? "text-orange-400" : questionTimeLeft > secsPerQuestion * 0.25 ? "text-yellow-400" : "text-red-400"}`}>
+                <Timer className={`w-5 h-5 ${questionTimeLeft > currentTimer * 0.5 ? "text-orange-400" : questionTimeLeft > currentTimer * 0.25 ? "text-yellow-400" : "text-red-400"}`} />
+                <span className={`text-xl font-bold tabular-nums ${questionTimeLeft > currentTimer * 0.5 ? "text-orange-400" : questionTimeLeft > currentTimer * 0.25 ? "text-yellow-400" : "text-red-400"}`}>
                   {questionTimeLeft}s
                 </span>
                 <span className="text-sm text-slate-400">{round + 1}/{totalRounds}</span>
               </div>
-              <StreakBadge streak={streak} />
+              <div className="flex items-center gap-2">
+                <StreakBadge streak={streak} />
+                {/* Adaptive difficulty badge */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                        {dl.label} (Lvl {Math.round(adaptive.level)})
+                      </span>
+                      <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-white tabular-nums">{score}</div>
                 <div className="text-xs text-slate-400">{solved} correct</div>
@@ -508,6 +563,18 @@ export function UnitConverterGame() {
             <ArrowRightLeft className="w-16 h-16 text-orange-400 mx-auto mb-4" />
             <h3 className="text-3xl font-bold text-white mb-2">Race Complete!</h3>
             <div className="text-5xl font-bold text-orange-400 mb-2">{score}</div>
+            {/* Final adaptive level */}
+            {(() => {
+              const dl = getDifficultyLabel(adaptive.level);
+              const gradeInfo = getGradeForLevel(adaptive.level);
+              return (
+                <div className="text-sm text-slate-400 mb-2">
+                  Final difficulty:{" "}
+                  <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                  {" — "}<span>{gradeInfo.label}</span>
+                </div>
+              );
+            })()}
             <div className="text-slate-400 space-y-1 mb-6">
               <p>{solved}/{totalRounds} correct ({accuracy}%)</p>
               <p>Best streak: x{bestStreak}</p>
@@ -518,8 +585,8 @@ export function UnitConverterGame() {
               </p>
             )}
             <div className="mb-3">
-              <ScoreSubmit game="unit-converter" score={score} level={1}
-                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak }} />
+              <ScoreSubmit game="unit-converter" score={score} level={Math.round(adaptive.level)}
+                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
             </div>
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast

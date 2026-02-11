@@ -10,6 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdownGo } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getFractionParams, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
@@ -1626,11 +1627,12 @@ export function FractionLabGame() {
             <div className="text-xs text-slate-500 text-center -mt-2">
               {(() => {
                 const dl = getDifficultyLabel(adaptive.level);
-                const gl = getLevelConfig(Math.max(1, Math.round(adaptive.level))).gradeLabel;
+                const gradeInfo = getGradeForLevel(adaptive.level);
                 return (
                   <span className="inline-flex items-center gap-2 flex-wrap justify-center">
-                    <span>{gl} · Lvl {adaptive.level.toFixed(1)} · {solved} solved</span>
-                    <span className="font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ color: dl.color, backgroundColor: dl.color + "15" }}>{dl.emoji} {dl.label}</span>
+                    <span className="text-xs font-bold" style={{ color: dl.color }}>{dl.emoji} {dl.label}</span>
+                    <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}</span>
+                    <span className="text-white/40">&middot; {solved} solved</span>
                     {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
                       <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                         {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
@@ -1804,7 +1806,7 @@ export function FractionLabGame() {
               <div><div className="text-xl font-bold text-white">{solved}</div><div className="text-[10px] text-slate-500 uppercase">Solved</div></div>
               <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
               <div><div className="text-xl font-bold text-cyan-400">{adaptive.level.toFixed(1)}</div><div className="text-[10px] text-slate-500 uppercase">Difficulty</div></div>
-              <div><div className="text-sm font-bold text-orange-400">{getLevelConfig(Math.max(1, Math.round(adaptive.level))).gradeLabel}</div><div className="text-[10px] text-slate-500 uppercase">Level Reached</div></div>
+              <div><div className="text-sm font-bold text-orange-400">{getGradeForLevel(adaptive.level).label}</div><div className="text-[10px] text-slate-500 uppercase">Grade Reached</div></div>
             </div>
 
             {score >= highScore && score > 0 && (

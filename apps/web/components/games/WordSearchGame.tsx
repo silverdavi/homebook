@@ -24,6 +24,8 @@ import {
   setLocalHighScore,
 } from "@/lib/games/use-scores";
 import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { WORD_SEARCH_WORDS } from "@/lib/games/data/word-data";
 import { WORD_SEARCH_WORDS_2 } from "@/lib/games/data/word-data-2";
 
@@ -232,6 +234,9 @@ export function WordSearchGame() {
   const [achievementQueue, setAchievementQueue] = useState<
     { name: string; tier: MedalTier }[]
   >([]);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const wordFoundTimeRef = useRef(Date.now());
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -272,6 +277,14 @@ export function WordSearchGame() {
     return () => clearInterval(t);
   }, [phase]);
 
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
+
   const startGame = useCallback(() => {
     const result = generateGrid(gridSize, category, wordCount);
     setGrid(result.grid);
@@ -282,6 +295,7 @@ export function WordSearchGame() {
     setScore(0);
     setCountdown(3);
     setPhase("countdown");
+    wordFoundTimeRef.current = Date.now();
     if (!einkMode && isSfxEnabled()) sfxClick();
   }, [gridSize, category, wordCount, einkMode]);
 
@@ -326,6 +340,12 @@ export function WordSearchGame() {
 
           if (!einkMode && isSfxEnabled()) sfxCorrect();
           matched = true;
+
+          // Adaptive: fast if found within 30 seconds
+          const timeSinceLast = (Date.now() - wordFoundTimeRef.current) / 1000;
+          const fast = timeSinceLast < 30;
+          setAdaptive(prev => adaptiveUpdate(prev, true, fast));
+          wordFoundTimeRef.current = Date.now();
 
           const wordsFound = newPlaced.filter((w) => w.found).length;
           const basePoints = pw.word.length * 10;
@@ -385,6 +405,8 @@ export function WordSearchGame() {
   );
 
   const foundCount = placedWords.filter((w) => w.found).length;
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
 
   const categories: { key: Category; label: string }[] = [
     { key: "science", label: "Science" },
@@ -786,10 +808,24 @@ export function WordSearchGame() {
 
         {phase === "playing" && (
           <div>
-            <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2">
+            <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2 flex-wrap gap-2">
               <span>
                 Found: {foundCount}/{placedWords.length}
               </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                  style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+                >
+                  {diffLabel.emoji} Lv {Math.round(adaptive.level)} {diffLabel.label}
+                </div>
+                <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                {adjustAnim && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
+              </div>
               <span className="flex items-center gap-1">
                 <Clock size={14} />
                 {formatTime(elapsed)}
@@ -894,7 +930,7 @@ export function WordSearchGame() {
               <ScoreSubmit
                 game="word-search"
                 score={score}
-                level={gridSize === 15 ? 3 : gridSize === 12 ? 2 : 1}
+                level={Math.round(adaptive.level)}
                 stats={{
                   wordsBuilt: placedWords.length,
                   timeSeconds: elapsed,

@@ -26,6 +26,7 @@ import {
 } from "@/lib/games/use-scores";
 import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { TRIVIA_QUESTIONS_1 } from "@/lib/games/data/trivia-questions-1";
 import { TRIVIA_QUESTIONS_2 } from "@/lib/games/data/trivia-questions-2";
 import { TRIVIA_QUESTIONS_3 } from "@/lib/games/data/trivia-questions-3";
@@ -875,7 +876,7 @@ export function TriviaQuizGame() {
                     {practiceCorrect}/{practiceTotal} correct ({practiceAccuracy}%)
                   </p>
                   <p style={{ fontSize: 18 }}>
-                    Final Level: {adaptive.level.toFixed(1)} — {diffLabel.emoji} {diffLabel.label}
+                    Final Level: {adaptive.level.toFixed(1)} — {diffLabel.emoji} {diffLabel.label} · {getGradeForLevel(adaptive.level).label}
                   </p>
                 </>
               ) : (
@@ -885,7 +886,7 @@ export function TriviaQuizGame() {
                   </p>
                   <p style={{ fontSize: 18 }}>Time: {formatTime(elapsed)}</p>
                   <p style={{ fontSize: 18 }}>
-                    Final Level: {adaptive.level.toFixed(1)} — {diffLabel.emoji} {diffLabel.label}
+                    Final Level: {adaptive.level.toFixed(1)} — {diffLabel.emoji} {diffLabel.label} · {getGradeForLevel(adaptive.level).label}
                   </p>
                   <p
                     style={{ fontSize: 24, fontWeight: "bold", margin: "16px 0" }}
@@ -1080,9 +1081,8 @@ export function TriviaQuizGame() {
 
             {/* Adaptive difficulty badge */}
             <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}>
-                {diffLabel.emoji} {diffLabel.label}
-              </div>
+              <span className="text-xs font-bold" style={{ color: diffLabel.color }}>{diffLabel.emoji} {diffLabel.label}</span>
+              <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
               {showDiffChange && (
                 <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                   {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
@@ -1217,7 +1217,7 @@ export function TriviaQuizGame() {
                   <div className="text-2xl font-bold" style={{ color: diffLabel.color }}>
                     {diffLabel.emoji} {diffLabel.label}
                   </div>
-                  <div className="text-xs text-slate-500">Level {adaptive.level.toFixed(1)}</div>
+                  <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</div>
                 </div>
               </>
             ) : (
@@ -1247,7 +1247,7 @@ export function TriviaQuizGame() {
                   <div className="text-lg font-bold" style={{ color: diffLabel.color }}>
                     {diffLabel.emoji} {diffLabel.label}
                   </div>
-                  <div className="text-xs text-slate-500">Level {adaptive.level.toFixed(1)}</div>
+                  <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</div>
                 </div>
 
                 <div className="max-w-xs mx-auto mb-6">

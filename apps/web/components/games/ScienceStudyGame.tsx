@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Zap, RotateCcw, ChevronRight, CheckCircle2, XCircle, Lightbulb, Trophy, Star } from "lucide-react";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { trackGamePlayed, setLocalHighScore, getLocalHighScore, getSavedName } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp } from "@/lib/games/audio";
@@ -560,7 +561,8 @@ export function ScienceStudyGame() {
             <div className="flex items-center gap-3 text-sm">
               <span className="text-slate-500">{currentIdx + 1}/{questions.length}</span>
               {mode === "quiz" && <span className="font-mono text-amber-400">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>}
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: diffLabel.color + "22", color: diffLabel.color }}>{diffLabel.label}</span>
+              <span className="text-xs font-bold" style={{ color: diffLabel.color }}>{diffLabel.emoji} {diffLabel.label}</span>
+              <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
             </div>
             <div className="text-right">
               <span className="text-amber-400 font-bold">{score}</span>
@@ -656,7 +658,8 @@ export function ScienceStudyGame() {
           </div>
           <div className="flex items-center justify-center gap-2 mb-6">
             <Star className="w-4 h-4" style={{ color: diffLabel.color }} />
-            <span className="text-sm" style={{ color: diffLabel.color }}>Difficulty reached: {diffLabel.label}</span>
+            <span className="text-sm" style={{ color: diffLabel.color }}>Difficulty reached: {diffLabel.emoji} {diffLabel.label}</span>
+            <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
           </div>
           {wrongAnswers.length > 0 && (
             <button onClick={() => setPhase("review")} className="w-full mb-3 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors">

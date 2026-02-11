@@ -88,6 +88,7 @@ const SECTIONS: Section[] = [
     games: [
       { title: "Geography Challenge", description: "Learn world capitals, countries, rivers, mountains & landmarks!", emoji: "🌍", iconId: "geography", href: "/games/geography", color: "#06b6d4", available: true, badge: "NEW", grade: "3-9" },
       { title: "Timeline Dash", description: "Place historical events in the right order on a timeline.", emoji: "🕰️", iconId: "timeline-dash", href: "/games/timeline-dash", color: "#8b5cf6", available: true, grade: "4-9" },
+      { title: "Fake News Detective", description: "Spot misinformation! Learn to identify clickbait, bad sources & logical fallacies.", emoji: "🔍", iconId: "fake-news-detective", href: "/games/fake-news-detective", color: "#f59e0b", available: true, badge: "NEW", grade: "3-12" },
     ],
   },
   {

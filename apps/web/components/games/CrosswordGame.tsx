@@ -23,6 +23,8 @@ import {
   sfxGameOver,
   sfxCountdownGo,
 } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── E-ink utilities (inline fallback if Agent 5 hasn't created eink-utils) ──
 
@@ -260,7 +262,10 @@ export function CrosswordGame() {
   const [achievements, setAchievements] = useState<NewAchievement[]>([]);
   const [highScore, setHighScore] = useState(0);
   const [countdown, setCountdown] = useState(3);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(3));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wordStartTimeRef = useRef(Date.now());
 
   const puzzle = PUZZLES[puzzleIdx];
 
@@ -299,6 +304,14 @@ export function CrosswordGame() {
     return () => clearTimeout(t);
   }, [phase, countdown, eink]);
 
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
+
   const initGrid = useCallback(
     (p: CrosswordPuzzle) => {
       const g: CellState[][] = Array.from({ length: p.size }, (_, r) =>
@@ -325,6 +338,7 @@ export function CrosswordGame() {
       setPhase("countdown");
       setElapsed(0);
       setScore(0);
+      wordStartTimeRef.current = Date.now();
       if (!eink) sfxClick();
     },
     [eink, initGrid]
@@ -434,6 +448,10 @@ export function CrosswordGame() {
     setChecked(true);
 
     if (allCorrect) {
+      // Adaptive update: fast if under 3 minutes
+      const fast = elapsed < 180;
+      setAdaptive(prev => adaptiveUpdate(prev, true, fast));
+
       // Calculate score: base 1000, bonus for speed, penalty for checks
       const timeBonus = Math.max(0, 500 - elapsed * 2);
       const finalScore = 1000 + timeBonus;
@@ -460,6 +478,8 @@ export function CrosswordGame() {
 
       if (!eink) sfxLevelUp();
     } else {
+      // Wrong check counts as a hint/reveal scenario
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
       if (!eink) sfxWrong();
     }
   }, [phase, grid, puzzle, elapsed, highScore, eink]);
@@ -588,6 +608,8 @@ export function CrosswordGame() {
   }, [activeClue]);
 
   const highlighted = getHighlightedCells();
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
 
   // ── Standard mode dark theme styles ──
   const stdBg = "bg-gradient-to-b from-[#060612] via-[#0a0e2a] to-[#060612]";
@@ -732,7 +754,7 @@ export function CrosswordGame() {
             <AchievementToast key={a.medalId} name={a.name} tier={a.tier} />
           ))}
 
-          <ScoreSubmit game="crossword" score={score} level={puzzleIdx + 1} />
+          <ScoreSubmit game="crossword" score={score} level={Math.round(adaptive.level)} />
 
           <div className="flex gap-3 justify-center mt-6">
             <button
@@ -769,9 +791,23 @@ export function CrosswordGame() {
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
-          <span className={`font-mono text-lg ${text}`}>
-            {formatTime(elapsed)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`font-mono text-lg ${text}`}>
+              {formatTime(elapsed)}
+            </span>
+            <div
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+              style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+            >
+              {diffLabel.emoji} Lv {Math.round(adaptive.level)}
+            </div>
+            <span className={`text-[10px] ${muted}`}>{gradeInfo.label}</span>
+            {adjustAnim && (
+              <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleEink}

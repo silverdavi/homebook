@@ -11,6 +11,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
 
 // ── Types ──
@@ -787,9 +788,8 @@ export function LetterRainGame() {
                     ))}
                   </div>
                   {/* Adaptive difficulty badge */}
-                  <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
-                    {dl.emoji} {dl.label}
-                  </div>
+                  <span className="text-xs font-bold" style={{ color: dl.color }}>{dl.emoji} {dl.label}</span>
+                  <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
                   {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
                     <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                       {adaptive.lastAdjust === "up" ? "↑" : "↓"}
@@ -995,7 +995,7 @@ export function LetterRainGame() {
                   <div><div className="text-xl font-bold text-cyan-400">{lpm}</div><div className="text-[9px] text-slate-500 uppercase">LPM</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
                 </div>
-                <p className="text-slate-400 mb-2 text-xs">Final difficulty: <span className="text-white font-bold">{adaptive.level.toFixed(1)}</span> {dl.emoji} {dl.label}</p>
+                <p className="text-slate-400 mb-2 text-xs">Final difficulty: <span className="text-white font-bold">{adaptive.level.toFixed(1)}</span> {dl.emoji} {dl.label} &middot; {getGradeForLevel(adaptive.level).label}</p>
                 {score >= highScore && score > 0 && (
                   <p className="text-yellow-400 text-sm font-medium mb-1.5 flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> New High Score!</p>
                 )}

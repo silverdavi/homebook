@@ -15,6 +15,8 @@ import {
   sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver,
   sfxCountdown, sfxCountdownGo, sfxClick, sfxAchievement,
 } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ── Types ──
 
@@ -206,6 +208,16 @@ const TIPS = [
   "Science facts become easier to remember with active recall practice.",
 ];
 
+// ── Adaptive → maze size mapping ──
+
+function getMazeSizeForLevel(level: number): number {
+  if (level <= 5) return 7;
+  if (level <= 14) return 9;
+  if (level <= 25) return 11;
+  if (level <= 35) return 13;
+  return 15;
+}
+
 // ── Component ──
 
 export function MazeRunnerGame() {
@@ -224,9 +236,13 @@ export function MazeRunnerGame() {
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [mazeSize, setMazeSize] = useState(7);
+  const [mazeCount, setMazeCount] = useState(1);
   const [subject, setSubject] = useState<Subject>("math");
+
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [startLevel, setStartLevel] = useState(1);
+  const questionStartRef = useRef(0);
   const [maze, setMaze] = useState<Cell[][] | null>(null);
   const [playerPos, setPlayerPos] = useState<[number, number]>([0, 0]);
   const [goalPos, setGoalPos] = useState<[number, number]>([0, 0]);
@@ -301,18 +317,19 @@ export function MazeRunnerGame() {
     const profile = getProfile();
     const acc = questionsTotal > 0 ? Math.round((questionsCorrect / questionsTotal) * 100) : 100;
     const newOnes = checkAchievements(
-      { gameId: "maze-runner", score: finalScore, level, accuracy: acc, bestCombo, bestStreak: bestCombo },
+      { gameId: "maze-runner", score: finalScore, level: Math.round(adaptive.level), accuracy: acc, bestCombo, bestStreak: bestCombo },
       profile.totalGamesPlayed, profile.gamesPlayedByGameId
     );
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [score, highScore, level, questionsCorrect, questionsTotal, bestCombo]);
+  }, [score, highScore, adaptive.level, questionsCorrect, questionsTotal, bestCombo]);
 
   // Start game
   const startGame = useCallback(() => {
     sfxClick();
-    const cols = mazeSize;
-    const rows = mazeSize;
+    const initSize = getMazeSizeForLevel(startLevel);
+    const cols = initSize;
+    const rows = initSize;
     const newMaze = generateMaze(cols, rows);
     setMaze(newMaze);
     setPlayerPos([0, 0]);
@@ -321,7 +338,8 @@ export function MazeRunnerGame() {
     setLives(INITIAL_LIVES);
     setCombo(0);
     setBestCombo(0);
-    setLevel(1);
+    setMazeCount(1);
+    setAdaptive(createAdaptiveState(startLevel));
     setQuestionsCorrect(0);
     setQuestionsTotal(0);
     setElapsedSecs(0);
@@ -335,7 +353,7 @@ export function MazeRunnerGame() {
     setPhase("countdown");
     setAchievementQueue([]);
     setShowAchievementIndex(0);
-  }, [mazeSize]);
+  }, [startLevel]);
 
   // Move player
   const movePlayer = useCallback((nx: number, ny: number) => {
@@ -360,7 +378,8 @@ export function MazeRunnerGame() {
     // Check if fork needs a question
     if (forkQuestionsRef.current.has(key) && !forkQuestionsRef.current.get(key)) {
       forkQuestionsRef.current.set(key, true);
-      setCurrentQuestion(generateQuestion(subject, level));
+      setCurrentQuestion(generateQuestion(subject, Math.round(adaptive.level)));
+      questionStartRef.current = Date.now();
       setPhase("question");
       // Store where they want to go
       setDragStartCell([nx, ny]);
@@ -380,10 +399,10 @@ export function MazeRunnerGame() {
       const { mult } = getMultiplierFromStreak(combo);
       const earned = Math.round(levelPoints * mult);
       setScore((s) => s + earned);
-      setLevel((l) => l + 1);
+      setMazeCount((c) => c + 1);
 
-      // Generate next maze (progressively bigger every 2 levels)
-      const nextSize = Math.min(mazeSize + Math.floor(level / 2) * 2, 15);
+      // Generate next maze sized by adaptive level
+      const nextSize = getMazeSizeForLevel(adaptive.level);
       const newMaze = generateMaze(nextSize, nextSize);
       setMaze(newMaze);
       setPlayerPos([0, 0]);
@@ -394,12 +413,13 @@ export function MazeRunnerGame() {
       forks.forEach(([fx, fy]) => forkQuestionsRef.current.set(`${fx},${fy}`, false));
       setStartTime(Date.now());
     }
-  }, [phase, maze, playerPos, goalPos, subject, level, elapsedSecs, questionsCorrect, combo, mazeSize]);
+  }, [phase, maze, playerPos, goalPos, subject, adaptive.level, elapsedSecs, questionsCorrect, combo]);
 
   // Answer question
   const answerQuestion = useCallback((ansIndex: number) => {
     if (!currentQuestion) return;
     setQuestionsTotal((t) => t + 1);
+    const answerTime = (Date.now() - questionStartRef.current) / 1000;
 
     if (ansIndex === currentQuestion.correctIndex) {
       sfxCorrect();
@@ -411,6 +431,8 @@ export function MazeRunnerGame() {
         return nc;
       });
       setScore((s) => s + 25);
+      // Adaptive: fast = answered in < 3 seconds
+      setAdaptive(prev => adaptiveUpdate(prev, true, answerTime < 3));
 
       // Complete the move
       if (dragStartCell) {
@@ -425,8 +447,8 @@ export function MazeRunnerGame() {
           const { mult } = getMultiplierFromStreak(combo + 1);
           const earned = Math.round(levelPoints * mult);
           setScore((s) => s + earned);
-          setLevel((l) => l + 1);
-          const nextSize = Math.min(mazeSize + Math.floor(level / 2) * 2, 15);
+          setMazeCount((c) => c + 1);
+          const nextSize = getMazeSizeForLevel(adaptive.level);
           const newMaze = generateMaze(nextSize, nextSize);
           setMaze(newMaze);
           setPlayerPos([0, 0]);
@@ -442,12 +464,13 @@ export function MazeRunnerGame() {
       sfxWrong();
       setCombo(0);
       setLives((l) => l - 1);
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
     }
 
     setCurrentQuestion(null);
     setDragStartCell(null);
     setPhase("playing");
-  }, [currentQuestion, dragStartCell, goalPos, maze, elapsedSecs, questionsCorrect, combo, bestCombo, mazeSize, level]);
+  }, [currentQuestion, dragStartCell, goalPos, maze, elapsedSecs, questionsCorrect, combo, bestCombo, adaptive.level]);
 
   // Canvas rendering
   useEffect(() => {
@@ -659,10 +682,23 @@ export function MazeRunnerGame() {
               ))}
             </div>
             <div className="flex items-center gap-3 text-slate-400">
-              <span>Lv {level}</span>
+              <span>Maze {mazeCount}</span>
               <span>{formatTime(elapsedSecs)}</span>
               <span className="text-green-400">{accuracy}%</span>
               <StreakBadge streak={combo} />
+              {/* Adaptive difficulty badge */}
+              {(() => {
+                const dl = getDifficultyLabel(adaptive.level);
+                const gradeInfo = getGradeForLevel(adaptive.level);
+                return (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
+                      {dl.label} (Lvl {Math.round(adaptive.level)})
+                    </span>
+                    <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                  </div>
+                );
+              })()}
               <span className="text-lg font-bold text-white">{score.toLocaleString()}</span>
             </div>
           </div>
@@ -706,13 +742,26 @@ export function MazeRunnerGame() {
                   </div>
                 )}
 
-                {/* Maze size slider */}
+                {/* Starting difficulty selector */}
                 <div className="w-full max-w-xs mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-slate-400">Maze Size</span>
-                    <span className="text-xs font-bold text-indigo-400">{mazeSize}×{mazeSize}</span>
+                  <div className="text-xs text-slate-500 mb-1.5">Starting Difficulty (adapts as you play!)</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { label: "Easy", level: 1, color: "#22c55e" },
+                      { label: "Medium", level: 10, color: "#f59e0b" },
+                      { label: "Hard", level: 20, color: "#ef4444" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => setStartLevel(opt.level)}
+                        className={`py-2 rounded-lg text-xs font-bold transition-all ${startLevel === opt.level ? "border-2 bg-white/10 text-white" : "border border-white/10 bg-white/[0.02] text-slate-400 hover:bg-white/5"}`}
+                        style={startLevel === opt.level ? { borderColor: opt.color + "80" } : undefined}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
-                  <input type="range" min={7} max={15} step={2} value={mazeSize} onChange={(e) => setMazeSize(Number(e.target.value))} className="w-full accent-indigo-500" />
+                  <div className="text-[10px] text-slate-600 mt-1 text-center">Maze size: {getMazeSizeForLevel(startLevel)}×{getMazeSizeForLevel(startLevel)}</div>
                 </div>
 
                 {/* Subject selector */}
@@ -801,14 +850,26 @@ export function MazeRunnerGame() {
                     <Trophy className="w-3 h-3" /> New High Score!
                   </div>
                 )}
+                {/* Final adaptive level */}
+                {(() => {
+                  const dl = getDifficultyLabel(adaptive.level);
+                  const gradeInfo = getGradeForLevel(adaptive.level);
+                  return (
+                    <div className="text-sm text-slate-400 mb-2">
+                      Final difficulty:{" "}
+                      <span className="font-bold" style={{ color: dl.color }}>{dl.label} (Lvl {Math.round(adaptive.level)})</span>
+                      {" — "}<span>{gradeInfo.label}</span>
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-4 gap-3 mb-3 text-center w-full max-w-sm">
-                  <div><div className="text-xl font-bold text-white">{level}</div><div className="text-[9px] text-slate-500 uppercase">Level</div></div>
+                  <div><div className="text-xl font-bold text-white">{mazeCount}</div><div className="text-[9px] text-slate-500 uppercase">Mazes</div></div>
                   <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[9px] text-slate-500 uppercase">Accuracy</div></div>
                   <div><div className="text-xl font-bold text-cyan-400">{formatTime(elapsedSecs)}</div><div className="text-[9px] text-slate-500 uppercase">Time</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
                 </div>
                 <div className="mb-2 w-full max-w-xs">
-                  <ScoreSubmit game="maze-runner" score={score} level={level} stats={{ accuracy: `${accuracy}%`, time: formatTime(elapsedSecs), bestCombo }} />
+                  <ScoreSubmit game="maze-runner" score={score} level={Math.round(adaptive.level)} stats={{ accuracy: `${accuracy}%`, time: formatTime(elapsedSecs), bestCombo, finalLevel: adaptive.level.toFixed(1) }} />
                 </div>
                 <div className="flex gap-3 mt-2">
                   <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">

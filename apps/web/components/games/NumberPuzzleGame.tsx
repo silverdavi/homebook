@@ -9,6 +9,9 @@ import type { NewAchievement } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver } from "@/lib/games/audio";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
+import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 
 // ─── E-ink Mode ──────────────────────────────────────────────────────
 
@@ -149,6 +152,22 @@ function getAdjacentToEmpty(tiles: number[], size: number): number[] {
 function formatTime(s: number) { return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`; }
 function hsKey(size: GridSize, mode: PuzzleMode) { return `number-puzzle-best-${size}-${mode}`; }
 
+// ─── Adaptive difficulty parameter mapping ──────────────────────────
+
+interface PuzzleDiffParams {
+  gridSize: GridSize;
+  puzzleMode: PuzzleMode;
+}
+
+function getPuzzleDiffParams(level: number): PuzzleDiffParams {
+  const l = Math.round(Math.max(1, Math.min(50, level)));
+  if (l <= 8) return { gridSize: 3, puzzleMode: "numbers" };
+  if (l <= 16) return { gridSize: 3, puzzleMode: "math" };
+  if (l <= 25) return { gridSize: 4, puzzleMode: "numbers" };
+  if (l <= 35) return { gridSize: 4, puzzleMode: "math" };
+  return { gridSize: 5, puzzleMode: l <= 42 ? "numbers" : "math" };
+}
+
 // ─── Tips ───────────────────────────────────────────────────────────
 
 const TIPS = [
@@ -179,6 +198,9 @@ export function NumberPuzzleGame() {
   const [newAchievements, setNewAchievements] = useState<NewAchievement[]>([]);
   const [countdown, setCountdown] = useState(3);
   const [tipIndex, setTipIndex] = useState(0);
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [puzzleStartTime, setPuzzleStartTime] = useState(Date.now());
 
   useGameMusic();
 
@@ -211,6 +233,14 @@ export function NumberPuzzleGame() {
   // Load best score
   useEffect(() => { setBestScore(getLocalHighScore(hsKey(gridSize, puzzleMode))); }, [gridSize, puzzleMode]);
 
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
+
   const startGame = useCallback(() => {
     setTiles(shuffleTiles(gridSize));
     if (puzzleMode === "math") setMathTiles(generateMathTiles(gridSize * gridSize - 1));
@@ -219,6 +249,7 @@ export function NumberPuzzleGame() {
     setNewAchievements([]);
     setCountdown(3);
     setPhase("countdown");
+    setPuzzleStartTime(Date.now());
     sfxClick();
   }, [gridSize, puzzleMode]);
 
@@ -234,6 +265,9 @@ export function NumberPuzzleGame() {
     setMoves(nm);
     if (isSolved(next)) {
       sfxGameOver();
+      const solveTime = (Date.now() - puzzleStartTime) / 1000;
+      const fast = solveTime < (gridSize === 3 ? 60 : gridSize === 4 ? 180 : 300);
+      setAdaptive(prev => adaptiveUpdate(prev, true, fast));
       const key = hsKey(gridSize, puzzleMode);
       const prev = getLocalHighScore(key);
       if (prev === 0 || nm < prev) { setLocalHighScore(key, nm); setBestScore(nm); }
@@ -259,6 +293,9 @@ export function NumberPuzzleGame() {
     : puzzleMode === "math" ? Math.max(14, Math.floor(36 / (gridSize - 1)))
     : Math.max(18, Math.floor(48 / (gridSize - 1)));
   const smallTile = Math.min(tileSize, 50);
+
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
 
   // ─── Render ───────────────────────────────────────────────────────
 
@@ -360,15 +397,28 @@ export function NumberPuzzleGame() {
         {phase === "playing" && (
           <div>
             {/* Stats */}
-            <div className={cx(eink, "flex justify-between items-center border-2 border-black p-3 mb-4",
-              "flex justify-between items-center bg-gray-800/50 rounded-lg p-3 mb-4")}>
+            <div className={cx(eink, "flex justify-between items-center border-2 border-black p-3 mb-4 flex-wrap gap-2",
+              "flex justify-between items-center bg-gray-800/50 rounded-lg p-3 mb-4 flex-wrap gap-2")}>
               <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
                 Moves: <span className={cx(eink, "", "text-white font-bold")}>{moves}</span>
               </div>
               <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>
                 Time: <span className={cx(eink, "", "text-white font-bold")}>{formatTime(elapsed)}</span>
               </div>
-              <div className={cx(eink, "font-bold text-lg", "text-gray-300")}>{SIZE_LABELS[gridSize]}</div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                  style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+                >
+                  {diffLabel.emoji} Lv {Math.round(adaptive.level)} {diffLabel.label}
+                </div>
+                <span className={cx(eink, "text-xs font-bold", "text-[10px] text-slate-500")}>{gradeInfo.label}</span>
+                {adjustAnim && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Puzzle Grid */}
@@ -471,6 +521,10 @@ export function NumberPuzzleGame() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="max-w-xs mx-auto mb-4">
+              <ScoreSubmit game="number-puzzle" score={moves} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
             </div>
 
             <div className="flex justify-center gap-3 flex-wrap">

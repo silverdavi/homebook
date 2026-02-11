@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Zap, RotateCcw, ChevronRight, CheckCircle2, XCircle, Lightbulb, Trophy, Star, Globe } from "lucide-react";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { trackGamePlayed, setLocalHighScore, getLocalHighScore } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
 import { sfxCorrect, sfxWrong, sfxCombo } from "@/lib/games/audio";
@@ -384,7 +385,8 @@ export function GeographyChallengeGame() {
           <div className="flex items-center gap-3 text-sm">
             <span className="text-slate-500">{idx + 1}/{questions.length}</span>
             {mode === "challenge" && <span className="font-mono text-amber-400">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>}
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: dl.color + "22", color: dl.color }}>{dl.label}</span>
+            <span className="text-xs font-bold" style={{ color: dl.color }}>{dl.emoji} {dl.label}</span>
+            <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
           </div>
           <div className="text-right"><span className="text-amber-400 font-bold">{score}</span>{streak > 1 && <span className="text-xs text-orange-400 ml-2">x{streak}</span>}</div>
         </div></header>
@@ -441,7 +443,7 @@ export function GeographyChallengeGame() {
             <div className="bg-white/5 rounded-xl p-4"><div className="text-2xl font-bold text-blue-400">{correct}</div><div className="text-xs text-slate-500">Correct</div></div>
             <div className="bg-white/5 rounded-xl p-4"><div className="text-2xl font-bold text-purple-400">{bestStreak}</div><div className="text-xs text-slate-500">Best Streak</div></div>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-6"><Star className="w-4 h-4" style={{ color: dl.color }} /><span className="text-sm" style={{ color: dl.color }}>Difficulty: {dl.label}</span></div>
+          <div className="flex items-center justify-center gap-2 mb-6"><Star className="w-4 h-4" style={{ color: dl.color }} /><span className="text-sm" style={{ color: dl.color }}>Difficulty: {dl.emoji} {dl.label}</span><span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span></div>
           {wrongAs.length > 0 && <button onClick={() => setPhase("review")} className="w-full mb-3 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors">Review Wrong Answers ({wrongAs.length})</button>}
           <div className="flex gap-3">
             <button onClick={() => setPhase("menu")} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors">Menu</button>

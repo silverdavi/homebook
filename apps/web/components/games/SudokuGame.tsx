@@ -10,6 +10,8 @@ import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver, sfxLevelUp, isSfxEnabled }
 import { checkAchievements, type MedalTier } from "@/lib/games/achievements";
 import { trackGamePlayed, getProfile, getLocalHighScore, setLocalHighScore } from "@/lib/games/use-scores";
 import { useEinkMode, EinkBanner, EinkWrapper } from "@/lib/games/eink-utils";
+import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -205,6 +207,12 @@ export function SudokuGame() {
   const [countdown, setCountdown] = useState(3);
   const [tipIndex, setTipIndex] = useState(0);
 
+  // Adaptive difficulty
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(5));
+  const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [hintCount, setHintCount] = useState(0);
+  const puzzleStartRef = useRef(Date.now());
+
   // Achievement
   const [achievementQueue, setAchievementQueue] = useState<
     { name: string; tier: MedalTier }[]
@@ -251,6 +259,14 @@ export function SudokuGame() {
     return () => clearInterval(t);
   }, [phase]);
 
+  // Adjust animation when difficulty changes
+  useEffect(() => {
+    if (adaptive.lastAdjustTime === 0) return;
+    setAdjustAnim(adaptive.lastAdjust);
+    const t = setTimeout(() => setAdjustAnim(null), 1500);
+    return () => clearTimeout(t);
+  }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
+
   const startGame = useCallback(
     (diff: Difficulty) => {
       const puzzles = PUZZLES[diff];
@@ -278,8 +294,10 @@ export function SudokuGame() {
       setSelectedCell(null);
       setElapsed(0);
       setMoveCount(0);
+      setHintCount(0);
       setCountdown(3);
       setPhase("countdown");
+      puzzleStartRef.current = Date.now();
       if (!einkMode && isSfxEnabled()) sfxClick();
     },
     [einkMode],
@@ -310,6 +328,15 @@ export function SudokuGame() {
           // Win!
           if (timerRef.current) clearInterval(timerRef.current);
           setPhase("complete");
+
+          // Adaptive update: fast if under expected time, penalize if too many hints
+          const expectedTime = difficulty === "easy" ? 300 : difficulty === "medium" ? 600 : 900;
+          const fast = elapsed < expectedTime;
+          if (hintCount >= 5) {
+            setAdaptive(prev => adaptiveUpdate(prev, false, false));
+          } else {
+            setAdaptive(prev => adaptiveUpdate(prev, true, fast));
+          }
 
           // Score: base by difficulty + time bonus
           const diffBonus =
@@ -354,6 +381,7 @@ export function SudokuGame() {
       difficulty,
       elapsed,
       moveCount,
+      hintCount,
     ],
   );
 
@@ -385,6 +413,8 @@ export function SudokuGame() {
   }, [phase, selectedCell, placeDigit, clearCell]);
 
   const conflicts = showConflicts ? getConflicts(grid) : new Set<number>();
+  const diffLabel = getDifficultyLabel(adaptive.level);
+  const gradeInfo = getGradeForLevel(adaptive.level);
 
   const score =
     phase === "complete"
@@ -756,8 +786,22 @@ export function SudokuGame() {
         {phase === "playing" && (
           <div>
             {/* HUD */}
-            <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2">
+            <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2 flex-wrap gap-2">
               <span className="capitalize">{difficulty}</span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                  style={{ color: diffLabel.color, borderColor: diffLabel.color + "40", backgroundColor: diffLabel.color + "15" }}
+                >
+                  {diffLabel.emoji} Lv {Math.round(adaptive.level)} {diffLabel.label}
+                </div>
+                <span className="text-[10px] text-slate-500">{gradeInfo.label}</span>
+                {adjustAnim && (
+                  <span className={`text-[10px] font-bold animate-bounce ${adjustAnim === "up" ? "text-red-400" : "text-green-400"}`}>
+                    {adjustAnim === "up" ? "↑ Harder!" : "↓ Easier"}
+                  </span>
+                )}
+              </div>
               <span>Moves: {moveCount}</span>
               {showTimer && (
                 <span className="flex items-center gap-1">
@@ -868,7 +912,7 @@ export function SudokuGame() {
               <ScoreSubmit
                 game="sudoku"
                 score={score}
-                level={difficulty === "hard" ? 3 : difficulty === "medium" ? 2 : 1}
+                level={Math.round(adaptive.level)}
                 stats={{ moves: moveCount, timeSeconds: elapsed }}
               />
             </div>

@@ -10,6 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
+import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
 
 type GamePhase = "menu" | "countdown" | "playing" | "feedback" | "complete";
@@ -630,9 +631,8 @@ export function TimesTableGame() {
                   const dl = getDifficultyLabel(adaptive.level);
                   return (
                     <div className="flex items-center gap-1.5">
-                      <div className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ color: dl.color, borderColor: dl.color + "40", backgroundColor: dl.color + "15" }}>
-                        {dl.emoji} {dl.label}
-                      </div>
+                      <span className="text-xs font-bold" style={{ color: dl.color }}>{dl.emoji} {dl.label}</span>
+                      <span className="text-xs text-white/60">Lvl {Math.round(adaptive.level)} &middot; {getGradeForLevel(adaptive.level).label}</span>
                       {adaptive.lastAdjust && Date.now() - adaptive.lastAdjustTime < 2000 && (
                         <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
                           {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
@@ -788,6 +788,7 @@ export function TimesTableGame() {
                     <span className="font-bold" style={{ color: dl.color }}>
                       {dl.emoji} {dl.label} ({adaptive.level.toFixed(1)})
                     </span>
+                    <span className="text-xs text-slate-500 ml-1">&middot; {getGradeForLevel(adaptive.level).label}</span>
                   </p>
                 );
               })()}
