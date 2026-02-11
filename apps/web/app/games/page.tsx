@@ -125,6 +125,36 @@ const SECTIONS: Section[] = [
       { title: "Number Puzzle", description: "Slide tiles into order. Classic 15-puzzle with math mode!", emoji: "🎲", iconId: "number-puzzle", href: "/games/number-puzzle", color: "#64748b", available: true, badge: "E-INK", grade: "K-5" },
     ],
   },
+  {
+    id: "cs",
+    title: "Computer Science",
+    subtitle: "Patterns, algorithms, binary, and debugging — the building blocks of code",
+    emoji: "💻",
+    iconId: "cat-cs",
+    gradient: "from-cyan-400 to-blue-400",
+    borderAccent: "border-cyan-500/20",
+    games: [
+      { title: "Pattern Machine", description: "Complete sequences, find loops, and master computational patterns.", emoji: "🔄", iconId: "pattern-machine", href: "/games/pattern-machine", color: "#06b6d4", available: true, badge: "NEW", grade: "1-8" },
+      { title: "Binary & Bits", description: "Convert binary, hex, and learn logic gates — the language of computers!", emoji: "🔢", iconId: "binary-bits", href: "/games/binary-bits", color: "#3b82f6", available: true, badge: "NEW", grade: "4-12" },
+      { title: "Debug Detective", description: "Find the bug! Spot errors in pseudocode and fix broken programs.", emoji: "🐛", iconId: "debug-detective", href: "/games/debug-detective", color: "#f59e0b", available: true, badge: "NEW", grade: "5-12" },
+      { title: "Algorithm Arena", description: "Sort, search, and predict — visualize how algorithms work step by step.", emoji: "⚡", iconId: "algorithm-arena", href: "/games/algorithm-arena", color: "#8b5cf6", available: true, badge: "NEW", grade: "6-12" },
+    ],
+  },
+  {
+    id: "design",
+    title: "Design",
+    subtitle: "Typography, layout, color harmony, and visual design skills",
+    emoji: "🎨",
+    iconId: "cat-design",
+    gradient: "from-rose-400 to-purple-400",
+    borderAccent: "border-rose-500/20",
+    games: [
+      { title: "Design Eye", description: "Spot the flaw! Find alignment errors, bad spacing, and design mistakes.", emoji: "👁️", iconId: "design-eye", href: "/games/design-eye", color: "#ec4899", available: true, badge: "NEW", grade: "3-12" },
+      { title: "Font Explorer", description: "Serif or sans-serif? Learn to identify, pair, and choose the right fonts.", emoji: "🔤", iconId: "font-explorer", href: "/games/font-explorer", color: "#a855f7", available: true, badge: "NEW", grade: "4-10" },
+      { title: "Layout Lab", description: "Align, space, and balance — arrange elements like a professional designer.", emoji: "📐", iconId: "layout-lab", href: "/games/layout-lab", color: "#f97316", available: true, badge: "NEW", grade: "3-10" },
+      { title: "Color Harmony", description: "Build palettes, check contrast, and master color theory and accessibility.", emoji: "🌈", iconId: "color-harmony", href: "/games/color-harmony", color: "#14b8a6", available: true, badge: "NEW", grade: "3-12" },
+    ],
+  },
 ];
 
 const TOTAL_GAMES = SECTIONS.reduce((sum, s) => sum + s.games.length, 0) + 1; // +1 for Daily

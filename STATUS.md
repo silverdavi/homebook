@@ -11,7 +11,7 @@
 
 1. **Worksheet Generator** — Teachers select a subject, topic, and options, then get a print-ready PDF worksheet with problems, answer keys, hints, and worked examples. Problems are generated deterministically (pure math, no LLM needed), while only creative content (intro pages, word problem contexts) uses LLMs.
 
-2. **Game Arena** — 27 interactive learning games covering math, science, language, and logic. Features adaptive difficulty (grade 1-11 progression), achievements, streaks, high scores, optional user profiles with server-side persistence, and a daily challenge system.
+2. **Game Arena** — 38 interactive learning games covering math, science, language, logic, computer science, and design. Features adaptive difficulty (grade 1-11 progression), achievements, streaks, high scores, optional user profiles with server-side persistence, and a daily challenge system.
 
 ---
 
@@ -37,9 +37,9 @@
 
 ---
 
-## Game Arena (27 Games)
+## Game Arena (38 Games)
 
-### Math Games
+### Math Games (9)
 | Game | Description |
 |------|-------------|
 | **Math Blitz** | Timed arithmetic speed challenge |
@@ -52,7 +52,7 @@
 | **Equation Balancer** | Balance chemical and math equations |
 | **Number Puzzle** | Logic-based number grids |
 
-### Science Games
+### Science Games (4)
 | Game | Description |
 |------|-------------|
 | **Element Match** | Periodic table memory matching |
@@ -60,7 +60,7 @@
 | **Science Study** | Chemistry, Biology, Physics, Earth Science (100+ questions) |
 | **Geography Challenge** | Capitals, continents, landmarks, flags (85+ questions) |
 
-### Language & Logic Games
+### Language & Logic Games (6)
 | Game | Description |
 |------|-------------|
 | **Letter Rain** | Typing speed with falling letters |
@@ -70,7 +70,7 @@
 | **Trivia Quiz** | General knowledge quiz |
 | **Timeline Dash** | Historical event ordering |
 
-### Puzzle & Creative Games
+### Puzzle & Creative Games (7)
 | Game | Description |
 |------|-------------|
 | **Maze Runner** | Math-solving maze navigation |
@@ -80,6 +80,28 @@
 | **Nonogram** | Picture logic puzzles |
 | **Sudoku** | Classic number puzzles |
 | **Scratch Reveal** | Scratch-card math reveal |
+
+### Data & Media Literacy (2)
+| Game | Description |
+|------|-------------|
+| **Fake News Detective** | Detect misinformation, identify red flags, learn media literacy (50+ stories) |
+| **Graph Reading** | Interpret bar charts, line graphs, scatter plots, and mathematical function shapes |
+
+### Computer Science (4)
+| Game | Description |
+|------|-------------|
+| **Pattern Machine** | Complete sequences, find loops, master computational patterns (82 questions) |
+| **Binary & Bits** | Binary, hex, logic gates — the language of computers (86 questions) |
+| **Debug Detective** | Find bugs in pseudocode and simple programs (57 challenges) |
+| **Algorithm Arena** | Visualize sorting, searching, and algorithmic thinking (50 questions) |
+
+### Design (4)
+| Game | Description |
+|------|-------------|
+| **Design Eye** | Spot alignment, spacing, and design flaws in visual compositions (50 challenges) |
+| **Font Explorer** | Serif vs sans-serif, font pairing, anatomy, and classification (50 questions) |
+| **Layout Lab** | Align elements, fix spacing, master grid and composition principles (48 challenges) |
+| **Color Harmony** | Color theory, palettes, contrast ratios, and WCAG accessibility (52 questions) |
 
 ### Meta
 | Feature | Description |

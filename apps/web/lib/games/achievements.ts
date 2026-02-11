@@ -78,7 +78,7 @@ export const MEDALS: MedalDef[] = [
     name: "Polymath",
     bronze: { requirement: "Play 5 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 5 },
     silver: { requirement: "Play 15 different games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 15 },
-    gold: { requirement: "Play all 30 games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 30 },
+    gold: { requirement: "Play all 38 games", check: (c) => Object.keys(c.gamesPlayedByGameId).length >= 38 },
   },
   {
     id: "perfectionist",

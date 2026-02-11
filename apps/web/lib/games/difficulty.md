@@ -166,6 +166,78 @@ These games use standard difficulty scaling:
 - **Crossword:** Word length and obscurity
 - **Word Search:** Grid size and word count
 
+### Pattern Machine (CS)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 82 across 8 difficulty tiers |
+| Content | Emoji/shape sequences → number sequences → function machines → loop detection → conditional patterns → Fibonacci/triangular → growth rates → complex recurrences |
+| Adaptive | Level maps to grade: shapes (Gr 1-2) through recurrences (Gr 11+) |
+| Mode | Multiple choice (what comes next / what's the rule / Nth term) |
+
+### Binary & Bits (CS)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 86 across 6 difficulty tiers |
+| Content | Binary counting → larger binary → hexadecimal → logic gates → XOR/NAND/ASCII → two's complement/bitwise |
+| Visual | BitBoxes component with colored on/off squares and place values |
+| Adaptive | Level maps from basic binary (Gr 3-4) through advanced bitwise (Gr 11+) |
+
+### Debug Detective (CS)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 57 across 8 difficulty tiers |
+| Content | Simple instruction errors → pseudocode bugs → variable/logic errors → loop bugs → execution tracing → scope/infinite loop issues |
+| Visual | Code editor panel with dark bg, monospace font, line numbers, buggy line highlighting |
+| Adaptive | From step-order errors (Gr 4-5) to scope/edge-case bugs (Gr 11+) |
+
+### Algorithm Arena (CS)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 50 across 8 difficulty tiers |
+| Content | Step-by-step sorting → bubble sort → selection sort + binary search → algorithm comparison → Big-O intro → merge sort/advanced |
+| Visual | ArrayBars component renders arrays as colored bars with highlighted indices |
+| Adaptive | From basic instruction following (Gr 5-6) through complexity analysis (Gr 11+) |
+
+### Design Eye (Design)
+
+| Parameter | Description |
+|-----------|-------------|
+| Challenges | 50 across 5 difficulty tiers |
+| Content | Obvious misalignment → spacing errors → consistency issues → hierarchy/contrast → subtle professional flaws → accessibility violations |
+| Visual | Actual styled divs rendering design specimens with Tailwind |
+| Adaptive | From obvious offsets (Gr 3-4) to accessibility audits (Gr 11+) |
+
+### Font Explorer (Design)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 50 across 5 difficulty tiers |
+| Content | Serif vs sans-serif → font mood/personality → font pairing → font anatomy → professional typography → font classification |
+| Visual | Inline fontFamily styles with web-safe fonts (Georgia, Arial, Verdana, etc.) |
+| Adaptive | From basic identification (Gr 4-5) to Humanist/Geometric classification (Gr 11+) |
+
+### Layout Lab (Design)
+
+| Parameter | Description |
+|-----------|-------------|
+| Challenges | 48 across 6 difficulty tiers |
+| Content | Basic alignment → even distribution → grid layouts → visual hierarchy → composition (rule of thirds) → Gestalt/golden ratio/responsive |
+| Visual | 2-4 mini layout previews as actual Tailwind-styled divs |
+| Adaptive | From centering (Gr 3-4) to Gestalt principles (Gr 11+) |
+
+### Color Harmony (Design)
+
+| Parameter | Description |
+|-----------|-------------|
+| Questions | 52 across 6 difficulty tiers |
+| Content | Warm/cool + primary/secondary → complementary → analogous/triadic → WCAG contrast → split-complementary/tetradic → color psychology/brand |
+| Visual | Actual color swatches as styled rectangles, contrast demos, mini color wheel |
+| Adaptive | From warm vs cool (Gr 3-4) to accessibility audits (Gr 11+) |
+
 ---
 
 ## Achievement System
@@ -175,7 +247,7 @@ These games use standard difficulty scaling:
 | **Score Master** | 1000 pts | 5000 pts | 10000 pts |
 | **Streak Master** | 5 streak | 10 streak | 25 streak |
 | **Speed Demon** | 10 fast | 25 fast | 50 fast |
-| **Polymath** | Play 10 games | Play 20 games | Play all 27 games |
+| **Polymath** | Play 10 games | Play 20 games | Play all 38 games |
 | **Daily Player** | 3 day streak | 7 day streak | 30 day streak |
 | **Perfectionist** | 90% accuracy | 95% accuracy | 100% in a session |
 
