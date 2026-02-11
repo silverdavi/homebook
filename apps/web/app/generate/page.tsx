@@ -197,6 +197,7 @@ export default function GeneratePage() {
                 onOptionChange={store.setOption}
                 subject={store.subject}
                 topicId={store.topicId}
+                subtopicIds={store.subtopicIds}
               />
             </div>
 

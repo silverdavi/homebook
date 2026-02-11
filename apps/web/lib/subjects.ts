@@ -83,6 +83,89 @@ export function getOptionsForSubjectAndTopic(
   return [...new Set([...subjectOpts, ...topicOpts])];
 }
 
+/**
+ * Options that only apply when specific subtopics are selected.
+ * If an option is listed here, it will only appear when at least one
+ * of the listed subtopics is currently selected.
+ *
+ * Options NOT listed here are always shown (if the subject/topic allows them).
+ */
+export const SUBTOPIC_OPTION_SUPPORT: Partial<Record<keyof WorksheetOptions, string[]>> = {
+  // Visual fraction bar models only make sense for addition/subtraction and multiply-by-whole
+  includeVisualModels: [
+    "add-same-denom",
+    "add-unlike-denom",
+    "subtract-same-denom",
+    "subtract-unlike-denom",
+    "multiply-by-whole",
+  ],
+  // LCD/GCF reference only for subtopics that involve finding LCD or GCF
+  showLcdGcfReference: [
+    "add-unlike-denom",
+    "subtract-unlike-denom",
+    "simplify-to-lowest",
+    "equivalent-fractions",
+    "compare-fractions",
+    "ordering-fractions",
+    "mixed-number-operations",
+  ],
+  // Word problems only for operation-based subtopics (not conversions, ordering, etc.)
+  includeWordProblems: [
+    "add-same-denom",
+    "add-unlike-denom",
+    "subtract-same-denom",
+    "subtract-unlike-denom",
+    "multiply-fractions",
+    "divide-fractions",
+    "multiply-by-whole",
+    "divide-by-whole",
+  ],
+  // These follow includeWordProblems
+  wordProblemRatio: [
+    "add-same-denom",
+    "add-unlike-denom",
+    "subtract-same-denom",
+    "subtract-unlike-denom",
+    "multiply-fractions",
+    "divide-fractions",
+    "multiply-by-whole",
+    "divide-by-whole",
+  ],
+  wordProblemContext: [
+    "add-same-denom",
+    "add-unlike-denom",
+    "subtract-same-denom",
+    "subtract-unlike-denom",
+    "multiply-fractions",
+    "divide-fractions",
+    "multiply-by-whole",
+    "divide-by-whole",
+  ],
+};
+
+/**
+ * Get applicable options considering the currently selected subtopics.
+ * Filters out options that don't apply to any of the selected subtopics.
+ */
+export function getOptionsForSelection(
+  subject: string,
+  topicId: string,
+  selectedSubtopics: string[]
+): (keyof WorksheetOptions)[] {
+  const base = getOptionsForSubjectAndTopic(subject, topicId);
+
+  // If no subtopics selected, show all base options (user hasn't picked yet)
+  if (selectedSubtopics.length === 0) return base;
+
+  return base.filter((opt) => {
+    const supportedBy = SUBTOPIC_OPTION_SUPPORT[opt];
+    // If this option has no subtopic restrictions, always show it
+    if (!supportedBy) return true;
+    // Show only if at least one selected subtopic supports this option
+    return selectedSubtopics.some((st) => supportedBy.includes(st));
+  });
+}
+
 export const FRACTION_SUBTOPICS = [
   { id: "add-same-denom", label: "Add (same denominator)", grade: "3-4" },
   { id: "add-unlike-denom", label: "Add (unlike denominators)", grade: "4-5" },
