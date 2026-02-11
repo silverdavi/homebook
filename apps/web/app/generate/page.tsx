@@ -81,14 +81,15 @@ export default function GeneratePage() {
   useEffect(() => {
     if (!hasSubtopics) return;
 
-    // Create a config fingerprint to detect changes
+    // Fingerprint only content-affecting settings.
+    // Display options (visuals, answer key, hints) do NOT regenerate problems —
+    // they take effect on "Generate PDF" or manual "New problems" click.
     const configFingerprint = JSON.stringify({
       subject: store.subject,
       topicId: store.topicId,
       subtopicIds: store.subtopicIds,
       problemCount: store.problemCount,
       difficulty: store.difficulty,
-      options: store.options,
       grade: store.grade,
     });
 
@@ -117,7 +118,6 @@ export default function GeneratePage() {
     store.subtopicIds,
     store.problemCount,
     store.difficulty,
-    store.options,
     store.grade,
     hasSubtopics,
     doPreview,

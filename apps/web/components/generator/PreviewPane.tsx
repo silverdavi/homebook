@@ -79,7 +79,7 @@ export function PreviewPane({ html, isLoading, className }: PreviewPaneProps) {
             src={iframeSrc}
             className="w-full h-[500px] lg:h-[700px] border-0"
             title="Worksheet Preview"
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8">

@@ -20,7 +20,7 @@ from ..models import (
 )
 from ..math_explanations import explain_simplify, explain_lcd
 from ..visualizations import create_addition_visual, create_fraction_bar
-from ..llm_service import generate_word_problem_context
+from ..word_problem_templates import get_word_problem
 from .base import BaseGenerator
 
 
@@ -140,7 +140,7 @@ class FractionGenerator(BaseGenerator):
         """Generate a word problem version of the current subtopic.
 
         This creates a word problem that matches the mathematical operation
-        of the configured subtopic.
+        of the configured subtopic, using deterministic templates.
         """
         # Map subtopic to operation
         subtopic_to_operation = {
@@ -169,62 +169,46 @@ class FractionGenerator(BaseGenerator):
         if config.word_problem_config and config.word_problem_config.context_type != "mixed":
             context_type = config.word_problem_config.context_type
 
-        # Get LLM to wrap in word problem context
-        word_context = None
-        try:
-            llm_result = generate_word_problem_context(
-                operation=operation,
-                fractions=problem_data["fractions"],
-                answer=problem_data["answer_text"],
-                grade_level=config.grade_level,
-                context_type=context_type,
-            )
+        # Use template-based word problem generation
+        template_result = get_word_problem(
+            operation=operation,
+            frac1_str=problem_data["fractions"][0],
+            frac2_str=problem_data["fractions"][1],
+            answer_str=problem_data["answer_text"],
+            context_type=context_type,
+        )
 
-            word_context = WordProblemContext(
-                story=llm_result.get("problem_text", ""),
-                question=llm_result.get("question", ""),
-                context_type=llm_result.get("context_type", ""),
-            )
+        word_context = WordProblemContext(
+            story=template_result["story"],
+            question=template_result["question"],
+            context_type=template_result["context_type"],
+        )
 
-            q_html = (
-                f"<div class='word-problem'>"
-                f"<p class='word-problem-story'>{word_context.story}</p>"
-                f"<p class='word-problem-question'><strong>{word_context.question}</strong></p>"
-                f"</div>"
-            )
-            q_text = f"{word_context.story} {word_context.question}"
-            is_word_problem = True
-
-        except Exception as e:
-            # Never silently fall back - raise the error so we can fix it
-            raise RuntimeError(
-                f"Word problem generation failed for {operation} problem: {e}. "
-                f"Check LLM service configuration and API key."
-            ) from e
+        q_html = (
+            f"<div class='word-problem'>"
+            f"<p class='word-problem-story'>{word_context.story}</p>"
+            f"<p class='word-problem-question'><strong>{word_context.question}</strong></p>"
+            f"</div>"
+        )
+        q_text = f"{word_context.story} {word_context.question}"
 
         # Create word problem-specific hint
         math_hint = problem_data.get("hint", "")
-        if is_word_problem:
-            hint = (
-                f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
-                f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
-                f"{math_hint}"
-            )
-        else:
-            hint = math_hint
+        hint = (
+            f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
+            f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
+            f"{math_hint}"
+        )
 
         # Create worked solution
         worked = None
         if config.include_worked_examples:
-            if is_word_problem:
-                worked = (
-                    f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
-                    f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
-                    f"Step 3: Set up the equation: {problem_data['question_text']}\n"
-                    f"{problem_data.get('worked_solution', '')}"
-                )
-            else:
-                worked = problem_data.get("worked_solution")
+            worked = (
+                f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
+                f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
+                f"Step 3: Set up the equation: {problem_data['question_text']}\n"
+                f"{problem_data.get('worked_solution', '')}"
+            )
 
         return FractionProblem(
             id=self._make_id(),
@@ -239,9 +223,9 @@ class FractionGenerator(BaseGenerator):
             subtopic=config.subtopic,
             difficulty=config.difficulty,
             lcd=problem_data.get("lcd"),
-            is_word_problem=is_word_problem,
+            is_word_problem=True,
             word_problem_context=word_context,
-            metadata={"operation": operation, "context_type": word_context.context_type if word_context else ""},
+            metadata={"operation": operation, "context_type": word_context.context_type},
         )
 
     # --- Denominator helpers ---
@@ -1212,7 +1196,7 @@ class FractionGenerator(BaseGenerator):
         """
         Generate a word problem by:
         1. Creating a deterministic math problem (add, subtract, multiply, divide)
-        2. Using LLM to wrap it in an engaging story context
+        2. Using templates to wrap it in an engaging story context
         """
         # Choose an operation randomly (weighted towards add/subtract for lower grades)
         grade = config.grade_level
@@ -1239,71 +1223,50 @@ class FractionGenerator(BaseGenerator):
             problem_data = self._create_division_problem(config)
 
         # Get context type from config if available
-        context_type_param = None
+        context_type = None
         if config.word_problem_config and config.word_problem_config.context_type != "mixed":
-            context_type_param = config.word_problem_config.context_type
+            context_type = config.word_problem_config.context_type
 
-        # Get LLM to wrap in word problem context
-        word_problem_ctx = None
-        is_word_problem = False
-        try:
-            llm_result = generate_word_problem_context(
-                operation=operation,
-                fractions=problem_data["fractions"],
-                answer=problem_data["answer_text"],
-                grade_level=grade,
-                context_type=context_type_param,
-            )
+        # Use template-based word problem generation
+        template_result = get_word_problem(
+            operation=operation,
+            frac1_str=problem_data["fractions"][0],
+            frac2_str=problem_data["fractions"][1],
+            answer_str=problem_data["answer_text"],
+            context_type=context_type,
+        )
 
-            word_problem_ctx = WordProblemContext(
-                story=llm_result.get("problem_text", ""),
-                question=llm_result.get("question", ""),
-                context_type=llm_result.get("context_type", ""),
-            )
+        word_problem_ctx = WordProblemContext(
+            story=template_result["story"],
+            question=template_result["question"],
+            context_type=template_result["context_type"],
+        )
 
-            q_html = (
-                f"<div class='word-problem'>"
-                f"<p class='word-problem-story'>{word_problem_ctx.story}</p>"
-                f"<p class='word-problem-question'><strong>{word_problem_ctx.question}</strong></p>"
-                f"</div>"
-            )
-            q_text = f"{word_problem_ctx.story} {word_problem_ctx.question}"
-            is_word_problem = True
-
-        except Exception as e:
-            # Never silently fall back - raise the error so we can fix it
-            raise RuntimeError(
-                f"Word problem generation failed for {operation} problem: {e}. "
-                f"Check LLM service configuration and API key."
-            ) from e
+        q_html = (
+            f"<div class='word-problem'>"
+            f"<p class='word-problem-story'>{word_problem_ctx.story}</p>"
+            f"<p class='word-problem-question'><strong>{word_problem_ctx.question}</strong></p>"
+            f"</div>"
+        )
+        q_text = f"{word_problem_ctx.story} {word_problem_ctx.question}"
 
         # Create hint for word problems
         math_hint = problem_data.get("hint", "")
-        if is_word_problem:
-            hint = (
-                f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
-                f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
-                f"{math_hint}"
-            )
-        else:
-            hint = f"Math: {problem_data['question_text']} | {math_hint}" if math_hint else f"Math: {problem_data['question_text']}"
+        hint = (
+            f"First, identify the fractions: {', '.join(problem_data['fractions'])}. "
+            f"This is {'an addition' if operation == 'add' else 'a ' + operation} problem. "
+            f"{math_hint}"
+        )
 
         # Create worked solution showing both word problem and math
         worked = None
         if config.include_worked_examples:
-            if is_word_problem:
-                worked = (
-                    f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
-                    f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
-                    f"Step 3: Set up the equation: {problem_data['question_text']}\n"
-                    f"{problem_data.get('worked_solution', '')}"
-                )
-            else:
-                worked = (
-                    f"Step 1: Identify the math - This is a {operation} problem\n"
-                    f"Step 2: Set up the equation: {problem_data['question_text']}\n"
-                    f"{problem_data.get('worked_solution', '')}"
-                )
+            worked = (
+                f"Step 1: Read the problem and identify the fractions: {', '.join(problem_data['fractions'])}\n"
+                f"Step 2: Determine the operation - this is {'an addition' if operation == 'add' else 'a ' + operation} problem\n"
+                f"Step 3: Set up the equation: {problem_data['question_text']}\n"
+                f"{problem_data.get('worked_solution', '')}"
+            )
 
         return FractionProblem(
             id=self._make_id(),
@@ -1318,11 +1281,11 @@ class FractionGenerator(BaseGenerator):
             subtopic="word-problems",
             difficulty=config.difficulty,
             lcd=problem_data.get("lcd"),
-            is_word_problem=is_word_problem,
+            is_word_problem=True,
             word_problem_context=word_problem_ctx,
             metadata={
                 "operation": operation,
-                "context_type": word_problem_ctx.context_type if word_problem_ctx else "",
+                "context_type": word_problem_ctx.context_type,
             },
         )
 
