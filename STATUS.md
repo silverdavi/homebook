@@ -1,77 +1,138 @@
-# Homebook (teacher.ninja) — Project Status
+# teacher.ninja — Project Status
 
-> Last updated: February 6, 2026  
-> Current commit: `79ec0e0` — fix: route API calls through Next.js proxy to avoid CORS
+> Last updated: February 10, 2026
+> Domain: https://teacher.ninja
 
 ---
 
 ## What This Project Is
 
-**teacher.ninja** is a worksheet generator for K-12 teachers. Teachers select a subject, topic, and options, then get a print-ready PDF worksheet with problems, answer keys, hints, and worked examples.
+**teacher.ninja** is an educational platform for K-12 students with two major components:
 
-The key architectural insight: **problems are generated deterministically** (pure math, no LLM needed), while only creative content (intro pages, word problem contexts) uses LLMs. This means each generation is cheap and fast, with optional LLM enhancement.
+1. **Worksheet Generator** — Teachers select a subject, topic, and options, then get a print-ready PDF worksheet with problems, answer keys, hints, and worked examples. Problems are generated deterministically (pure math, no LLM needed), while only creative content (intro pages, word problem contexts) uses LLMs.
+
+2. **Game Arena** — 27 interactive learning games covering math, science, language, and logic. Features adaptive difficulty (grade 1-11 progression), achievements, streaks, high scores, optional user profiles with server-side persistence, and a daily challenge system.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     EC2: 44.209.209.79                       │
-│                                                               │
-│  nginx (80/443)                                               │
-│  ├── teacher.ninja ──────────► Next.js :3000 (frontend)       │
-│  └── api.teacher.ninja ──────► uvicorn :8000 (Python API)     │
-│                                                               │
-│  Frontend calls /api/preview, /api/generate (same-origin)     │
-│  Next.js API routes proxy server-side to localhost:8000       │
-└─────────────────────────────────────────────────────────────┘
-         │                              │
-         ▼                              ▼
-   S3: homebook-worksheets        OpenAI GPT (optional)
-   (PDF storage)                  (intro pages, word problems)
+                          teacher.ninja
+                               |
+                     EC2: 44.209.209.79
+   ┌───────────────────────────────────────────────┐
+   │  nginx (80/443, Let's Encrypt SSL)            │
+   │  ├── teacher.ninja → Next.js :3000 (frontend) │
+   │  └── api.teacher.ninja → uvicorn :8000 (API)  │
+   │                                                │
+   │  SQLite (.data/profiles.db) — user profiles    │
+   │  JSON  (.data/scores.json) — global scores     │
+   └───────────────────────────────────────────────┘
+            │                    │
+            ▼                    ▼
+   S3: homebook-worksheets   OpenAI GPT (optional)
+   (PDF storage)             (intro pages, word problems)
 ```
 
-### Frontend: `apps/web/` — Next.js 16 + TypeScript + Tailwind
+---
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Main page | `app/generate/page.tsx` | Orchestrates all UI, auto-preview |
-| API proxy | `app/api/preview/route.ts` | Server-side proxy to Python API |
-| API proxy | `app/api/generate/route.ts` | Server-side proxy for PDF generation |
-| State | `lib/store.ts` | Zustand store for all generator state |
-| API client | `lib/api.ts` | Calls `/api/*` routes (no direct backend calls) |
-| Subjects | `lib/subjects.ts` | Subject/topic/subtopic definitions + option filtering |
-| Standards | `lib/standards.ts` | Common Core standards data |
-| Preview | `components/generator/PreviewPane.tsx` | Sandboxed iframe preview |
-| Options | `components/generator/OptionsPanel.tsx` | Subject/topic-aware options |
-| Download | `components/generator/DownloadButton.tsx` | PDF generation + download |
-| Help | `components/generator/HelpModal.tsx` | Usage guide modal |
-| Version | `components/VersionFooter.tsx` | Build version display |
+## Game Arena (27 Games)
 
-### Backend: `packages/generator/` — Python 3.11 + FastAPI
+### Math Games
+| Game | Description |
+|------|-------------|
+| **Math Blitz** | Timed arithmetic speed challenge |
+| **Times Table** | Multiplication mastery trainer |
+| **Fraction Lab** | Full fraction curriculum (grade 1-11), 14 challenge types, adaptive |
+| **Fraction Fighter** | Fast fraction comparison battles |
+| **Decimal Dash** | Decimal operations and conversions |
+| **Graph Plotter** | Coordinate geometry and slope |
+| **Unit Converter** | Metric/imperial unit conversions |
+| **Equation Balancer** | Balance chemical and math equations |
+| **Number Puzzle** | Logic-based number grids |
 
-| Module | File | Purpose |
-|--------|------|---------|
-| API | `src/api/main.py` | FastAPI endpoints: `/preview`, `/generate`, `/health` |
-| Config | `src/config.py` | Loads `.env`, S3/cache/CORS settings |
-| Models | `src/models.py` | Dataclasses: Problem, Worksheet, WordProblemConfig |
-| Renderer | `src/renderer.py` | Jinja2 HTML rendering |
-| PDF | `src/pdf_generator.py` | WeasyPrint HTML→PDF |
-| S3 | `src/s3_client.py` | Upload PDFs, generate presigned URLs |
-| LLM | `src/llm_service.py` | OpenAI calls for intro pages + word problems |
-| Cache | `src/cache.py` | Two-tier (memory + file) LLM response cache |
-| Standards | `src/standards.py` | Common Core standards mapping |
+### Science Games
+| Game | Description |
+|------|-------------|
+| **Element Match** | Periodic table memory matching |
+| **Genetics Lab** | Mendelian genetics (Punnett squares) |
+| **Science Study** | Chemistry, Biology, Physics, Earth Science (100+ questions) |
+| **Geography Challenge** | Capitals, continents, landmarks, flags (85+ questions) |
 
-### Generators (deterministic, no LLM)
+### Language & Logic Games
+| Game | Description |
+|------|-------------|
+| **Letter Rain** | Typing speed with falling letters |
+| **Word Builder** | Scrambled science vocabulary |
+| **Word Search** | Educational word search puzzles |
+| **Crossword** | Science-themed crossword puzzles |
+| **Trivia Quiz** | General knowledge quiz |
+| **Timeline Dash** | Historical event ordering |
 
-| Generator | File | Subtopics |
-|-----------|------|-----------|
-| Fractions | `src/generators/fractions.py` | Add/subtract (same/diff denom), multiply, divide, mixed, simplify, compare |
-| Arithmetic | `src/generators/arithmetic.py` | Addition, subtraction, multiplication, division, mixed, order of operations |
-| Decimals | `src/generators/decimals.py` | 12 subtopics: add/sub/mul/div, rounding, comparing, fractions↔decimals↔percentages |
-| Chemistry | `src/generators/chemistry.py` | Balancing equations |
-| Biology | `src/generators/biology.py` | Mendelian genetics |
+### Puzzle & Creative Games
+| Game | Description |
+|------|-------------|
+| **Maze Runner** | Math-solving maze navigation |
+| **Trace & Learn** | Letter/number tracing practice |
+| **Color Lab** | Color mixing and theory |
+| **Connect Dots** | Dot-to-dot with math answers |
+| **Nonogram** | Picture logic puzzles |
+| **Sudoku** | Classic number puzzles |
+| **Scratch Reveal** | Scratch-card math reveal |
+
+### Meta
+| Feature | Description |
+|---------|-------------|
+| **Daily Challenge** | Rotating daily game challenge |
+| **Progress & Profile** | Achievements, stats, optional cloud profiles |
+
+### Key Game Features
+- **Adaptive Difficulty Engine** — Tracks streaks, accuracy, speed; auto-adjusts level (1-50 scale mapped to grade 1-11+)
+- **Achievement System** — Bronze/Silver/Gold tiers across multiple categories (Polymath, Streak Master, Speed Demon, etc.)
+- **User Profiles** — Optional sign-up with kid-friendly access codes (e.g., BLUE-FOX-73); server-side SQLite persistence
+- **Score Syncing** — Local + server high scores with cloud sync
+- **Practice Mode** — No lives, detailed explanations, learn at own pace
+- **E-ink Mode** — High-contrast mode for e-readers
+- **Sound Effects** — Correct/wrong/achievement/countdown audio with mute toggle
+
+---
+
+## Worksheet Generator
+
+### Subjects & Generators
+| Subject | Generator | Subtopics |
+|---------|-----------|-----------|
+| **Math: Fractions** | `fractions.py` | Add/subtract (same/diff denom), multiply, divide, mixed, simplify, compare |
+| **Math: Arithmetic** | `arithmetic.py` | Addition, subtraction, multiplication, division, mixed, order of operations |
+| **Math: Decimals** | `decimals.py` | 12 subtopics: add/sub/mul/div, rounding, comparing, fractions/decimals/percentages |
+| **Chemistry** | `chemistry.py` | Balancing equations |
+| **Biology** | `biology.py` | Mendelian genetics |
+
+### Features
+- Difficulty levels (easy, medium, hard, mixed)
+- Configurable problem count (5-30)
+- Answer keys, hints, worked examples
+- Real-time preview with debounced auto-update
+- PDF generation via WeasyPrint
+- S3 upload with presigned download URLs
+- LLM-powered intro pages and word problem contexts
+- Common Core standards alignment
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 16 + TypeScript + Tailwind CSS |
+| **Game State** | React hooks + localStorage + sessionStorage |
+| **Profiles DB** | better-sqlite3 (WAL mode) |
+| **Worksheet API** | Python 3.11 + FastAPI + WeasyPrint |
+| **PDF Storage** | AWS S3 (`homebook-worksheets`) |
+| **LLM** | OpenAI GPT (optional, for intro pages) |
+| **Infrastructure** | EC2 (Ubuntu 22.04) + nginx + Let's Encrypt |
+| **CI/CD** | GitHub Actions (CI + Deploy Frontend on push to main) |
 
 ---
 
@@ -79,162 +140,71 @@ The key architectural insight: **problems are generated deterministically** (pur
 
 | Resource | Details |
 |----------|---------|
-| **EC2** | `i-0a4133b9e0bda5c58`, `44.209.209.79`, Ubuntu 22.04, 2GB RAM |
-| **S3** | `homebook-worksheets` bucket (us-east-1) |
+| **EC2** | `i-0a4133b9e0bda5c58`, `44.209.209.79`, Ubuntu 22.04 |
+| **S3** | `homebook-worksheets` (us-east-1), 7-day auto-delete |
 | **Domain** | `teacher.ninja` + `api.teacher.ninja` |
-| **SSL** | Let's Encrypt via Certbot |
-| **Nginx** | Reverse proxy for both frontend and API |
-| **Process mgmt** | `nohup` (no systemd/pm2 yet) |
-| **SSH key** | `~/.ssh/homebook-key.pem` (key name: `homebook-key`) |
-
-### Server Health (as of Feb 6, 2026)
-
-- Disk: 3.9G / 20G used (21%)
-- Memory: 406Mi used / 1.9Gi total (1.3Gi available)
-- API: healthy, LLM available, word problems + intro pages enabled
-- Frontend: healthy, serving on port 3000
+| **SSL** | Let's Encrypt via Certbot (both domains) |
+| **Nginx** | Reverse proxy for frontend (:3000) and API (:8000) |
+| **SSH** | Key: `~/.ssh/homebook-key.pem` |
 
 ---
 
-## CI/CD Status
+## CI/CD
 
-### Workflows
+| Workflow | Trigger | Status |
+|----------|---------|--------|
+| **CI** | Push to main | Passing |
+| **Deploy Frontend** | Push to main | Passing |
 
-| Workflow | Trigger | Status | Notes |
-|----------|---------|--------|-------|
-| **CI** | Push to main | **Passing** | Tests Python + builds frontend + builds Docker |
-| **Deploy Frontend** | Push to `apps/web/**` | **Failing** | SSH to EC2 — needs `GENERATOR_API_URL` env on server |
-| **Deploy Generator** | Push to `packages/generator/**` | **Failing** | SSH to EC2 — race condition with concurrent deploys |
-| **Deploy Simple** | Manual only | N/A | Not triggered automatically |
-
-### GitHub Secrets Configured
-
+### GitHub Secrets
 | Secret | Set |
 |--------|-----|
 | `EC2_HOST` | Yes (44.209.209.79) |
-| `EC2_SSH_KEY` | Yes (homebook-key.pem) |
-| `AWS_ACCESS_KEY_ID` | **No** — not needed for deploy (keys are in .env on EC2) |
-| `AWS_SECRET_ACCESS_KEY` | **No** — same |
-| `VERCEL_TOKEN` | **No** — not using Vercel |
-
-### Deploy Workflow Issue
-
-The deploy workflows fail intermittently because:
-1. `nohup` background processes get killed when the SSH session ends (SIGHUP/SIGTERM)
-2. The `set -e` + health check runs before the server fully starts
-3. When both frontend and generator deploys trigger simultaneously, `git reset --hard` causes race conditions
-
-**Recommended fix**: Switch to `systemd` services or `pm2` for process management. This would survive SSH disconnects and handle restarts properly.
+| `EC2_SSH_KEY` | Yes |
 
 ---
 
-## What Works (Production)
-
-- [x] Subject selection (Math, Chemistry, Biology)
-- [x] Topic/subtopic selection with subject-specific filtering
-- [x] Fractions generator (7 subtopics)
-- [x] Arithmetic generator (6 subtopics)
-- [x] Decimals & Percentages generator (12 subtopics)
-- [x] Chemistry: balancing equations
-- [x] Biology: Mendelian genetics
-- [x] Difficulty levels (easy, medium, hard, mixed)
-- [x] Configurable problem count (5-30)
-- [x] Answer key generation
-- [x] Hints
-- [x] Worked examples
-- [x] Real-time preview (auto-updates on config change, debounced 800ms)
-- [x] Sandboxed iframe preview (no style leakage)
-- [x] PDF generation via WeasyPrint
-- [x] PDF upload to S3 with presigned download URLs
-- [x] Descriptive download filenames (e.g., `math-fractions-worksheet.pdf`)
-- [x] Personalization (student name, teacher name, date, title)
-- [x] Options filtering by subject AND topic (no LCD/GCF for chemistry)
-- [x] Word problems support (LLM-powered contexts)
-- [x] Intro page generation (LLM-powered)
-- [x] Two-tier LLM response caching (memory + file)
-- [x] Common Core standards alignment
-- [x] Version footer for deployment tracking
-- [x] Help modal with usage guide
-- [x] API proxied through Next.js routes (no CORS issues)
-- [x] SSL on both domains
-- [x] CI pipeline passing (Python tests + frontend build + Docker build)
-
----
-
-## Known Issues & Technical Debt
-
-### High Priority
-
-| # | Issue | Impact |
-|---|-------|--------|
-| 1 | **Deploy workflows fail** — `nohup` processes killed on SSH disconnect | Auto-deploy broken; manual SSH deploy works |
-| 2 | **No process manager** — services don't restart on crash or reboot | Server downtime risk |
-| 3 | **No frontend tests** — only backend has test coverage | Regressions possible |
-
-### Medium Priority
-
-| # | Issue | Impact |
-|---|-------|--------|
-| 4 | Lint warnings in `HelpModal.tsx` (eslint quote escaping) | CI annotations, no functional impact |
-| 5 | `node_modules` corruption on EC2 during deploys | Occasional build failures; clean install fixes |
-| 6 | No error monitoring (Sentry, etc.) | Errors only visible in `/tmp/*.log` |
-| 7 | No rate limiting on frontend API routes | Potential abuse |
-| 8 | `.env` file on EC2 is manually managed | Not version controlled, easy to forget updates |
-
-### Low Priority / Enhancements
-
-| # | Item |
-|---|------|
-| 9 | Only first subtopic is sent to API (`subtopicIds[0]`) — should support multi-subtopic worksheets |
-| 10 | No reading/science subjects yet (feature flags exist but disabled) |
-| 11 | No user accounts or saved worksheets |
-| 12 | No analytics or usage tracking |
-| 13 | Docker compose exists but isn't used in production (venv instead) |
-| 14 | `RE` empty file in project root (leftover) |
-
----
-
-## Recommended Next Steps
-
-1. **Fix process management** — Install `pm2` or create `systemd` services so processes survive SSH disconnect and auto-restart on crash/reboot
-2. **Fix deploy workflows** — Use `pm2 restart` or `systemctl restart` instead of `nohup`
-3. **Multi-subtopic worksheets** — Send all selected subtopics to the API, not just the first
-4. **Add frontend tests** — At minimum, test API route handlers
-5. **Error monitoring** — Add Sentry or similar
-6. **Expand subjects** — Reading, Science (flags already exist)
-
----
-
-## File Quick Reference
+## File Structure (Key Paths)
 
 ```
-.env                              # Local dev env (DO NOT COMMIT — in .gitignore)
-~/homebook/.env (on EC2)          # Production env (manually managed)
-apps/web/                         # Frontend (Next.js)
-packages/generator/               # Backend (Python/FastAPI)
-infra/scripts/deploy-generator.sh # Manual deploy script
-.github/workflows/ci.yml          # CI: tests + build
-.github/workflows/deploy-*.yml    # Auto-deploy (currently broken)
+apps/web/                         # Next.js frontend
+  app/
+    generate/                     # Worksheet generator UI
+    games/                        # Game Arena
+      fraction-lab/               # (and 26 other game routes)
+      progress/                   # Profile & achievements
+    api/
+      profiles/                   # User profile CRUD (SQLite)
+      scores/                     # Global high scores (JSON)
+      preview/                    # Proxy to Python API
+      generate/                   # Proxy to Python API
+  components/games/               # All game components
+  lib/games/
+    adaptive-difficulty.ts        # Adaptive difficulty engine
+    achievements.ts               # Achievement definitions & checks
+    profile-context.tsx           # React context for user profiles
+    use-scores.ts                 # Score tracking hooks
+    audio.ts                      # Sound effects
+packages/generator/               # Python worksheet generator
+  src/generators/                 # Math/science problem generators
+  src/api/main.py                 # FastAPI server
+  templates/                      # Jinja2 worksheet templates
+infra/                            # AWS, nginx, deploy scripts
+.github/workflows/                # CI + deploy workflows
 ```
 
 ---
 
-## Recent Commit History
+## Recent Commits
 
 ```
-79ec0e0 fix: route API calls through Next.js proxy to avoid CORS
-505ac0b feat: real-time preview and UI improvements
-3816c1e fix: load .env file with dotenv in generator config
-0529a70 fix: make deploy workflows more robust
-39bb498 fix: update deploy workflows for EC2 with venv setup
-ffb5763 fix: revert frontend deployment back to Vercel
-868525d fix: change frontend deployment from Vercel to EC2
-6dabc94 fix: escape quotes in HelpModal JSX and update CI package name
-e94d994 fix: update libgdk-pixbuf package name for Debian Trixie
-a0df566 fix: add pytest-asyncio to requirements.txt
-9e8db35 feat: make Help button functional with modal
-b475fc8 feat: add version footer to all pages
-f028456 fix: use iframe for preview to isolate styles
-56d227d fix: filter options by topic, not just subject
-fd3ad7e test: add comprehensive tests for generators, cache, and standards
+fa7eb09 feat: add fraction ÷ whole number and whole ÷ fraction to Divide mode
+7abca7a feat: complete Fraction Lab overhaul with grade 1-11 adaptive progression
+17e2fe8 feat: add Science Study and Geography Challenge games
+c8c2a7b feat: add optional profile system with server-side progress tracking
+ff87d08 fix: prevent infinite loops in wrong-answer generators across 7 games
+d153a36 feat: adaptive difficulty engine + massive content expansion across all games
+0a9e201 feat: replace all emoji icons with 99 AI-generated game assets
+94e64fb feat: comprehensive polish — full game coverage, SEO, error pages, UX improvements
+82f86cd feat: improve Fraction Lab with progressive visuals + GCF/LCM training
 ```

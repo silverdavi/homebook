@@ -1,40 +1,33 @@
 # GitHub Secrets Configuration
 
-Configure these secrets in: **Settings → Secrets and variables → Actions**
+Configure these secrets in: **Settings > Secrets and variables > Actions**
 
 ## Required for CI
 
 None - CI runs without secrets.
 
-## Required for Frontend Deployment (Vercel)
+## Required for Deployment (EC2)
 
 | Secret | Description | How to get |
 |--------|-------------|------------|
-| `VERCEL_TOKEN` | Vercel API token | [Vercel Tokens](https://vercel.com/account/tokens) |
+| `EC2_HOST` | EC2 IP address | EC2 console (currently `44.209.209.79`) |
+| `EC2_SSH_KEY` | Private SSH key (PEM) | Your `homebook-key.pem` key pair |
 
-## Required for Generator Deployment (EC2)
-
-| Secret | Description | How to get |
-|--------|-------------|------------|
-| `AWS_ACCESS_KEY_ID` | AWS access key | AWS IAM console |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | AWS IAM console |
-| `EC2_HOST` | EC2 IP or hostname | `api.teacher.ninja` or EC2 console |
-| `EC2_SSH_KEY` | Private SSH key | Your `~/.ssh/id_rsa` or EC2 key pair |
-
-## Optional (for ECR approach)
+## Optional (AWS — only needed if changing S3/Secrets Manager)
 
 | Secret | Description |
 |--------|-------------|
-| `ECR_REGISTRY` | ECR registry URL (e.g., `302249171798.dkr.ecr.us-east-1.amazonaws.com`) |
+| `AWS_ACCESS_KEY_ID` | AWS access key (keys are in `.env` on EC2, not needed for deploy) |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 
 ## How to Add Secrets
 
 1. Go to your GitHub repository
-2. Click **Settings** → **Secrets and variables** → **Actions**
+2. Click **Settings** > **Secrets and variables** > **Actions**
 3. Click **New repository secret**
 4. Add each secret with its value
 
-## Current AWS Account Info
+## AWS Account Info
 
 - **Account ID:** 302249171798
 - **Region:** us-east-1

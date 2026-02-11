@@ -1,7 +1,12 @@
-# Homebook Technical Specification
+# teacher.ninja Technical Specification
 
-> Fractions Module - First Implementation
+> Worksheet Generator + Game Arena
 > Domain: teacher.ninja
+>
+> **Note:** This spec was originally written for the fractions worksheet module.
+> Parts 1-5 remain accurate for the worksheet generator backend.
+> Part 6 has been updated to reflect the current project structure.
+> Part 8 (Game Arena) covers the interactive games platform.
 
 ---
 
@@ -834,102 +839,147 @@ Response:
 
 ---
 
-## Part 6: File Structure (Final)
+## Part 6: File Structure
 
 ```
 homebook/
 ├── apps/
-│   └── web/                          # Next.js frontend
+│   └── web/                              # Next.js 16 frontend
 │       ├── app/
-│       │   ├── page.tsx              # Landing page
-│       │   ├── generate/
-│       │   │   └── page.tsx          # Main generator
+│       │   ├── page.tsx                  # Landing page
+│       │   ├── generate/page.tsx         # Worksheet generator UI
+│       │   ├── games/                    # Game Arena (27 games)
+│       │   │   ├── fraction-lab/         # Fraction curriculum
+│       │   │   ├── math-blitz/           # Arithmetic speed
+│       │   │   ├── times-table/          # Multiplication
+│       │   │   ├── science-study/        # Science quiz
+│       │   │   ├── geography/            # Geography challenge
+│       │   │   ├── progress/             # Profile & achievements
+│       │   │   └── .../                  # 21 more game routes
 │       │   ├── api/
-│       │   │   ├── preview/route.ts
-│       │   │   ├── generate/route.ts
-│       │   │   └── download/[id]/route.ts
+│       │   │   ├── profiles/             # User profile CRUD
+│       │   │   ├── scores/               # Global high scores
+│       │   │   ├── preview/route.ts      # Proxy to Python API
+│       │   │   └── generate/route.ts     # Proxy to Python API
 │       │   └── layout.tsx
 │       ├── components/
-│       │   ├── ui/                   # Base components
-│       │   └── generator/            # Generator-specific
+│       │   ├── games/                    # Game components
+│       │   │   ├── FractionLabGame.tsx   # 14 challenge types, grade 1-11
+│       │   │   ├── MathBlitzGame.tsx
+│       │   │   └── .../                  # 25 more game components
+│       │   ├── generator/                # Worksheet generator UI
+│       │   └── ui/                       # Shared UI components
 │       ├── lib/
-│       │   ├── subjects.ts           # Subject/topic definitions
-│       │   └── api.ts                # API client
-│       └── tailwind.config.ts
+│       │   ├── games/
+│       │   │   ├── adaptive-difficulty.ts  # Adaptive engine
+│       │   │   ├── achievements.ts         # Achievement system
+│       │   │   ├── profile-context.tsx     # Profile React context
+│       │   │   ├── use-scores.ts          # Score hooks
+│       │   │   └── audio.ts              # Sound effects
+│       │   ├── subjects.ts               # Worksheet subjects
+│       │   ├── api.ts                    # API client
+│       │   └── store.ts                  # Zustand store
+│       └── public/
+│           └── game-icons/               # 99 AI-generated game assets
 │
 ├── packages/
-│   └── generator/                    # Python generator
+│   └── generator/                        # Python worksheet generator
 │       ├── src/
 │       │   ├── generators/
-│       │   │   ├── base.py
-│       │   │   ├── fractions.py      # ← FIRST IMPLEMENTATION
-│       │   │   └── registry.py
+│       │   │   ├── fractions.py
+│       │   │   ├── arithmetic.py
+│       │   │   ├── decimals.py
+│       │   │   ├── chemistry.py
+│       │   │   └── biology.py
+│       │   ├── api/main.py               # FastAPI
 │       │   ├── models.py
-│       │   ├── math_explanations.py  # GCF/LCD helpers
-│       │   ├── visualizations.py     # SVG generators
-│       │   ├── renderer.py           # Jinja2 rendering
-│       │   ├── pdf_generator.py      # WeasyPrint
+│       │   ├── renderer.py               # Jinja2 HTML
+│       │   ├── pdf_generator.py          # WeasyPrint
 │       │   ├── s3_client.py
-│       │   ├── secrets.py            # AWS Secrets Manager
-│       │   └── api/
-│       │       └── main.py           # FastAPI
+│       │   ├── llm_service.py            # OpenAI integration
+│       │   └── cache.py                  # Two-tier LLM cache
 │       ├── templates/
-│       │   ├── worksheet.html
-│       │   └── styles/
-│       │       └── print.css
 │       ├── tests/
 │       ├── requirements.txt
 │       └── Dockerfile
 │
 ├── infra/
-│   ├── aws/                          # IAM, S3 configs
-│   ├── dns/                          # Route53, SSL docs
-│   ├── nginx/                        # Reverse proxy config
-│   ├── docker/                       # docker-compose
-│   └── scripts/                      # Deployment scripts
+│   ├── aws/                              # S3, IAM, Secrets Manager
+│   ├── nginx/                            # Reverse proxy config
+│   └── scripts/                          # Deploy scripts
 │
-├── scripts/
-│   └── agents/                       # Agent prompts
-│       ├── frontend-prompt.md
-│       ├── backend-prompt.md
-│       ├── generator-prompt.md
-│       ├── templates-prompt.md
-│       ├── infra-prompt.md
-│       └── dns-prompt.md
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                        # CI: tests + build
+│       └── deploy-frontend.yml           # Auto-deploy on push
 │
 ├── .env
 ├── .gitignore
-├── package.json
-├── PLAN.md
-├── PLAN_DEEP.md
-└── TECHNICAL_SPEC.md                 # ← This file
+├── STATUS.md                             # Project status
+├── TECHNICAL_SPEC.md                     # This file
+└── package.json
 ```
 
 ---
 
-## Part 7: Success Criteria
+## Part 7: Success Criteria (Worksheet Generator)
 
-### Fractions Module Complete When:
-
-1. **Generator works:**
-   - `FractionGenerator` produces valid problems for all 10+ subtopics
-   - GCF/LCD calculations are correct
-   - Answers are automatically simplified
-
-2. **Visuals work:**
-   - Fraction bars render correctly in SVG
-   - Print quality is good (vector graphics)
-
-3. **Worksheets generate:**
-   - HTML renders with all components
-   - PDF generates via WeasyPrint
-   - Uploads to S3 successfully
-
-4. **User story satisfied:**
-   - Ms. Rodriguez can create 3 differentiated worksheets
-   - Hints and worked examples display correctly
-   - Answer key is on separate page
+1. **Generator works:** All subtopics produce valid problems with correct GCF/LCD
+2. **Visuals work:** SVG fraction bars render in print quality
+3. **Worksheets generate:** HTML renders, WeasyPrint PDF works, S3 upload succeeds
+4. **User story:** Teachers can create differentiated worksheets with hints and answer keys
 
 ---
 
-*This specification drives all agent implementations.*
+## Part 8: Game Arena Architecture
+
+### Overview
+
+The Game Arena is a collection of 27 interactive educational games built as React components within the Next.js frontend. Games share common infrastructure for adaptive difficulty, achievements, scoring, and optional user profiles.
+
+### Adaptive Difficulty Engine
+
+All games use a centralized adaptive engine (`lib/games/adaptive-difficulty.ts`):
+
+```typescript
+interface AdaptiveState {
+  level: number;        // 1-50 floating point
+  streak: number;       // Current correct streak
+  maxStreak: number;    // Session best streak
+  totalCorrect: number;
+  totalWrong: number;
+  history: Array<{ correct: boolean; timeMs: number }>;
+}
+```
+
+The engine increases difficulty on correct streaks (especially fast ones) and decreases on wrong answers. The penalty for wrong answers is intentionally less than the reward for correct answers.
+
+Level maps to grade through `getLevelConfig(level)` which returns grade-appropriate parameters (denominator pools, number ranges, operation types, etc.).
+
+### User Profiles
+
+Optional profiles use kid-friendly access codes (e.g., `BLUE-FOX-73`) instead of passwords:
+
+- **Storage:** SQLite via `better-sqlite3` with WAL mode
+- **API:** Next.js API routes at `/api/profiles/`
+- **Context:** React context (`profile-context.tsx`) provides profile state to all games
+- **Sync:** Game results sync to server on completion
+
+### Achievement System
+
+Bronze/Silver/Gold tiers with categories: Score Master, Streak Master, Speed Demon, Polymath (play all 27 games), Daily Player, Perfectionist. Additional tiers (Unstoppable, Immortal, Legendary) for extreme performance.
+
+### Audio
+
+Sound effects for correct/wrong answers, achievements, countdowns, and game completion. User-togglable mute.
+
+### Key Design Decisions
+
+1. **Client-side game logic** — All game state lives in React hooks, not server-side. This means zero latency for game interactions.
+2. **localStorage for scores** — Games work offline. Scores sync to server when profiles are active.
+3. **No external game engine** — Pure React + CSS animations + Canvas API (for Maze Runner, Trace & Learn, Color Lab). This keeps the bundle small and avoids heavy dependencies.
+4. **Deterministic question generation** — All math/science questions are generated client-side with seeded randomness, no API calls needed during gameplay.
+
+---
+
+*This specification covers both the worksheet generator backend and the game arena frontend.*
