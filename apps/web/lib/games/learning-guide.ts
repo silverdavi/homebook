@@ -255,6 +255,25 @@ export const GAME_CURRICULUM: GameCurriculum[] = [
     },
   },
 
+  {
+    id: "graph-reading",
+    name: "Graph Reading",
+    category: "math",
+    adaptive: true,
+    teaches: "Graph comprehension: reading axes, trends, correlation, function shapes",
+    gradeContent: {
+      "grade-1-2": "Read bar chart axes and labels, identify tallest/shortest bars",
+      "grade-3": "Read line graph values, understand legends, compare data series",
+      "grade-4": "Find min/max, calculate differences, read specific values accurately",
+      "grade-5": "Identify trends (growing/declining), make predictions, understand acceleration",
+      "grade-6": "Interpret real-world data (population, climate), understand correlation vs causation",
+      "grade-7-8": "Scatter plots, outlier detection, multi-dataset comparison, statistical interpretation",
+      "grade-9-10": "Recognize function shapes: parabola (x²), exponential (2ˣ), sine, circle, logarithm",
+      "grade-11+": "Normal distribution, inverse functions, advanced shape identification, data integrity",
+    },
+    standards: ["CCSS.MATH.CONTENT.3.MD", "CCSS.MATH.CONTENT.5.G", "CCSS.MATH.CONTENT.8.SP", "CCSS.MATH.CONTENT.HSF-IF"],
+  },
+
   // ── SCIENCE ──
   {
     id: "science-study",

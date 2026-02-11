@@ -59,6 +59,7 @@ const SECTIONS: Section[] = [
       { title: "Fraction Lab", description: "See, compare, add fractions with visual bars and pies.", emoji: "🥧", iconId: "fraction-lab", href: "/games/fraction-lab", color: "#f97316", available: true, grade: "3-7" },
       { title: "Decimal Dash", description: "Number lines, operations, and fraction-decimal conversions.", emoji: "🔢", iconId: "decimal-dash", href: "/games/decimal-dash", color: "#14b8a6", available: true, badge: "NEW", grade: "4-7" },
       { title: "Graph Plotter", description: "Plot points, find slopes, and draw lines on coordinate grids.", emoji: "📈", iconId: "graph-plotter", href: "/games/graph-plotter", color: "#6366f1", available: true, badge: "NEW", grade: "6-9" },
+      { title: "Graph Reading", description: "Read charts, spot trends, identify functions — master graph comprehension!", emoji: "📊", iconId: "graph-reading", href: "/games/graph-reading", color: "#818cf8", available: true, badge: "NEW", grade: "1-12" },
     ],
   },
   {
