@@ -7,7 +7,7 @@ import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveS
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { trackGamePlayed, setLocalHighScore, getLocalHighScore } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
-import { sfxCorrect, sfxWrong, sfxCombo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 
 // ── Types ──
 
@@ -258,7 +258,12 @@ export function GeographyChallengeGame() {
   useEffect(() => {
     if (phase !== "playing" || mode !== "challenge") return;
     if (timer <= 0) { finish(); return; }
-    const t = setTimeout(() => setTimer((v) => v - 1), 1000);
+    const t = setTimeout(() => {
+      setTimer((v) => {
+        if (v <= 5 && v > 1) sfxTick();
+        return v - 1;
+      });
+    }, 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, mode, timer]);
@@ -274,6 +279,8 @@ export function GeographyChallengeGame() {
   }, []);
 
   const finish = useCallback(() => {
+    const acc = correct + wrong > 0 ? correct / (correct + wrong) : 0;
+    if (acc >= 1.0) sfxPerfect();
     const highKey = "geography_highScore";
     const prev = getLocalHighScore(highKey);
     if (score > prev) setLocalHighScore(highKey, score);
@@ -291,7 +298,7 @@ export function GeographyChallengeGame() {
     setSelected(ci);
     const fast = (Date.now() - qStart.current) / 1000 < 5;
     if (ok) { sfxCorrect(); setScore((s) => s + Math.round((100 + (fast ? 50 : 0)) * (1 + streak * 0.1))); setStreak((s) => s + 1); setBestStreak((b) => Math.max(b, streak + 1)); setCorrect((c) => c + 1); setFeedback("correct"); if ((streak + 1) % 5 === 0 && streak > 0) sfxCombo(streak + 1); }
-    else { sfxWrong(); setStreak(0); setWrong((w) => w + 1); setFeedback("wrong"); setWrongAs((p) => [...p, { q, sel: ci }]); }
+    else { if (streak > 0) sfxStreakLost(); sfxWrong(); setStreak(0); setWrong((w) => w + 1); setFeedback("wrong"); setWrongAs((p) => [...p, { q, sel: ci }]); }
     setAdaptive((p) => adaptiveUpdate(p, ok, fast)); setShowExp(true);
   }, [feedback, questions, idx, streak]);
 

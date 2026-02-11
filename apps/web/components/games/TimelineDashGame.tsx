@@ -7,7 +7,7 @@ import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { TIMELINE_EVENTS as EXPANDED_EVENTS } from "@/lib/games/data/timeline-events";
@@ -259,7 +259,10 @@ export function TimelineDashGame() {
   // Game complete
   useEffect(() => {
     if (phase !== "complete") return;
-    if (!practiceMode) sfxGameOver();
+    if (!practiceMode) {
+      if (lives === 3) sfxPerfect();
+      else sfxGameOver();
+    }
     if (timerRef.current) clearInterval(timerRef.current);
     if (!practiceMode) {
       trackGamePlayed("timeline-dash", score);

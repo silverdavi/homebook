@@ -14,6 +14,7 @@ import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
   sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver,
   sfxCountdown, sfxCountdownGo, sfxClick, sfxAchievement,
+  sfxStreakLost, sfxPerfect,
 } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -307,7 +308,9 @@ export function MazeRunnerGame() {
 
   const endGame = useCallback(() => {
     setPhase("complete");
-    sfxGameOver();
+    const acc = questionsTotal > 0 ? questionsCorrect / questionsTotal : 0;
+    if (acc >= 1.0) sfxPerfect();
+    else sfxGameOver();
     const finalScore = score;
     if (finalScore > highScore) {
       setHighScore(finalScore);
@@ -315,9 +318,9 @@ export function MazeRunnerGame() {
     }
     trackGamePlayed("maze-runner", finalScore);
     const profile = getProfile();
-    const acc = questionsTotal > 0 ? Math.round((questionsCorrect / questionsTotal) * 100) : 100;
+    const accPct = questionsTotal > 0 ? Math.round((questionsCorrect / questionsTotal) * 100) : 100;
     const newOnes = checkAchievements(
-      { gameId: "maze-runner", score: finalScore, level: Math.round(adaptive.level), accuracy: acc, bestCombo, bestStreak: bestCombo },
+      { gameId: "maze-runner", score: finalScore, level: Math.round(adaptive.level), accuracy: accPct, bestCombo, bestStreak: bestCombo },
       profile.totalGamesPlayed, profile.gamesPlayedByGameId
     );
     if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
@@ -461,6 +464,7 @@ export function MazeRunnerGame() {
         }
       }
     } else {
+      if (combo > 0) sfxStreakLost();
       sfxWrong();
       setCombo(0);
       setLives((l) => l - 1);

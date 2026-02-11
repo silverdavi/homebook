@@ -12,6 +12,7 @@ import {
   sfxClick,
   sfxLevelUp,
   sfxGameOver,
+  sfxPerfect,
   isSfxEnabled,
 } from "@/lib/games/audio";
 import {
@@ -459,7 +460,8 @@ export function TriviaQuizGame() {
       const score = Math.round(finalCorrect * 100 + Math.max(0, 300 - elapsed) * accuracy);
 
       if (!einkMode && isSfxEnabled()) {
-        if (accuracy >= 0.8) sfxLevelUp();
+        if (accuracy >= 1.0) sfxPerfect();
+        else if (accuracy >= 0.8) sfxLevelUp();
         else sfxGameOver();
       }
 

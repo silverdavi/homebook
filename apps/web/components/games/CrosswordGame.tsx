@@ -21,6 +21,7 @@ import {
   sfxClick,
   sfxLevelUp,
   sfxGameOver,
+  sfxPerfect,
   sfxCountdownGo,
 } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";

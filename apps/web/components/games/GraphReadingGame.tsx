@@ -10,7 +10,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 
@@ -558,6 +558,7 @@ export function GraphReadingGame() {
       if (ns > maxStreak) setMaxStreak(ns);
       if (ns > 0 && ns % 5 === 0) sfxCombo(ns);
     } else {
+      if (streak > 0) sfxStreakLost();
       sfxWrong();
       setTotalWrong(w => w + 1);
       setStreak(0);
@@ -601,7 +602,10 @@ export function GraphReadingGame() {
       setMedals(newMedals);
       if (newMedals.length > 0) sfxAchievement();
       trackGamePlayed(GAME_ID, finalScore, { bestStreak: maxStreak, adaptiveLevel: Math.round(adaptive.level) });
-      sfxGameOver();
+      const acc = total > 0 ? totalCorrect / total : 0;
+      if (acc >= 1.0) sfxPerfect();
+      else if (acc >= 0.8) sfxLevelUp();
+      else sfxGameOver();
       setPhase("complete");
     } else {
       setCurrentIdx(i => i + 1);

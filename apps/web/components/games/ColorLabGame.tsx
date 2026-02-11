@@ -12,7 +12,7 @@ import { BonusToast } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
-  sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver,
+  sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver, sfxPerfect,
   sfxCountdown, sfxCountdownGo, sfxClick, sfxAchievement,
 } from "@/lib/games/audio";
 
@@ -502,7 +502,6 @@ export function ColorLabGame() {
   // Finish game
   const finishGame = useCallback(() => {
     setPhase("complete");
-    sfxLevelUp();
 
     // Calculate correctness
     let correct = 0;
@@ -513,6 +512,10 @@ export function ColorLabGame() {
     }
 
     const accuracy = d.regions.length > 0 ? Math.round((correct / d.regions.length) * 100) : 0;
+    if (accuracy >= 100) sfxPerfect();
+    else if (accuracy >= 80) sfxLevelUp();
+    else sfxGameOver();
+
     const timeBonus = Math.max(0, 200 - elapsedSecs);
     const accBonus = accuracy >= 100 ? 500 : accuracy >= 80 ? 200 : 0;
     const finalScore = score + timeBonus + accBonus;

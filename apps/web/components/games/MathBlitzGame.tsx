@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxTick } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -239,8 +239,9 @@ export function MathBlitzGame() {
   useEffect(() => {
     if (phase !== "playing" || practiceMode) return;
     timerRef.current = setInterval(() => {
-      setTimeLeft((t) => Math.max(0, t - 1));
       const newTime = timeLeftRef.current - 1;
+      if (newTime > 0 && newTime <= 5) sfxTick();
+      setTimeLeft((t) => Math.max(0, t - 1));
       timeLeftRef.current = newTime;
       if (newTime <= 0) {
         clearInterval(timerRef.current!);
@@ -341,6 +342,7 @@ export function MathBlitzGame() {
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
         else sfxCorrect();
       } else {
+        if (streakRef.current > 0) sfxStreakLost();
         sfxWrong();
         streakRef.current = 0;
         setStreak(0);

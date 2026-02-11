@@ -9,7 +9,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 
@@ -200,6 +200,7 @@ export function AlgorithmArenaGame() {
         pts = Math.round((fast ? 150 : 100) * mult);
         sfxCorrect();
       } else {
+        if (streak > 0) sfxStreakLost();
         sfxWrong();
       }
       setScore((s) => s + pts);
@@ -254,7 +255,10 @@ export function AlgorithmArenaGame() {
         bestStreak: maxStreak,
         adaptiveLevel: Math.round(adaptive.level),
       });
-      sfxGameOver();
+      const acc = results.length > 0 ? cc / results.length : 0;
+      if (acc >= 1.0) sfxPerfect();
+      else if (acc >= 0.8) sfxLevelUp();
+      else sfxGameOver();
       setPhase("complete");
     } else {
       setCurrentIdx((i) => i + 1);

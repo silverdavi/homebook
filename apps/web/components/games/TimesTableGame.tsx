@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -306,7 +306,11 @@ export function TimesTableGame() {
 
   const finishGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    sfxLevelUp();
+    const acc = solvedRef.current + wrongRef.current > 0
+      ? solvedRef.current / (solvedRef.current + wrongRef.current)
+      : 1;
+    if (acc >= 1.0 && solvedRef.current > 0) sfxPerfect();
+    else sfxLevelUp();
     setPhase("complete");
     const finalScore = !practiceMode && mode === "sprint" ? Math.max(1, 1000 - elapsedRef.current * 5 - wrongRef.current * 50) : scoreRef.current;
     scoreRef.current = finalScore;
@@ -375,6 +379,7 @@ export function TimesTableGame() {
           }
         }, 600);
       } else {
+        if (streakRef.current > 0) sfxStreakLost();
         sfxWrong();
         streakRef.current = 0;
         setStreak(0);

@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp, sfxPerfect, sfxStreakLost } from "@/lib/games/audio";
 import Link from "next/link";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -405,7 +405,8 @@ export function ConnectDotsGame() {
   // On game complete
   useEffect(() => {
     if (phase !== "complete") return;
-    sfxGameOver();
+    if (mistakes === 0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("connectDots_highScore", score);
       setHighScore(score);
@@ -603,8 +604,9 @@ export function ConnectDotsGame() {
         const dist = Math.sqrt((px - dot.x) ** 2 + (py - dot.y) ** 2);
         if (dist < 0.06) {
           // Wrong dot
-          sfxWrong();
+          if (streak > 0) sfxStreakLost();
           setStreak(0);
+          sfxWrong();
           setMistakes((m) => m + 1);
           setFlash("wrong");
           setTimeout(() => setFlash(null), 200);

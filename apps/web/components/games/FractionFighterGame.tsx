@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, HeartRecovery, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxHeart, sfxAchievement, sfxCombo, sfxCountdownGo, sfxStreakLost } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getFractionParams, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -340,6 +340,7 @@ export function FractionFighterGame() {
   const livesRef = useRef(INITIAL_LIVES);
   const scoreRef = useRef(0);
   const highScoreRef = useRef(0);
+  const streakRef = useRef(0);
   const startingLevelRef = useRef(1);
   const gameModeRef = useRef<GameMode>("bigger");
 
@@ -358,6 +359,9 @@ export function FractionFighterGame() {
   useEffect(() => {
     gameModeRef.current = gameMode;
   }, [gameMode]);
+  useEffect(() => {
+    streakRef.current = streak;
+  }, [streak]);
 
   useEffect(() => {
     if (pair) setTipIdx(Math.floor(Math.random() * 100));
@@ -408,6 +412,7 @@ export function FractionFighterGame() {
           clearInterval(timerRef.current!);
           setResult("timeout");
           setPhase("result");
+          if (streakRef.current > 0) sfxStreakLost();
           setStreak(0);
           setLives((l) => l - 1);
           const newLives = livesRef.current - 1;
@@ -504,6 +509,7 @@ export function FractionFighterGame() {
         const wasFast = timeLeft > 50; // answered in less than half the time
         setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
       } else {
+        if (streakRef.current > 0) sfxStreakLost();
         sfxWrong();
         setStreak(0);
         setResult("wrong");

@@ -8,7 +8,7 @@ import { checkAchievements } from "@/lib/games/achievements";
 import type { NewAchievement } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxClick, sfxGameOver, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -264,7 +264,7 @@ export function NumberPuzzleGame() {
     const nm = moves + 1;
     setMoves(nm);
     if (isSolved(next)) {
-      sfxGameOver();
+      sfxPerfect();
       const solveTime = (Date.now() - puzzleStartTime) / 1000;
       const fast = solveTime < (gridSize === 3 ? 60 : gridSize === 4 ? 180 : 300);
       setAdaptive(prev => adaptiveUpdate(prev, true, fast));

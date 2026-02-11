@@ -6,7 +6,7 @@ import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } fro
 import { checkAchievements } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxAchievement, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxAchievement, sfxCountdownGo, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -164,6 +164,11 @@ export function WordBuilderGame() {
   const [practiceWaiting, setPracticeWaiting] = useState(false);
   // Extra hint letters revealed in practice mode at low adaptive levels
   const [revealedHintLetters, setRevealedHintLetters] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (phase !== "gameOver") return;
+    if (practiceMode && practiceTotal > 0 && practiceCorrect === practiceTotal) sfxPerfect();
+  }, [phase, practiceMode, practiceTotal, practiceCorrect]);
 
   useEffect(() => {
     if (phase !== "correct") return;

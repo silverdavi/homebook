@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Trophy, RotateCcw, Share2, Calendar, Flame, Check, X } from "lucide-react";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { AchievementToast } from "@/components/games/AchievementToast";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxLevelUp, sfxPerfect, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
 import { trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import {

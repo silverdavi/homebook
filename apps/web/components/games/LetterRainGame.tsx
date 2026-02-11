@@ -9,7 +9,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, HeartRecovery, BonusToast, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxHeart, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -201,7 +201,9 @@ export function LetterRainGame() {
   // On game over: track play and check achievements
   useEffect(() => {
     if (phase !== "gameOver") return;
-    sfxGameOver();
+    const accRatio = totalCaught + totalMissed > 0 ? totalCaught / (totalCaught + totalMissed) : 1;
+    if (accRatio >= 1.0 && totalCaught > 0) sfxPerfect();
+    else sfxGameOver();
     trackGamePlayed("letter-rain", score);
     const profile = getProfile();
     const acc = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
@@ -401,6 +403,7 @@ export function LetterRainGame() {
           }, 300);
         }
       } else if (wasWrong) {
+        if (comboRef.current > 0) sfxStreakLost();
         comboRef.current = 0;
         sfxWrong();
         setCombo(0);
@@ -525,6 +528,7 @@ export function LetterRainGame() {
         }
       } else {
         // Wrong key — penalty: lose points + break combo
+        if (comboRef.current > 0) sfxStreakLost();
         comboRef.current = 0;
         sfxWrong();
         setCombo(0);
@@ -591,6 +595,7 @@ export function LetterRainGame() {
       });
 
       if (lostLife) {
+        if (comboRef.current > 0) sfxStreakLost();
         spawnRipple(missX);
         setTotalMissed((m) => m + 1);
         setAdaptive(prev => adaptiveUpdate(prev, false, false));

@@ -7,7 +7,7 @@ import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxLevelUp, sfxAchievement, sfxClick, sfxCountdownGo, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -218,7 +218,8 @@ export function ElementMatchGame() {
               setMatchedPairs((m) => {
                 const nm = m + 1;
                 if (nm === totalPairs) {
-                  sfxLevelUp();
+                  if (moves + 1 === totalPairs) sfxPerfect();
+                  else sfxLevelUp();
                   setPhase("won");
                   // Save best time
                   if (!isPractice) {

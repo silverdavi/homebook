@@ -9,7 +9,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 
@@ -925,7 +925,7 @@ export function DesignEyeGame() {
       setScore(s => s + Math.round((100 + tb) * mult));
       if (na.streak > 2) sfxCombo(na.streak);
       if (na.streak > bs) setBs(na.streak);
-    } else { sfxWrong(); }
+    } else { if (adaptive.streak > 0) sfxStreakLost(); sfxWrong(); }
     setPhase("feedback");
   }, [phase, sel, questions, ci, qs, adaptive, bs]);
 
@@ -933,7 +933,9 @@ export function DesignEyeGame() {
     if (ci + 1 >= questions.length) {
       if (tr.current) clearInterval(tr.current);
       const acc = questions.length > 0 ? Math.round((cc / questions.length) * 100) : 0;
-      if (acc >= 80) sfxLevelUp(); else sfxGameOver();
+      if (acc >= 100) sfxPerfect();
+      else if (acc >= 80) sfxLevelUp();
+      else sfxGameOver();
       if (score > hi) { setHi(score); setLocalHighScore(GAME_ID, score); }
       trackGamePlayed(GAME_ID, score, { bestStreak: bs, adaptiveLevel: Math.floor(adaptive.level) });
       const p = getProfile();

@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxLevelUp, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 import Link from "next/link";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -255,6 +255,7 @@ export function GraphPlotterGame() {
           setTimeout(() => setPhase("complete"), 0);
           return 0;
         }
+        if (t <= 5 && t > 1) sfxTick();
         return t - 1;
       });
     }, 1000);
@@ -264,7 +265,9 @@ export function GraphPlotterGame() {
   // On complete
   useEffect(() => {
     if (phase !== "complete") return;
-    sfxGameOver();
+    const acc = totalProblems > 0 ? solved / totalProblems : 0;
+    if (acc >= 1.0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("graphPlotter_highScore", score);
       setHighScore(score);
@@ -539,6 +542,7 @@ export function GraphPlotterGame() {
       // Adaptive: fast = answered in < 50% of 10 seconds (5s)
       setAdaptive(prev => adaptiveUpdate(prev, true, elapsed < 5));
     } else {
+      if (streak > 0) sfxStreakLost();
       sfxWrong();
       setStreak(0);
       setShowResult("wrong");

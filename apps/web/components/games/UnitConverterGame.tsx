@@ -10,7 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
-  sfxCountdown, sfxCountdownGo,
+  sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect, sfxTick,
 } from "@/lib/games/audio";
 import Link from "next/link";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
@@ -261,6 +261,7 @@ export function UnitConverterGame() {
         if (t <= 1) {
           clearInterval(questionTimerRef.current!);
           // Time up — wrong
+          if (streak > 0) sfxStreakLost();
           sfxWrong();
           setStreak(0);
           setFlash("wrong");
@@ -276,6 +277,7 @@ export function UnitConverterGame() {
           }, 800);
           return 0;
         }
+        if (t <= 5 && t > 0) sfxTick();
         return t - 1;
       });
     }, 1000);
@@ -287,7 +289,9 @@ export function UnitConverterGame() {
   useEffect(() => {
     if (phase !== "gameOver") return;
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
-    sfxGameOver();
+    const acc = totalRounds > 0 ? solved / totalRounds : 0;
+    if (acc >= 1.0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("unitConverter_highScore", score);
       setHighScore(score);
@@ -355,6 +359,7 @@ export function UnitConverterGame() {
         // Adaptive: fast = answered in < 50% of available time
         setAdaptive(prev => adaptiveUpdate(prev, true, elapsed < availableTime * 0.5));
       } else {
+        if (streak > 0) sfxStreakLost();
         sfxWrong();
         setStreak(0);
         setFlash("wrong");

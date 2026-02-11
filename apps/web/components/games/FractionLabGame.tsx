@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, HeartRecovery, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxGameOver, sfxAchievement, sfxHeart, sfxCountdownGo, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getFractionParams, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import Link from "next/link";
@@ -1226,6 +1226,8 @@ export function FractionLabGame() {
 
   useEffect(() => {
     if (phase !== "complete") return;
+    const acc = solved + wrong > 0 ? solved / (solved + wrong) : 1;
+    if (acc >= 1.0 && solved > 0) sfxPerfect();
     trackGamePlayed("fraction-lab", score);
     const profile = getProfile();
     const newOnes = checkAchievements(
@@ -1375,6 +1377,7 @@ export function FractionLabGame() {
           setStreak((s) => s + 1);
           setFeedback("correct");
         } else {
+          if (streak > 0) sfxStreakLost();
           sfxWrong();
           setStreak(0);
           setWrong((w) => w + 1);
@@ -1417,6 +1420,7 @@ export function FractionLabGame() {
           });
         }, 1200);
       } else {
+        if (streak > 0) sfxStreakLost();
         sfxWrong();
         setStreak(0);
         setWrong((w) => w + 1);

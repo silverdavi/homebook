@@ -8,7 +8,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 import Link from "next/link";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -255,6 +255,7 @@ export function ScratchRevealGame() {
           setRevealed(true);
           return 0;
         }
+        if (t <= 5 && t > 1) sfxTick();
         return t - 1;
       });
     }, 1000);
@@ -264,7 +265,9 @@ export function ScratchRevealGame() {
   // On complete
   useEffect(() => {
     if (phase !== "complete") return;
-    sfxGameOver();
+    const acc = cards.length > 0 ? correct / cards.length : 0;
+    if (acc >= 1.0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("scratchReveal_highScore", score);
       setHighScore(score);
@@ -412,6 +415,7 @@ export function ScratchRevealGame() {
       else sfxCorrect();
       setAdaptive(prev => adaptiveUpdate(prev, true, false));
     } else {
+      if (streak > 0) sfxStreakLost();
       sfxWrong();
       setStreak(0);
       setWrong((w) => w + 1);

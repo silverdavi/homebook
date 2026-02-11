@@ -10,7 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
-  sfxCountdown, sfxCountdownGo, sfxClick,
+  sfxCountdown, sfxCountdownGo, sfxClick, sfxStreakLost, sfxPerfect,
 } from "@/lib/games/audio";
 import Link from "next/link";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
@@ -199,7 +199,9 @@ export function GeneticsLabGame() {
   // ── Game over ──
   useEffect(() => {
     if (phase !== "gameOver") return;
-    sfxGameOver();
+    const acc = totalRounds > 0 ? solved / totalRounds : 0;
+    if (acc >= 1.0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("geneticsLab_highScore", score);
       setHighScore(score);
@@ -275,6 +277,7 @@ export function GeneticsLabGame() {
   };
 
   const handleWrongAnswer = () => {
+    if (streak > 0) sfxStreakLost();
     sfxWrong();
     setStreak(0);
     setFlash("wrong");

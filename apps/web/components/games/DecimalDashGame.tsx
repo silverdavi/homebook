@@ -10,7 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
-  sfxCountdown, sfxCountdownGo, sfxClick,
+  sfxCountdown, sfxCountdownGo, sfxClick, sfxStreakLost, sfxPerfect, sfxTick,
 } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -397,6 +397,7 @@ export function DecimalDashGame() {
     if (phase !== "playing" || practiceMode) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
+        if (t > 0 && t <= 5) sfxTick();
         if (t <= 1) {
           clearInterval(timerRef.current!);
           setTimeout(() => {
@@ -420,10 +421,11 @@ export function DecimalDashGame() {
   // ── Game over effects ──
   useEffect(() => {
     if (phase !== "gameOver") return;
-    sfxGameOver();
+    const total = solved + wrong;
+    if (total > 0 && wrong === 0) sfxPerfect();
+    else sfxGameOver();
     trackGamePlayed("decimal-dash", score);
     const profile = getProfile();
-    const total = solved + wrong;
     const newOnes = checkAchievements(
       { gameId: "decimal-dash", score, solved, bestStreak, accuracy: total > 0 ? Math.round((solved / total) * 100) : 0 },
       profile.totalGamesPlayed,

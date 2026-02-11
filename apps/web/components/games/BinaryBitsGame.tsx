@@ -10,7 +10,7 @@ import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { StreakBadge, getMultiplierFromStreak } from "@/components/games/RewardEffects";
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxGameOver, sfxAchievement, sfxCountdown, sfxCountdownGo, sfxStreakLost, sfxPerfect } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 
@@ -330,7 +330,9 @@ export function BinaryBitsGame() {
     if (currentIdx + 1 >= QUESTIONS_PER_SESSION) {
       if (timerRef.current) clearInterval(timerRef.current);
       const accuracy = QUESTIONS_PER_SESSION > 0 ? correctCount / QUESTIONS_PER_SESSION : 0;
-      if (accuracy >= 0.8) sfxLevelUp(); else sfxGameOver();
+      if (accuracy >= 1.0) sfxPerfect();
+      else if (accuracy >= 0.8) sfxLevelUp();
+      else sfxGameOver();
 
       try {
         const prev = getLocalHighScore("binary-bits") ?? 0;

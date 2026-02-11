@@ -12,7 +12,7 @@ import { StreakBadge, BonusToast, getMultiplierFromStreak } from "@/components/g
 import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
-  sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver,
+  sfxCorrect, sfxWrong, sfxLevelUp, sfxGameOver, sfxPerfect, sfxStreakLost,
   sfxCountdown, sfxCountdownGo, sfxClick, sfxAchievement, sfxCombo,
 } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
@@ -595,6 +595,7 @@ export function TraceLearnGame() {
       if (newCombo > bestCombo) setBestCombo(newCombo);
       if (newCombo >= 5 && newCombo % 5 === 0) sfxCombo(newCombo);
     } else {
+      if (combo > 0) sfxStreakLost();
       sfxWrong();
       setAdaptive(prev => adaptiveUpdate(prev, false, false));
       setCombo(0);
@@ -644,7 +645,10 @@ export function TraceLearnGame() {
   // End game from result screen
   const finishGame = useCallback(() => {
     setPhase("complete");
-    sfxGameOver();
+    const avgAcc = roundAccuracies.length > 0 ? Math.round(roundAccuracies.reduce((a, b) => a + b, 0) / roundAccuracies.length) : 0;
+    if (avgAcc >= 100) sfxPerfect();
+    else if (avgAcc >= 80) sfxLevelUp();
+    else sfxGameOver();
     const finalScore = score;
     if (finalScore > highScore) {
       setHighScore(finalScore);
@@ -652,7 +656,6 @@ export function TraceLearnGame() {
     }
     trackGamePlayed("trace-learn", finalScore);
     const profile = getProfile();
-    const avgAcc = roundAccuracies.length > 0 ? Math.round(roundAccuracies.reduce((a, b) => a + b, 0) / roundAccuracies.length) : 0;
     const newOnes = checkAchievements(
       { gameId: "trace-learn", score: finalScore, level, accuracy: avgAcc, bestCombo, bestStreak: bestCombo },
       profile.totalGamesPlayed, profile.gamesPlayedByGameId

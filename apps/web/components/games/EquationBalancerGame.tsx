@@ -10,7 +10,7 @@ import { AchievementToast } from "@/components/games/AchievementToast";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import {
   sfxCorrect, sfxWrong, sfxCombo, sfxGameOver, sfxAchievement,
-  sfxCountdown, sfxCountdownGo, sfxClick,
+  sfxCountdown, sfxCountdownGo, sfxClick, sfxStreakLost, sfxPerfect, sfxTick,
 } from "@/lib/games/audio";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
@@ -202,6 +202,7 @@ export function EquationBalancerGame() {
   const [showResult, setShowResult] = useState<"correct" | "wrong" | null>(null);
   const usedEquationsRef = useRef<Set<number>>(new Set());
   const roundStartRef = useRef(0);
+  const streakRef = useRef(0);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(0);
@@ -248,6 +249,7 @@ export function EquationBalancerGame() {
     if (phase !== "playing" || !timerEnabled || isPractice) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
+        if (t > 0 && t <= 5) sfxTick();
         if (t <= 1) {
           // Time up for this equation — treat as wrong
           clearInterval(timerRef.current!);
@@ -261,7 +263,10 @@ export function EquationBalancerGame() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, timerEnabled, round, isPractice]);
 
+  useEffect(() => { streakRef.current = streak; }, [streak]);
+
   const handleTimerExpired = useCallback(() => {
+    if (streakRef.current > 0) sfxStreakLost();
     sfxWrong();
     setStreak(0);
     setFlash("wrong");
@@ -283,7 +288,9 @@ export function EquationBalancerGame() {
   // ── Game over effects ──
   useEffect(() => {
     if (phase !== "gameOver") return;
-    sfxGameOver();
+    const acc = totalRounds > 0 ? solved / totalRounds : 1;
+    if (acc >= 1.0 && solved > 0) sfxPerfect();
+    else sfxGameOver();
     if (score > highScore) {
       setLocalHighScore("equationBalancer_highScore", score);
       setHighScore(score);
@@ -387,6 +394,7 @@ export function EquationBalancerGame() {
         return;
       }
 
+      if (streakRef.current > 0) sfxStreakLost();
       sfxWrong();
       setStreak(0);
       setFlash("wrong");

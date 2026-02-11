@@ -7,7 +7,7 @@ import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveS
 import { getGradeForLevel } from "@/lib/games/learning-guide";
 import { trackGamePlayed, setLocalHighScore, getLocalHighScore, getSavedName } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
-import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp } from "@/lib/games/audio";
+import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 
 // ── Types ──
 
@@ -383,6 +383,8 @@ export function ScienceStudyGame() {
   );
 
   const finishGame = useCallback(() => {
+    const acc = correct + wrong > 0 ? correct / (correct + wrong) : 0;
+    if (acc >= 1.0) sfxPerfect();
     const elapsed = Math.round((Date.now() - startRef.current) / 1000);
     const highKey = "scienceStudy_highScore";
     const prev = getLocalHighScore(highKey);
@@ -423,6 +425,7 @@ export function ScienceStudyGame() {
         setFeedback("correct");
         if ((streak + 1) % 5 === 0 && streak > 0) sfxCombo(streak + 1);
       } else {
+        if (streak > 0) sfxStreakLost();
         sfxWrong();
         setStreak(0);
         setWrong((w) => w + 1);
