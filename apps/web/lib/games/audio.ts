@@ -25,7 +25,7 @@ function getCtx(): AudioContext {
 // ── Preferences ──
 
 export function isMusicEnabled(): boolean {
-  try { return localStorage.getItem(MUSIC_KEY) !== "false"; } catch { return true; }
+  try { return localStorage.getItem(MUSIC_KEY) === "true"; } catch { return false; }
 }
 
 export function isSfxEnabled(): boolean {

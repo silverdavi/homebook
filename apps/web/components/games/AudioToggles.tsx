@@ -16,7 +16,7 @@ import {
  * Can be placed in any game's menu or HUD.
  */
 export function AudioToggles({ className = "" }: { className?: string }) {
-  const [music, setMusic] = useState(true);
+  const [music, setMusic] = useState(false);
   const [sfx, setSfx] = useState(true);
 
   useEffect(() => {
