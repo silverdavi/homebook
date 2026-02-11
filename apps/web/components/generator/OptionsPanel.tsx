@@ -88,10 +88,7 @@ export function OptionsPanel({
   const wordProblemsAvailable = applicableOptions?.includes("includeWordProblems") ?? false;
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-slate-700">
-        Options
-      </label>
+    <div className="space-y-2">
       <div className="space-y-2">
         {filteredOptions.map(({ key, label }) => (
           <div key={key}>

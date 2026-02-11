@@ -2,7 +2,8 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, HelpCircle, RefreshCw, ChevronDown } from "lucide-react";
+import clsx from "clsx";
 import { useGeneratorStore } from "@/lib/store";
 import { generatePreview, generateWorksheet } from "@/lib/api";
 import { SubjectSelector } from "@/components/generator/SubjectSelector";
@@ -18,6 +19,35 @@ import { HelpModal } from "@/components/generator/HelpModal";
 
 // Debounce delay for auto-preview (ms)
 const PREVIEW_DEBOUNCE_MS = 800;
+
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+      >
+        {title}
+        <ChevronDown
+          className={clsx(
+            "w-4 h-4 text-slate-400 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+      {open && <div className="pb-1">{children}</div>}
+    </div>
+  );
+}
 
 export default function GeneratePage() {
   const store = useGeneratorStore();
@@ -155,72 +185,79 @@ export default function GeneratePage() {
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 lg:py-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Configure panel */}
-          <div className="w-full lg:w-[420px] shrink-0 space-y-5">
-            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5 space-y-5">
-              <h2 className="font-display text-lg font-semibold text-slate-800">
-                Configure Worksheet
-              </h2>
+          {/* Configure panel — single card with sections */}
+          <div className="w-full lg:w-[440px] shrink-0">
+            <div className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+              {/* Core settings */}
+              <div className="p-5 space-y-5">
+                <SubjectSelector
+                  value={store.subject}
+                  onChange={store.setSubject}
+                />
 
-              <SubjectSelector
-                value={store.subject}
-                onChange={store.setSubject}
-              />
+                <div className="grid grid-cols-2 gap-4">
+                  <GradeLevelSelector
+                    value={store.grade}
+                    onChange={store.setGrade}
+                  />
+                  <ProblemCountSlider
+                    value={store.problemCount}
+                    onChange={store.setProblemCount}
+                  />
+                </div>
 
-              <GradeLevelSelector
-                value={store.grade}
-                onChange={store.setGrade}
-              />
+                <TopicSelector
+                  subject={store.subject}
+                  topicId={store.topicId}
+                  subtopicIds={store.subtopicIds}
+                  onTopicChange={store.setTopicId}
+                  onSubtopicToggle={store.toggleSubtopic}
+                />
 
-              <TopicSelector
-                subject={store.subject}
-                topicId={store.topicId}
-                subtopicIds={store.subtopicIds}
-                onTopicChange={store.setTopicId}
-                onSubtopicToggle={store.toggleSubtopic}
-              />
-
-              <ProblemCountSlider
-                value={store.problemCount}
-                onChange={store.setProblemCount}
-              />
-
-              <DifficultySelector
-                value={store.difficulty}
-                onChange={store.setDifficulty}
-              />
-            </div>
-
-            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5">
-              <OptionsPanel
-                options={store.options}
-                onOptionChange={store.setOption}
-                subject={store.subject}
-                topicId={store.topicId}
-                subtopicIds={store.subtopicIds}
-              />
-            </div>
-
-            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5">
-              <PersonalizationPanel
-                config={store.personalization}
-                onChange={store.setPersonalization}
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-                {error}
+                <DifficultySelector
+                  value={store.difficulty}
+                  onChange={store.setDifficulty}
+                />
               </div>
-            )}
 
-            <DownloadButton
-              onGenerate={handleGenerate}
-              isGenerating={store.isGenerating}
-              downloadUrl={downloadUrl}
-              filename={filename}
-              disabled={!hasSubtopics}
-            />
+              {/* Divider + collapsible sections */}
+              <div className="border-t border-slate-100 px-5 py-2">
+                <CollapsibleSection title="Options" defaultOpen={true}>
+                  <OptionsPanel
+                    options={store.options}
+                    onOptionChange={store.setOption}
+                    subject={store.subject}
+                    topicId={store.topicId}
+                    subtopicIds={store.subtopicIds}
+                  />
+                </CollapsibleSection>
+              </div>
+
+              <div className="border-t border-slate-100 px-5 py-2">
+                <CollapsibleSection title="Personalization" defaultOpen={false}>
+                  <PersonalizationPanel
+                    config={store.personalization}
+                    onChange={store.setPersonalization}
+                  />
+                </CollapsibleSection>
+              </div>
+
+              {/* Download button — always visible at bottom of card */}
+              <div className="border-t border-slate-100 p-5">
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 mb-3">
+                    {error}
+                  </div>
+                )}
+                <DownloadButton
+                  onGenerate={handleGenerate}
+                  isGenerating={store.isGenerating}
+                  downloadUrl={downloadUrl}
+                  filename={filename}
+                  disabled={!hasSubtopics}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Preview panel */}

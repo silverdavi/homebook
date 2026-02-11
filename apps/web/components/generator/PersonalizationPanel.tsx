@@ -14,9 +14,6 @@ export function PersonalizationPanel({
 }: PersonalizationPanelProps) {
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-slate-700">
-        Personalization
-      </label>
       <div className="space-y-3">
         <Input
           id="student-name"
