@@ -58,6 +58,10 @@ const ICONS: IconDef[] = [
   { id: "nonogram", prompt: "A pixel-art style grid with some cells filled creating a pattern, on a slate-to-violet gradient background" },
   { id: "number-puzzle", prompt: "A sliding tile puzzle with numbered tiles and one empty space, on a slate-to-gray gradient background" },
   { id: "daily-challenge", prompt: "A calendar page with a flame/fire icon on it, on an orange-to-red gradient background" },
+  { id: "science-study", prompt: "A laboratory desk with a textbook, beaker, and atom model, on a blue-to-indigo gradient background" },
+  { id: "geography", prompt: "A colorful globe with a compass needle and mountain peaks, on a cyan-to-teal gradient background" },
+  { id: "graph-reading", prompt: "A bar chart and line graph side by side with a magnifying glass analyzing trends, on an indigo-to-violet gradient background" },
+  { id: "fake-news-detective", prompt: "A newspaper with a large red FAKE stamp and a detective magnifying glass, on an amber-to-yellow gradient background" },
 
   // ─── 8 New Game Icons (CS + Design) ────────────────────────────
   { id: "pattern-machine", prompt: "Colorful gears and cogs forming a repeating pattern sequence, with arrows showing the cycle, on a violet-to-fuchsia gradient background" },
