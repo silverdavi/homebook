@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Long Multiplication Lab — Demo</title>
+<style>
+  :root {
+    --bg-0: #020617;
+    --bg-1: #0b1024;
+    --bg-2: #1e1b4b;
+    --ink: #f8fafc;
+    --ink-dim: #94a3b8;
+    --ink-fade: #475569;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.2);
+    --accent: #a78bfa;
+    --accent-2: #f472b6;
+    --ok: #34d399;
+    --err: #f87171;
+    --warn: #fbbf24;
+
+    /* Place-value palette (hue per decimal place) */
+    --pv-0: #a78bfa; /* ones — violet */
+    --pv-1: #22d3ee; /* tens — cyan */
+    --pv-2: #f59e0b; /* hundreds — amber */
+    --pv-3: #f472b6; /* thousands — pink */
+    --pv-4: #34d399; /* ten-thousands — emerald */
+    --pv-5: #f97316; /* hundred-thousands — orange */
+
+    --cell: 52px;
+    --cell-carry: 30px;
+    --gap: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 20% 0%, rgba(167,139,250,0.15), transparent 50%),
+      radial-gradient(900px 500px at 80% 100%, rgba(244,114,182,0.12), transparent 50%),
+      linear-gradient(to bottom, var(--bg-0), var(--bg-1) 40%, var(--bg-0));
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    overflow-x: hidden;
+  }
+
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .subtitle { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+
+  .level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.03);
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .level-badge strong { color: var(--ink); font-weight: 700; }
+
+  main {
+    width: 100%;
+    max-width: 960px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+  }
+  @media (max-width: 820px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  /* ==========================================================
+     Tableau
+     ========================================================== */
+  .tableau-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 32px 24px 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #tableau {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+  }
+
+  .row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--cell);
+    column-gap: var(--gap);
+    justify-items: center;
+    align-items: center;
+    position: relative;
+  }
+  .row-carry { /* carry rows use the same grid so columns align */ }
+
+  .row-op::before {
+    content: attr(data-prefix);
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink-dim);
+  }
+
+  .row-separator {
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+    margin: 8px 0 6px;
+    grid-column: 1 / -1;
+    display: block;
+  }
+
+  .row-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: calc((var(--cell) + var(--gap)) * var(--cols) + var(--gap));
+  }
+  .row-divider .line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--line-strong) 20%, var(--line-strong) 80%, transparent);
+  }
+
+  /* Cells */
+  .cell {
+    width: var(--cell);
+    height: var(--cell);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer;
+    position: relative;
+    transition: transform 120ms ease, background 180ms ease,
+                border-color 180ms ease, box-shadow 180ms ease;
+    outline: none;
+  }
+  .cell:hover { background: rgba(255,255,255,0.06); }
+  .cell.readonly {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink);
+    cursor: default;
+  }
+  .cell.readonly:hover { background: rgba(255,255,255,0.04); }
+  .cell.empty { color: var(--ink-fade); }
+  .cell.ghost {
+    color: var(--ink-fade);
+    opacity: 0.35;
+    font-style: italic;
+    cursor: help;
+    border-color: transparent;
+  }
+  .cell.focused {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 3px rgba(167,139,250,0.25),
+      0 0 24px rgba(167,139,250,0.4);
+    background: rgba(167,139,250,0.12);
+    z-index: 2;
+  }
+  .cell.correct {
+    color: var(--ok);
+    border-color: rgba(52,211,153,0.5);
+    background: rgba(52,211,153,0.1);
+  }
+  .cell.wrong {
+    color: var(--err);
+    border-color: rgba(248,113,113,0.6);
+    background: rgba(248,113,113,0.14);
+    animation: shake 350ms ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  @keyframes pulse-ok {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(52,211,153,0.18); }
+    100% { transform: scale(1); }
+  }
+  .cell.just-correct { animation: pulse-ok 420ms ease; }
+
+  /* Carry cells — smaller */
+  .cell.carry {
+    width: var(--cell-carry);
+    height: var(--cell-carry);
+    font-size: 16px;
+    justify-self: center;
+    align-self: end;
+    margin-bottom: -2px;
+    color: var(--warn);
+    background: rgba(251,191,36,0.06);
+    border-color: rgba(251,191,36,0.18);
+    border-style: dashed;
+    border-radius: 8px;
+  }
+  .cell.carry.empty { color: rgba(251,191,36,0.3); }
+  .cell.carry.correct { color: var(--warn); border-color: rgba(251,191,36,0.5); background: rgba(251,191,36,0.12); }
+
+  /* Column highlight on hover */
+  .col-highlight {
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    width: var(--cell);
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0%,
+      rgba(167,139,250,0.12) 30%,
+      rgba(244,114,182,0.08) 80%,
+      rgba(255,255,255,0) 100%
+    );
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    z-index: 0;
+  }
+  .col-highlight.active { opacity: 1; }
+
+  /* Place value label row */
+  #place-labels {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--cell);
+    column-gap: var(--gap);
+    justify-items: center;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  .pv-label {
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    padding: 4px 0;
+    border-top: 1px solid var(--line);
+    transition: color 180ms ease, border-color 180ms ease;
+    cursor: help;
+  }
+  .pv-label .power {
+    display: block;
+    font-weight: 400;
+    font-size: 9px;
+    opacity: 0.6;
+    margin-top: 1px;
+  }
+  .pv-label.active {
+    color: var(--pv-color, var(--accent));
+    border-top-color: var(--pv-color, var(--accent));
+  }
+
+  /* Floating tooltip */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translate(-50%, -120%);
+    transition: opacity 120ms ease;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+  #tooltip.show { opacity: 1; }
+  #tooltip .pv-big {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  #tooltip .pv-mul {
+    color: var(--ink-dim);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  /* ==========================================================
+     Side panel (coach)
+     ========================================================== */
+  aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .panel h3 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 10px;
+  }
+  .coach-body {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink);
+    min-height: 60px;
+  }
+  .coach-body .equation {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    background: rgba(167,139,250,0.12);
+    border: 1px solid rgba(167,139,250,0.3);
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin: 2px 2px;
+    display: inline-block;
+    color: var(--accent);
+  }
+  .coach-body .key {
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+
+  .hint-bubble {
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(244,114,182,0.1));
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #fcd34d;
+    margin-top: 10px;
+    display: none;
+  }
+  .hint-bubble.show { display: block; animation: fadeSlide 300ms ease; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat .n { font-size: 20px; font-weight: 700; font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+  .stat .l { font-size: 10px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat.ok .n { color: var(--ok); }
+  .stat.warn .n { color: var(--warn); }
+
+  .keyboard-hints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .kbd {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 10px;
+    padding: 3px 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    background: rgba(255,255,255,0.03);
+    color: var(--ink-dim);
+  }
+  .kbd b { color: var(--ink); }
+
+  /* ==========================================================
+     Controls
+     ========================================================== */
+  #controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    background: rgba(255,255,255,0.04);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+    color: #0b1024;
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn .kbd { background: rgba(0,0,0,0.2); color: inherit; opacity: 0.7; margin-left: 4px; }
+
+  /* Level selector */
+  .level-picker {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .level-chip {
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.02);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .level-chip:hover { color: var(--ink); border-color: var(--line-strong); }
+  .level-chip.active {
+    color: var(--ink);
+    background: rgba(167,139,250,0.2);
+    border-color: var(--accent);
+  }
+
+  /* Confetti for completion */
+  #confetti {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Completion overlay */
+  .win-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(52,211,153,0.18), transparent 60%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 250ms ease;
+    border-radius: 20px;
+  }
+  .win-flash.active { opacity: 1; }
+
+  footer {
+    margin-top: 32px;
+    font-size: 11px;
+    color: var(--ink-fade);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">Long Multiplication Lab</div>
+    <div class="subtitle">Fill each cell. Hover to see place value. Let the carries do the talking.</div>
+  </div>
+  <div class="level-badge">
+    Level <strong id="level-num">1</strong> · <span id="level-label">2d × 1d · no carry</span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="tableau-card">
+      <div class="win-flash" id="win-flash"></div>
+      <div id="tableau" aria-label="Multiplication tableau"></div>
+      <div id="place-labels"></div>
+    </div>
+
+    <div id="controls">
+      <button class="btn" id="btn-hint">💡 Hint <span class="kbd">H</span></button>
+      <button class="btn" id="btn-reveal">✨ Reveal step <span class="kbd">R</span></button>
+      <button class="btn primary" id="btn-new">↻ New problem <span class="kbd">N</span></button>
+    </div>
+
+    <div class="level-picker" id="level-picker"></div>
+  </section>
+
+  <aside>
+    <div class="panel">
+      <h3>Coach</h3>
+      <div class="coach-body" id="coach-body"></div>
+      <div class="hint-bubble" id="hint-bubble"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Progress</h3>
+      <div class="stats">
+        <div class="stat ok"><div class="n" id="stat-correct">0</div><div class="l">Correct</div></div>
+        <div class="stat warn"><div class="n" id="stat-wrong">0</div><div class="l">Wrong</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Keyboard</h3>
+      <div class="keyboard-hints">
+        <span class="kbd"><b>← → ↑ ↓</b> move</span>
+        <span class="kbd"><b>0-9</b> fill</span>
+        <span class="kbd"><b>⌫</b> clear</span>
+        <span class="kbd"><b>Enter</b> next</span>
+        <span class="kbd"><b>H</b> hint</span>
+        <span class="kbd"><b>R</b> reveal</span>
+        <span class="kbd"><b>N</b> new</span>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div id="tooltip"></div>
+<canvas id="confetti"></canvas>
+
+<footer>
+  Demo · hit <span class="kbd">N</span> for a new problem
+</footer>
+
+<script>
+/* ============================================================
+   STATE & CONFIG
+   ============================================================ */
+
+const PLACE_NAMES = [
+  { name: "Ones",        power: "×1",          short: "O" },
+  { name: "Tens",        power: "×10",         short: "T" },
+  { name: "Hundreds",    power: "×100",        short: "H" },
+  { name: "Thousands",   power: "×1 000",      short: "Th" },
+  { name: "Ten-thousands",     power: "×10 000",     short: "TTh" },
+  { name: "Hundred-thousands", power: "×100 000",    short: "HTh" },
+  { name: "Millions",    power: "×1 000 000",  short: "M" },
+];
+
+const LEVELS = [
+  { id: 1, aLen: 2, bLen: 1, noCarry: true,  label: "2d × 1d · no carry" },
+  { id: 2, aLen: 2, bLen: 1, noCarry: false, label: "2d × 1d · with carry" },
+  { id: 3, aLen: 3, bLen: 1, noCarry: false, label: "3d × 1d" },
+  { id: 4, aLen: 2, bLen: 2, noCarry: true,  label: "2d × 2d · no carry" },
+  { id: 5, aLen: 2, bLen: 2, noCarry: false, label: "2d × 2d · with carry" },
+  { id: 6, aLen: 3, bLen: 2, noCarry: false, label: "3d × 2d" },
+];
+
+const state = {
+  level: 1,
+  operandA: [],      // digits, most-significant-first (index 0 = most significant)
+  operandB: [],
+  aLen: 0,
+  bLen: 0,
+  cols: 0,           // total tableau columns (maxCols)
+  cells: {},         // id -> cell object
+  rows: [],          // render order of rows
+  activeId: null,
+  correctCount: 0,
+  wrongCount: 0,
+  completed: false,
+};
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+
+function digitsOf(n) {
+  return String(n).split("").map(Number); // MSB-first
+}
+function fromDigits(digits) {
+  return Number(digits.join("")) || 0;
+}
+/** Return digit at place `col` (0 = ones) from an MSB-first digit array. */
+function digitAt(digits, col) {
+  const len = digits.length;
+  const idx = len - 1 - col;
+  return idx < 0 || idx >= len ? 0 : digits[idx];
+}
+function placeName(col) {
+  return PLACE_NAMES[col] || { name: `10^${col}`, power: `×10^${col}`, short: `P${col}` };
+}
+function pvColor(col) {
+  return `var(--pv-${col % 6})`;
+}
+
+function rnd(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* ============================================================
+   PROBLEM GENERATION
+   ============================================================ */
+
+function genNoCarryDigit(b) {
+  // pick digit d in 1..9 such that d*b < 10 (so no carry in that column)
+  const options = [];
+  for (let d = 1; d <= 9; d++) if (d * b < 10) options.push(d);
+  return options[rnd(0, options.length - 1)];
+}
+
+function genProblem(level) {
+  const cfg = LEVELS[level - 1];
+  let a, b;
+  // Try until constraints satisfied
+  for (let tries = 0; tries < 200; tries++) {
+    if (cfg.noCarry) {
+      // Each partial product column is digit*bDigit<10, and no carries in the sum.
+      const bDigits = [];
+      for (let i = 0; i < cfg.bLen; i++) bDigits.push(rnd(1, 3)); // keep b digits small
+      const aDigits = [];
+      // For each a-digit position: must satisfy aDigit * bDigit < 10 for every b digit
+      for (let i = 0; i < cfg.aLen; i++) {
+        const maxBDig = Math.max(...bDigits);
+        let maxAllowed = Math.floor(9 / maxBDig);
+        maxAllowed = Math.max(1, Math.min(9, maxAllowed));
+        aDigits.push(rnd(1, maxAllowed));
+      }
+      a = fromDigits(aDigits);
+      b = fromDigits(bDigits);
+      // Also check sum of partials has no carry.
+      const partials = bDigits.map((bd, idx) => {
+        const bIndex = cfg.bLen - 1 - idx;
+        return a * bd * Math.pow(10, bIndex);
+      });
+      // Check column-wise addition of partials has no carry
+      const product = partials.reduce((s, x) => s + x, 0);
+      const prodDigits = digitsOf(product);
+      // compare column sums
+      let hasCarry = false;
+      for (let c = 0; c < prodDigits.length; c++) {
+        let colSum = 0;
+        for (let p of partials) colSum += digitAt(digitsOf(p), c);
+        if (colSum >= 10) { hasCarry = true; break; }
+      }
+      if (hasCarry) continue;
+      // ensure top digits nonzero
+      if (aDigits[0] === 0 || bDigits[0] === 0) continue;
+      break;
+    } else {
+      // free-form
+      const aMin = Math.pow(10, cfg.aLen - 1);
+      const aMax = Math.pow(10, cfg.aLen) - 1;
+      const bMin = Math.pow(10, cfg.bLen - 1);
+      const bMax = Math.pow(10, cfg.bLen) - 1;
+      a = rnd(aMin, aMax);
+      b = rnd(bMin, bMax);
+      // Heuristic: ensure at least one partial has a carry (makes it interesting for levels 2,3,5,6)
+      let hasCarry = false;
+      const bDigits = digitsOf(b);
+      for (let idx = 0; idx < bDigits.length; idx++) {
+        const bd = bDigits[idx];
+        const aDigits = digitsOf(a);
+        for (let aIdx = 0; aIdx < aDigits.length; aIdx++) {
+          if (aDigits[aIdx] * bd >= 10) { hasCarry = true; break; }
+        }
+        if (hasCarry) break;
+      }
+      if (hasCarry) break;
+    }
+  }
+  return { a, b };
+}
+
+/* ============================================================
+   BUILD TABLEAU STATE
+   ============================================================ */
+
+function buildTableau() {
+  state.cells = {};
+  state.rows = [];
+  const a = state.operandA;
+  const b = state.operandB;
+  const aLen = state.aLen = a.length;
+  const bLen = state.bLen = b.length;
+  const product = fromDigits(a) * fromDigits(b);
+  const productDigits = digitsOf(product);
+  const prodLen = productDigits.length;
+  state.cols = Math.max(aLen + bLen, prodLen);
+  const cols = state.cols;
+
+  // Helper to create a carry row with per-column expected values.
+  // Carries with expected=0 are "not required" (editable=false, hidden=true).
+  // Columns outside [minCol, maxCol] inclusive are hidden.
+  function addCarryRow(rowId, kind, expectedFn, minCol, maxCol) {
+    state.rows.push({ id: rowId, kind });
+    for (let c = 0; c < cols; c++) {
+      const inRange = c >= minCol && c <= maxCol;
+      const expected = inRange ? expectedFn(c) : 0;
+      const needed = inRange && expected > 0;
+      state.cells[`${rowId}-${c}`] = {
+        id: `${rowId}-${c}`, row: rowId, col: c,
+        value: null, correct: expected,
+        editable: needed,
+        hidden: !needed,
+        kind: "carry",
+      };
+    }
+  }
+
+  // Operand A (read-only)
+  state.rows.push({ id: "opA", kind: "operand", digits: a });
+  for (let c = 0; c < cols; c++) {
+    const d = digitAt(a, c);
+    state.cells[`opA-${c}`] = {
+      id: `opA-${c}`, row: "opA", col: c,
+      value: d, correct: d, editable: false,
+      kind: "operand", hidden: (c >= aLen),
+    };
+  }
+
+  // Operand B (read-only, × prefix)
+  state.rows.push({ id: "opB", kind: "operand", digits: b, prefix: "×" });
+  for (let c = 0; c < cols; c++) {
+    const d = digitAt(b, c);
+    state.cells[`opB-${c}`] = {
+      id: `opB-${c}`, row: "opB", col: c,
+      value: d, correct: d, editable: false,
+      kind: "operand", hidden: (c >= bLen),
+    };
+  }
+
+  state.rows.push({ id: "sep1", kind: "separator" });
+
+  // For each partial product row: carry row just ABOVE it, then the partial row.
+  for (let bi = 0; bi < bLen; bi++) {
+    const rowId = `pp${bi}`;
+    const carryId = `cmul${bi}`;
+    const bDig = digitAt(b, bi);
+    const partialVal = fromDigits(a) * bDig; // unshifted
+    const partialDigitsMsb = digitsOf(partialVal);
+
+    // Carry row for this partial. We show carries only for columns that feed
+    // into a subsequent multiplication step — i.e. [bi+1 .. bi+aLen-1]. The
+    // carry out of the last a-digit IS the leftmost partial digit itself, so
+    // no separate carry cell is needed there.
+    addCarryRow(carryId, "carry-mult",
+      (c) => carryForPartialAtCol(bi, c),
+      bi + 1, bi + aLen - 1);
+
+    // Partial product row
+    state.rows.push({ id: rowId, kind: "partial", bIndex: bi });
+    for (let c = 0; c < cols; c++) {
+      if (c < bi) {
+        // Ghost zero showing the place shift
+        state.cells[`${rowId}-${c}`] = {
+          id: `${rowId}-${c}`, row: rowId, col: c,
+          value: 0, correct: 0, editable: false,
+          kind: "ghost", ghostShift: bi,
+        };
+      } else {
+        const posFromRight = c - bi;
+        const expected = digitAt(partialDigitsMsb, posFromRight);
+        const isInSpan = posFromRight < partialDigitsMsb.length;
+        if (!isInSpan) {
+          state.cells[`${rowId}-${c}`] = {
+            id: `${rowId}-${c}`, row: rowId, col: c,
+            value: null, correct: 0, editable: false, hidden: true, kind: "filler",
+          };
+        } else {
+          state.cells[`${rowId}-${c}`] = {
+            id: `${rowId}-${c}`, row: rowId, col: c,
+            value: null, correct: expected, editable: true,
+            kind: "partial", bIndex: bi,
+          };
+        }
+      }
+    }
+  }
+
+  // For bLen >= 2: carry row above the final answer, then the final.
+  if (bLen > 1) {
+    state.rows.push({ id: "sep2", kind: "separator" });
+    addCarryRow("cadd", "carry-add",
+      (c) => carryForAddAtCol(c),
+      1, prodLen - 1);
+
+    state.rows.push({ id: "final", kind: "final" });
+    for (let c = 0; c < cols; c++) {
+      const d = digitAt(productDigits, c);
+      const inProduct = c < prodLen;
+      state.cells[`final-${c}`] = {
+        id: `final-${c}`, row: "final", col: c,
+        value: null, correct: d, editable: inProduct, kind: "final",
+        hidden: !inProduct,
+      };
+    }
+  }
+  // For bLen === 1 the single partial product IS the answer; no final row needed.
+}
+
+/* ============================================================
+   CARRY-ROW EXPECTED VALUES (computed contextually)
+   ============================================================ */
+
+/**
+ * Carry-mult: expected carry at column c depends on which partial
+ * product the student is working on. We treat it as "the carry that
+ * should appear in column c while computing the partial product that
+ * THIS column belongs to." For partial bi covering cols [bi, bi+aLen],
+ * column c carries from computing column c-1's digit.
+ *
+ * We determine which partial each column 'belongs' to: when multiple
+ * partials overlap, we pick the one whose rightmost editable cell is
+ * closest to c on the right — i.e. the partial the student is working
+ * on right now. Simpler rule: carry[c] shows the carry associated with
+ * the CURRENTLY FOCUSED partial row, if any. Otherwise hidden.
+ *
+ * For correctness evaluation, we compute for every partial the carry
+ * into each column and store it on a per-partial basis. The visible
+ * carry cell just holds one value at a time — whatever the focused
+ * partial needs.
+ */
+
+function carryForPartialAtCol(bi, c) {
+  const a = state.operandA;
+  const bDig = digitAt(state.operandB, bi);
+  if (c <= bi) return 0;
+  // Compute column-wise until column c (the "carry into c" = carry out of c-1).
+  let carry = 0;
+  for (let cc = bi; cc < c; cc++) {
+    const aDig = digitAt(a, cc - bi);
+    const total = aDig * bDig + carry;
+    carry = Math.floor(total / 10);
+  }
+  return carry;
+}
+
+/** For the addition-of-partials stage: carry into column c of the sum. */
+function carryForAddAtCol(c) {
+  const a = state.operandA, b = state.operandB;
+  // column sums of all partials
+  let carry = 0;
+  for (let cc = 0; cc < c; cc++) {
+    let colSum = carry;
+    for (let bi = 0; bi < b.length; bi++) {
+      const bDig = digitAt(b, bi);
+      if (cc < bi) continue;
+      const partialVal = fromDigits(a) * bDig;
+      colSum += digitAt(digitsOf(partialVal), cc - bi);
+    }
+    carry = Math.floor(colSum / 10);
+  }
+  return carry;
+}
+
+/**
+ * Which partial is the student currently in? Inferred from active cell
+ * (if it's a pp row) or from the rightmost incomplete pp.
+ */
+function currentPartialIndex() {
+  const a = state.activeId;
+  if (a && a.startsWith("pp")) {
+    return Number(a.split("-")[0].slice(2));
+  }
+  // Default: the first pp row with any empty editable cell
+  for (let bi = 0; bi < state.bLen; bi++) {
+    const hasEmpty = Object.values(state.cells)
+      .some(x => x.row === `pp${bi}` && x.editable && x.value === null);
+    if (hasEmpty) return bi;
+  }
+  return state.bLen - 1;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+const tableauEl = document.getElementById("tableau");
+const placeLabelsEl = document.getElementById("place-labels");
+
+function render() {
+  document.documentElement.style.setProperty("--cols", state.cols);
+  tableauEl.innerHTML = "";
+
+  for (const row of state.rows) {
+    if (row.kind === "separator") {
+      const sep = document.createElement("div");
+      sep.className = "row-divider";
+      const line = document.createElement("div");
+      line.className = "line";
+      sep.appendChild(line);
+      tableauEl.appendChild(sep);
+      continue;
+    }
+    // Skip rendering a carry row if ALL its cells are hidden.
+    if (row.kind === "carry-mult" || row.kind === "carry-add") {
+      const anyVisible = Object.values(state.cells)
+        .some(c => c.row === row.id && !c.hidden);
+      if (!anyVisible) continue;
+    }
+    const rowEl = document.createElement("div");
+    rowEl.className = "row";
+    if (row.kind === "operand") {
+      rowEl.classList.add("row-op");
+      if (row.prefix) rowEl.dataset.prefix = row.prefix;
+    }
+    if (row.kind === "carry-mult" || row.kind === "carry-add") {
+      rowEl.classList.add("row-carry");
+    }
+
+    // Render rightmost column LAST (grid auto-flow column puts children in order,
+    // but we want col 0 on the right). So iterate c from cols-1 down to 0.
+    for (let c = state.cols - 1; c >= 0; c--) {
+      const id = `${row.id}-${c}`;
+      const cell = state.cells[id];
+      if (!cell) continue;
+
+      if (cell.hidden) {
+        const isCarryRow = row.kind === "carry-mult" || row.kind === "carry-add";
+        const spacer = document.createElement("div");
+        spacer.style.height = isCarryRow ? "var(--cell-carry)" : "var(--cell)";
+        spacer.style.width = "100%";
+        rowEl.appendChild(spacer);
+        continue;
+      }
+
+      const el = document.createElement("div");
+      el.className = "cell";
+      el.dataset.id = id;
+      el.dataset.col = c;
+      el.dataset.row = row.id;
+
+      if (cell.kind === "carry") el.classList.add("carry");
+      if (cell.kind === "ghost") el.classList.add("ghost");
+      if (!cell.editable) el.classList.add("readonly");
+
+      // Content
+      if (cell.kind === "carry") {
+        el.textContent = cell.value ?? "";
+        if (cell.value === null) el.classList.add("empty");
+      } else if (cell.kind === "ghost") {
+        el.textContent = "0";
+      } else {
+        if (cell.value === null) {
+          el.textContent = "";
+          el.classList.add("empty");
+        } else {
+          el.textContent = cell.value;
+        }
+      }
+
+      if (cell.correct > 0 && cell.value !== null && cell.value === cell.correct) {
+        el.classList.add("correct");
+      }
+      if (cell._wrong) {
+        el.classList.add("wrong");
+      }
+      if (cell._justCorrect) {
+        el.classList.add("just-correct");
+      }
+
+      if (state.activeId === id) el.classList.add("focused");
+
+      // Events
+      if (cell.editable && !cell.hidden) {
+        el.tabIndex = 0;
+        el.addEventListener("click", () => setActive(id));
+      }
+
+      // Column hover
+      el.addEventListener("mouseenter", e => highlightColumn(c, e));
+      el.addEventListener("mouseleave", () => clearColumn());
+
+      rowEl.appendChild(el);
+    }
+    tableauEl.appendChild(rowEl);
+  }
+
+  // Place value labels
+  placeLabelsEl.innerHTML = "";
+  for (let c = state.cols - 1; c >= 0; c--) {
+    const lbl = document.createElement("div");
+    lbl.className = "pv-label";
+    lbl.dataset.col = c;
+    lbl.style.setProperty("--pv-color", pvColor(c));
+    const p = placeName(c);
+    lbl.innerHTML = `${p.short}<span class="power">${p.power}</span>`;
+    lbl.addEventListener("mouseenter", e => highlightColumn(c, e));
+    lbl.addEventListener("mouseleave", () => clearColumn());
+    placeLabelsEl.appendChild(lbl);
+  }
+
+  updateStats();
+  updateCoach();
+}
+
+/* ============================================================
+   ACTIVE CELL & NAVIGATION
+   ============================================================ */
+
+function firstEditableId() {
+  // Start at rightmost editable cell of the first partial (pp0).
+  const pp0 = Object.values(state.cells)
+    .filter(c => c.row === "pp0" && c.editable && !c.hidden)
+    .sort((a, b) => a.col - b.col)[0];
+  if (pp0) return pp0.id;
+  // Fallback: anything editable.
+  const any = Object.values(state.cells).find(c => c.editable && !c.hidden);
+  return any?.id ?? null;
+}
+
+function setActive(id) {
+  const c = state.cells[id];
+  if (!c || !c.editable || c.hidden) return;
+  state.activeId = id;
+  render();
+}
+
+function moveActive(dRow, dCol) {
+  if (!state.activeId) return;
+  const { row, col } = state.cells[state.activeId];
+  // Determine row order among visible rows that contain editable cells
+  const editableRows = state.rows
+    .filter(r => r.kind !== "separator")
+    .filter(r => Object.values(state.cells).some(c => c.row === r.id && c.editable && !c.hidden))
+    .map(r => r.id);
+  const rIdx = editableRows.indexOf(row);
+  let targetRow = rIdx >= 0 ? editableRows[Math.max(0, Math.min(editableRows.length - 1, rIdx + dRow))] : row;
+  let targetCol = Math.max(0, Math.min(state.cols - 1, col + dCol));
+
+  // Snap to closest editable cell on the target row
+  const candidates = Object.values(state.cells)
+    .filter(c => c.row === targetRow && c.editable && !c.hidden);
+  if (candidates.length === 0) return;
+  candidates.sort((a, b) => Math.abs(a.col - targetCol) - Math.abs(b.col - targetCol)
+    || Math.abs(a.col - col) - Math.abs(b.col - col));
+  setActive(candidates[0].id);
+}
+
+/**
+ * Build a single linear "natural order" through all editable cells so that
+ * the student moves the way they'd work on paper: for each partial row,
+ * visit pp{bi}-c0, then (if a carry exists) cmul{bi}-c1, then pp{bi}-c1,
+ * then cmul{bi}-c2, pp{bi}-c2, ... Then the next partial. Then carries
+ * for the final addition and the final row.
+ */
+function naturalOrderIds() {
+  const order = [];
+  for (let bi = 0; bi < state.bLen; bi++) {
+    const ppCells = Object.values(state.cells)
+      .filter(c => c.row === `pp${bi}` && c.editable && !c.hidden)
+      .sort((a, b) => a.col - b.col);
+    for (const p of ppCells) {
+      // Carry ABOVE this column (cmul{bi}-{p.col}) gets filled AFTER the pp of the column
+      // to the right — so before entering this pp cell, try the carry at this col.
+      const carryId = `cmul${bi}-${p.col}`;
+      if (state.cells[carryId] && state.cells[carryId].editable) {
+        order.push(carryId);
+      }
+      order.push(p.id);
+    }
+  }
+  // Final addition: interleave cadd-{c} before final-{c} for each column
+  if (state.bLen > 1) {
+    const finalCells = Object.values(state.cells)
+      .filter(c => c.row === "final" && c.editable && !c.hidden)
+      .sort((a, b) => a.col - b.col);
+    for (const f of finalCells) {
+      const caddId = `cadd-${f.col}`;
+      if (state.cells[caddId] && state.cells[caddId].editable) {
+        order.push(caddId);
+      }
+      order.push(f.id);
+    }
+  }
+  return order;
+}
+
+function advanceNatural() {
+  if (!state.activeId) return;
+  const order = naturalOrderIds();
+  const idx = order.indexOf(state.activeId);
+  // Prefer the next UNFILLED cell after the current one.
+  for (let i = idx + 1; i < order.length; i++) {
+    const c = state.cells[order[i]];
+    if (c && c.value !== c.correct) { setActive(c.id); return; }
+  }
+  // Fallback: any unfilled cell in natural order
+  for (const id of order) {
+    const c = state.cells[id];
+    if (c && c.value !== c.correct) { setActive(c.id); return; }
+  }
+}
+
+/* ============================================================
+   INPUT / VALIDATION
+   ============================================================ */
+
+function fillActive(digit) {
+  if (state.activeId == null) return;
+  const cell = state.cells[state.activeId];
+  if (!cell || !cell.editable) return;
+  const expected = cell.correct ?? 0;
+
+  if (digit === cell.value) return; // no-op
+
+  if (digit === expected) {
+    cell.value = digit;
+    cell._wrong = false;
+    cell._justCorrect = true;
+    state.correctCount++;
+    setTimeout(() => { cell._justCorrect = false; render(); }, 500);
+    render();
+    if (checkCompletion()) return;
+    advanceNatural();
+    return;
+  }
+
+  // Wrong
+  cell._wrong = true;
+  state.wrongCount++;
+  render();
+  setTimeout(() => { cell._wrong = false; render(); }, 500);
+  showContextualHint(cell);
+}
+
+function clearActive() {
+  if (state.activeId == null) return;
+  const cell = state.cells[state.activeId];
+  if (!cell || !cell.editable) return;
+  cell.value = null;
+  render();
+}
+
+function checkCompletion() {
+  const unsolved = Object.values(state.cells)
+    .filter(c => c.editable && !c.hidden && c.value !== c.correct);
+  if (unsolved.length === 0 && !state.completed) {
+    state.completed = true;
+    celebrate();
+    return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   COACH / HINTS
+   ============================================================ */
+
+const coachBody = document.getElementById("coach-body");
+const hintBubble = document.getElementById("hint-bubble");
+
+function updateCoach() {
+  if (state.completed) return; // preserve celebration message
+  const id = state.activeId;
+  if (!id) { coachBody.textContent = "Ready."; return; }
+  const cell = state.cells[id];
+  if (!cell) return;
+  let txt = "";
+
+  if (cell.kind === "carry") {
+    const row = state.rows.find(r => r.id === cell.row);
+    if (row.kind === "carry-mult") {
+      const bi = currentPartialIndex();
+      const bDig = digitAt(state.operandB, bi);
+      txt = `Carry cell · <b>${placeName(cell.col).name}</b> column.<br>
+             Write here the carry from the previous multiplication in this partial product row.<br>
+             <span class="key">Tip:</span> if you multiplied and got a result > 9, write the tens digit here.`;
+    } else {
+      txt = `Addition carry · <b>${placeName(cell.col).name}</b> column.<br>
+             When summing the partial products, if the column total > 9, carry the tens digit here.`;
+    }
+  } else if (cell.kind === "partial") {
+    const bi = cell.bIndex;
+    const bDig = digitAt(state.operandB, bi);
+    const aPos = cell.col - bi;
+    const aDig = digitAt(state.operandA, aPos);
+    const carryIn = carryForPartialAtCol(bi, cell.col);
+
+    if (aPos < state.aLen) {
+      const product = aDig * bDig;
+      const total = product + carryIn;
+      const pn = placeName(cell.col).name;
+      txt = `<b>Partial row ${bi + 1}</b> · column <b>${pn}</b>.<br>
+             Multiply <span class="equation">${bDig} × ${aDig} = ${product}</span>${carryIn ? ` + carry <span class="equation">${carryIn}</span> = <span class="equation">${total}</span>` : ""}.<br>
+             Write the <span class="key">ones</span> digit of <b>${total}</b> here${total >= 10 ? `, carry <b>${Math.floor(total / 10)}</b> to the <b>${placeName(cell.col + 1).name}</b> column.` : "."}`;
+    } else {
+      // overflow column — carry only
+      txt = `<b>Partial row ${bi + 1}</b> · final column (<b>${placeName(cell.col).name}</b>).<br>
+             No more digits of the first number — just write the leftover carry (<span class="equation">${carryIn}</span>) here.`;
+    }
+  } else if (cell.kind === "final") {
+    const c = cell.col;
+    const carryIn = carryForAddAtCol(c);
+    let colSum = carryIn;
+    const partialBits = [];
+    for (let bi = 0; bi < state.bLen; bi++) {
+      if (c < bi) continue;
+      const pv = fromDigits(state.operandA) * digitAt(state.operandB, bi);
+      const d = digitAt(digitsOf(pv), c - bi);
+      partialBits.push(d);
+      colSum += d;
+    }
+    const pn = placeName(c).name;
+    txt = `<b>Sum row</b> · column <b>${pn}</b>.<br>
+           Add the partial products in this column${partialBits.length > 0 ? `: <span class="equation">${partialBits.join(" + ")}${carryIn ? " + " + carryIn : ""} = ${colSum}</span>` : ""}.<br>
+           Write the <span class="key">ones</span> digit of <b>${colSum}</b> here${colSum >= 10 ? `, carry to the <b>${placeName(c + 1).name}</b> column.` : "."}`;
+  }
+
+  coachBody.innerHTML = txt || "Keep going!";
+}
+
+function showContextualHint(cell) {
+  let txt = "";
+  if (cell.kind === "partial") {
+    const bi = cell.bIndex;
+    const bDig = digitAt(state.operandB, bi);
+    const aPos = cell.col - bi;
+    const aDig = digitAt(state.operandA, aPos);
+    const carryIn = carryForPartialAtCol(bi, cell.col);
+    if (aPos < state.aLen) {
+      const total = aDig * bDig + carryIn;
+      txt = `Try again: ${bDig} × ${aDig}${carryIn ? ` + ${carryIn}` : ""} = <b>${total}</b>. The ones digit of ${total} is <b>${total % 10}</b>.`;
+    } else {
+      txt = `Nothing left to multiply — just copy the pending carry here.`;
+    }
+  } else if (cell.kind === "final") {
+    const c = cell.col;
+    const carryIn = carryForAddAtCol(c);
+    let colSum = carryIn;
+    const parts = [];
+    for (let bi = 0; bi < state.bLen; bi++) {
+      if (c < bi) continue;
+      const pv = fromDigits(state.operandA) * digitAt(state.operandB, bi);
+      const d = digitAt(digitsOf(pv), c - bi);
+      parts.push(d);
+      colSum += d;
+    }
+    txt = `Column total: ${parts.join(" + ")}${carryIn ? ` + ${carryIn}` : ""} = <b>${colSum}</b>. Ones digit: <b>${colSum % 10}</b>.`;
+  } else if (cell.kind === "carry") {
+    txt = `This cell needs the tens-digit carry from the previous column's multiplication (or 0 if none).`;
+  }
+  hintBubble.innerHTML = txt;
+  hintBubble.classList.add("show");
+  clearTimeout(showContextualHint._t);
+  showContextualHint._t = setTimeout(() => hintBubble.classList.remove("show"), 4500);
+}
+
+/* Hint button: show hint for current active cell */
+function onHint() {
+  if (!state.activeId) return;
+  const cell = state.cells[state.activeId];
+  showContextualHint(cell);
+}
+
+/* Reveal button: fill the active cell with its correct value */
+function onReveal() {
+  if (!state.activeId) return;
+  const cell = state.cells[state.activeId];
+  if (!cell || !cell.editable) return;
+  cell.value = cell.correct;
+  cell._justCorrect = true;
+  setTimeout(() => { cell._justCorrect = false; render(); }, 500);
+  render();
+  if (checkCompletion()) return;
+  advanceNatural();
+}
+
+/* ============================================================
+   COLUMN HIGHLIGHT + TOOLTIP
+   ============================================================ */
+
+const tooltip = document.getElementById("tooltip");
+
+function highlightColumn(col, event) {
+  document.querySelectorAll(".cell").forEach(el => {
+    if (Number(el.dataset.col) === col) {
+      el.style.outline = `1px solid ${getComputedStyle(document.documentElement).getPropertyValue(`--pv-${col % 6}`)}`;
+      el.style.outlineOffset = "2px";
+    }
+  });
+  document.querySelectorAll(".pv-label").forEach(el => {
+    if (Number(el.dataset.col) === col) el.classList.add("active");
+  });
+
+  const p = placeName(col);
+  tooltip.innerHTML = `<div class="pv-big" style="color:${getComputedStyle(document.documentElement).getPropertyValue(`--pv-${col % 6}`)}">${p.name}</div><div class="pv-mul">place · ${p.power}</div>`;
+  tooltip.classList.add("show");
+  const x = event.clientX;
+  const y = event.clientY;
+  tooltip.style.left = x + "px";
+  tooltip.style.top = (y - 8) + "px";
+}
+function clearColumn() {
+  document.querySelectorAll(".cell").forEach(el => {
+    el.style.outline = "";
+    el.style.outlineOffset = "";
+  });
+  document.querySelectorAll(".pv-label.active").forEach(el => el.classList.remove("active"));
+  tooltip.classList.remove("show");
+}
+
+document.addEventListener("mousemove", (e) => {
+  if (tooltip.classList.contains("show")) {
+    tooltip.style.left = e.clientX + "px";
+    tooltip.style.top = (e.clientY - 8) + "px";
+  }
+  // Safety: if the mouse isn't over any .cell or .pv-label, clear hover state
+  const underMouse = document.elementFromPoint(e.clientX, e.clientY);
+  if (underMouse && !underMouse.closest(".cell") && !underMouse.closest(".pv-label")) {
+    clearColumn();
+  }
+});
+document.addEventListener("click", () => clearColumn());
+
+/* ============================================================
+   CELEBRATION
+   ============================================================ */
+
+function celebrate() {
+  document.getElementById("win-flash").classList.add("active");
+  setTimeout(() => document.getElementById("win-flash").classList.remove("active"), 1200);
+  // Confetti
+  const canvas = document.getElementById("confetti");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = [];
+  for (let i = 0; i < 120; i++) {
+    pieces.push({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2 - 60,
+      vx: (Math.random() - 0.5) * 12,
+      vy: -Math.random() * 12 - 4,
+      g: 0.35,
+      size: Math.random() * 6 + 3,
+      color: ["#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#22d3ee"][Math.floor(Math.random() * 5)],
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.3,
+    });
+  }
+  let frames = 0;
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const p of pieces) {
+      p.vy += p.g;
+      p.x += p.vx; p.y += p.vy;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.5);
+      ctx.restore();
+    }
+    frames++;
+    if (frames < 160) requestAnimationFrame(tick);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  tick();
+  // Update coach
+  const equation = `${fromDigits(state.operandA)} × ${fromDigits(state.operandB)} = ${fromDigits(state.operandA) * fromDigits(state.operandB)}`;
+  coachBody.innerHTML = `🎉 <b>Solved!</b><br><span class="equation" style="margin-top:6px;">${equation}</span><br>Press <span class="key">N</span> for a new problem, or try a harder level on the right.`;
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+
+function updateStats() {
+  document.getElementById("stat-correct").textContent = state.correctCount;
+  document.getElementById("stat-wrong").textContent = state.wrongCount;
+}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+
+document.addEventListener("keydown", (e) => {
+  const k = e.key;
+  if (/^[0-9]$/.test(k)) { fillActive(Number(k)); e.preventDefault(); return; }
+  if (k === "Backspace" || k === "Delete") { clearActive(); e.preventDefault(); return; }
+  if (k === "Enter") { advanceNatural(); e.preventDefault(); return; }
+  if (k === "ArrowLeft") { moveActive(0, +1); e.preventDefault(); return; } // left = col +1 (higher place)
+  if (k === "ArrowRight") { moveActive(0, -1); e.preventDefault(); return; }
+  if (k === "ArrowUp") { moveActive(-1, 0); e.preventDefault(); return; }
+  if (k === "ArrowDown") { moveActive(+1, 0); e.preventDefault(); return; }
+  if (k === "h" || k === "H") { onHint(); e.preventDefault(); return; }
+  if (k === "r" || k === "R") { onReveal(); e.preventDefault(); return; }
+  if (k === "n" || k === "N") { newProblem(); e.preventDefault(); return; }
+});
+
+/* ============================================================
+   LEVEL PICKER + NEW PROBLEM
+   ============================================================ */
+
+function buildLevelPicker() {
+  const el = document.getElementById("level-picker");
+  el.innerHTML = "";
+  for (const lvl of LEVELS) {
+    const chip = document.createElement("button");
+    chip.className = "level-chip" + (state.level === lvl.id ? " active" : "");
+    chip.textContent = `Lvl ${lvl.id} · ${lvl.label}`;
+    chip.addEventListener("click", () => {
+      state.level = lvl.id;
+      newProblem();
+    });
+    el.appendChild(chip);
+  }
+}
+
+function newProblem() {
+  state.completed = false;
+  const { a, b } = genProblem(state.level);
+  state.operandA = digitsOf(a);
+  state.operandB = digitsOf(b);
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  buildTableau();
+  state.activeId = firstEditableId();
+  document.getElementById("level-num").textContent = state.level;
+  document.getElementById("level-label").textContent = LEVELS[state.level - 1].label;
+  buildLevelPicker();
+  render();
+}
+
+/* ============================================================
+   BOOTSTRAP
+   ============================================================ */
+
+document.getElementById("btn-hint").addEventListener("click", onHint);
+document.getElementById("btn-reveal").addEventListener("click", onReveal);
+document.getElementById("btn-new").addEventListener("click", newProblem);
+
+newProblem();
+</script>
+</body>
+</html>
