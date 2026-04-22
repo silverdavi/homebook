@@ -1,11 +1,14 @@
 "use client";
 
 /**
- * CarryLab — Interactive long-multiplication teacher.
+ * CarryLab — Interactive arithmetic teacher (add / subtract / multiply / divide).
  *
- * Clean, muted, paper-inspired theme. The tableau aligns on a strict CSS
- * grid so columns line up perfectly; every transition is color-only so
- * the layout never shifts or jitters.
+ * Clean, muted, paper-inspired theme. The tableau aligns on a strict CSS grid
+ * so columns line up perfectly; every transition is colour-only so the layout
+ * never shifts or jitters.
+ *
+ * The component is operation-agnostic: it reads everything (levels, problem
+ * generator, tableau builder, coach narration, hints) from the registry.
  */
 
 import {
@@ -23,22 +26,14 @@ import {
   RotateCw,
   Keyboard as KeyboardIcon,
   Check,
+  Plus,
+  Minus,
+  X as XIcon,
+  Divide,
 } from "lucide-react";
-import {
-  buildTableau,
-  carryForAddAtCol,
-  carryForPartialAtCol,
-  digitAt,
-  digitsOf,
-  firstEditableId,
-  fromDigits,
-  genProblem,
-  LEVELS,
-  naturalOrderIds,
-  placeName,
-  type Cell,
-  type TableauState,
-} from "@/lib/carry-lab/engine";
+import { fromDigits, placeName } from "@/lib/carry-lab/shared";
+import type { Cell, Operation, TableauState } from "@/lib/carry-lab/types";
+import { OPERATIONS, OPERATION_ORDER } from "@/lib/carry-lab/registry";
 
 /* ─────────────────────────────────────────────────────────────
  * Constants — palette, sizes.
@@ -56,13 +51,20 @@ const PV_COLORS = [
 ];
 const pvColor = (col: number) => PV_COLORS[col % PV_COLORS.length];
 
-const CELL_PX = 64; // main cell edge
-const CARRY_PX = 34; // carry cell edge
+const CELL_PX = 64;
+const CARRY_PX = 34;
 const GAP_PX = 10;
 
+const OPERATION_ICONS: Record<Operation, React.ComponentType<{ className?: string }>> = {
+  add: Plus,
+  subtract: Minus,
+  multiply: XIcon,
+  divide: Divide,
+};
+
 /* ─────────────────────────────────────────────────────────────
- * Cell component — memoised so a single value change only
- * repaints its cell (not the whole row/grid).
+ * Cell view — one button per cell, fully styled inline so we can
+ * compose colour from the active state without layout shifts.
  * ───────────────────────────────────────────────────────────── */
 
 interface CellViewProps {
@@ -83,12 +85,16 @@ function CellView({
   onHoverCol,
 }: CellViewProps) {
   const isCarry = cell.kind === "carry";
+  const isBorrow = cell.kind === "borrow";
   const isGhost = cell.kind === "ghost";
+  const isQuotient = cell.kind === "quotient";
   const isReadOnly = !cell.editable;
   const filled = cell.value !== null && cell.value !== undefined;
   const isCorrect = filled && cell.value === cell.correct;
 
-  const size = isCarry ? CARRY_PX : CELL_PX;
+  // Borrow uses the same compact size as carry cells.
+  const compact = isCarry || isBorrow;
+  const size = compact ? CARRY_PX : CELL_PX;
 
   if (cell.hidden) {
     return <div style={{ width: size, height: size }} />;
@@ -96,7 +102,7 @@ function CellView({
 
   // Content
   let content: React.ReactNode = "";
-  if (isCarry) {
+  if (compact) {
     content = cell.value ?? "";
   } else if (isGhost) {
     content = "0";
@@ -107,9 +113,9 @@ function CellView({
   const base: React.CSSProperties = {
     width: size,
     height: size,
-    borderRadius: isCarry ? 8 : 12,
+    borderRadius: compact ? 8 : 12,
     fontFamily: "var(--font-outfit), system-ui, sans-serif",
-    fontSize: isCarry ? 16 : 28,
+    fontSize: compact ? 16 : 28,
     fontWeight: 600,
     fontVariantNumeric: "tabular-nums",
     display: "inline-flex",
@@ -122,15 +128,14 @@ function CellView({
     cursor: cell.editable ? "pointer" : "default",
   };
 
-  // Variants — default is "editable empty cell".
+  // Default — empty editable cell.
   let bg = "#fafaf7";
   let border = "1px solid #e7e5e4";
   let color = "#1f2937";
   let boxShadow: string | undefined =
     "inset 0 0 0 1px rgba(255,255,255,0.6), 0 1px 2px rgba(15,23,42,0.04)";
 
-  if (isReadOnly && !isGhost && !isCarry) {
-    // Operand digits: no card, just a bold glyph.
+  if (isReadOnly && !isGhost && !compact) {
     bg = "transparent";
     border = "1px solid transparent";
     boxShadow = undefined;
@@ -144,14 +149,18 @@ function CellView({
     color = "#a8a29e";
   }
 
-  if (isCarry) {
-    bg = filled ? "#fef3c7" : "#fffbeb";
-    border = filled ? "1px solid #f59e0b" : "1px dashed #fcd34d";
-    color = "#b45309";
+  if (compact) {
+    // Carries (amber) and borrows (rose) both use the small cell with dashed border.
+    const tone = isBorrow
+      ? { fillBg: "#fef2f2", fillBorder: "#f87171", fillText: "#b91c1c", emptyBg: "#fff7f7", emptyBorder: "#fecaca", emptyText: "#fca5a5" }
+      : { fillBg: "#fef3c7", fillBorder: "#f59e0b", fillText: "#b45309", emptyBg: "#fffbeb", emptyBorder: "#fcd34d", emptyText: "#fcd34d" };
+    bg = filled ? tone.fillBg : tone.emptyBg;
+    border = filled ? `1px solid ${tone.fillBorder}` : `1px dashed ${tone.emptyBorder}`;
+    color = filled ? tone.fillText : tone.emptyText;
     boxShadow = undefined;
   }
 
-  if (filled && !isCarry && !isReadOnly) {
+  if (filled && !compact && !isReadOnly) {
     if (isCorrect) {
       bg = "#ecfdf5";
       border = "1px solid #10b981";
@@ -160,8 +169,14 @@ function CellView({
     }
   }
 
-  // Focus and flash states use box-shadow only — keeping border width at 1px
-  // guarantees the cell's content never shifts position.
+  // Quotient cells get a subtle top-edge accent in the place-value hue,
+  // since visually they sit above the dividend row.
+  if (isQuotient && !filled && !isFocused) {
+    border = `1px solid #e7e5e4`;
+    bg = "#ffffff";
+  }
+
+  // Focus and flashes — colour and shadow only, no size change.
   if (isFocused) {
     border = `1px solid ${pvColor(cell.col)}`;
     boxShadow = `0 0 0 3px ${pvColor(cell.col)}22, 0 2px 10px ${pvColor(cell.col)}35`;
@@ -182,14 +197,6 @@ function CellView({
     boxShadow = `0 0 0 6px ${pvColor(cell.col)}22`;
   }
 
-  const style: React.CSSProperties = {
-    ...base,
-    background: bg,
-    border,
-    color,
-    boxShadow,
-  };
-
   return (
     <button
       type="button"
@@ -198,20 +205,22 @@ function CellView({
       onClick={() => cell.editable && onActivate(cell.id)}
       onMouseEnter={(e) => onHoverCol(cell.col, e)}
       onMouseLeave={() => onHoverCol(null)}
-      onFocus={(e) => onHoverCol(cell.col, undefined)}
+      onFocus={() => onHoverCol(cell.col)}
       tabIndex={cell.editable ? 0 : -1}
       disabled={!cell.editable}
-      style={style}
+      style={{ ...base, background: bg, border, color, boxShadow }}
       aria-label={
         isCarry
           ? `Carry cell, ${placeName(cell.col).name} column${filled ? `, value ${cell.value}` : ""}`
-          : isGhost
-            ? `Place shift placeholder, ${placeName(cell.col).name}`
-            : isReadOnly
-              ? `Digit ${cell.value}, ${placeName(cell.col).name}`
-              : filled
-                ? `Your answer ${cell.value}, ${placeName(cell.col).name} column`
-                : `Empty cell, ${placeName(cell.col).name} column`
+          : isBorrow
+            ? `Borrow indicator, ${placeName(cell.col).name} column${filled ? `, value ${cell.value}` : ""}`
+            : isGhost
+              ? `Place shift placeholder, ${placeName(cell.col).name}`
+              : isReadOnly
+                ? `Digit ${cell.value}, ${placeName(cell.col).name}`
+                : filled
+                  ? `Your answer ${cell.value}, ${placeName(cell.col).name} column`
+                  : `Empty cell, ${placeName(cell.col).name} column`
       }
     >
       {content}
@@ -224,19 +233,27 @@ function CellView({
  * ───────────────────────────────────────────────────────────── */
 
 interface CarryLabProps {
+  initialOperation?: Operation;
   initialLevel?: number;
-  /** When embedded in a page with its own chrome, hide the outer layout. */
-  embedded?: boolean;
 }
 
-export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) {
+export function CarryLab({
+  initialOperation = "multiply",
+  initialLevel = 1,
+}: CarryLabProps) {
+  const [operation, setOperation] = useState<Operation>(initialOperation);
   const [level, setLevel] = useState(initialLevel);
-  // Start with a fixed seed problem so SSR/hydration matches. A random
-  // problem is loaded in useEffect once the client has mounted.
-  const [state, setState] = useState<TableauState>(() => buildTableau(23, 3));
+
+  // Per-operation default levels (so switching operations resets to lvl 1).
+  const opMod = OPERATIONS[operation];
+
+  // Fixed seed initial state (so SSR/hydration match); replaced on mount.
+  const seedState = useMemo(() => opMod.buildTableau({ a: 12, b: 3 }), [opMod]);
+  const [state, setState] = useState<TableauState>(seedState);
   const [activeId, setActiveId] = useState<string | null>(() =>
-    firstEditableId(buildTableau(23, 3)),
+    opMod.firstEditableId(seedState),
   );
+
   const [wrongFlashId, setWrongFlashId] = useState<string | null>(null);
   const [correctFlashId, setCorrectFlashId] = useState<string | null>(null);
   const [hoverCol, setHoverCol] = useState<number | null>(null);
@@ -244,129 +261,66 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
   const [completed, setCompleted] = useState(false);
   const [counts, setCounts] = useState({ correct: 0, wrong: 0 });
   const [hintText, setHintText] = useState<string | null>(null);
+
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrongTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ─── Level / problem lifecycle ─────────────────────────── */
+  /* ─── Lifecycle ─────────────────────────────────────────── */
 
   const newProblem = useCallback(
-    (lvl: number = level) => {
-      const { a, b } = genProblem(lvl);
-      const next = buildTableau(a, b);
+    (opId: Operation = operation, lvl: number = level) => {
+      const mod = OPERATIONS[opId];
+      const { a, b } = mod.genProblem(lvl);
+      const next = mod.buildTableau({ a, b });
       setState(next);
-      setActiveId(firstEditableId(next));
+      setActiveId(mod.firstEditableId(next));
       setCompleted(false);
       setCounts({ correct: 0, wrong: 0 });
       setHintText(null);
       setWrongFlashId(null);
       setCorrectFlashId(null);
     },
-    [level],
+    [operation, level],
   );
 
-  // Initial problem — guard against StrictMode double-invocation so the
-  // first visible problem doesn't flicker between two random values.
-  const didInitialise = useRef(false);
+  // Initial random problem, guarded against StrictMode double-invocation.
+  const didInit = useRef(false);
   useEffect(() => {
-    if (didInitialise.current) return;
-    didInitialise.current = true;
-    newProblem(initialLevel);
+    if (didInit.current) return;
+    didInit.current = true;
+    newProblem(initialOperation, initialLevel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changeLevel = useCallback(
-    (newLvl: number) => {
-      setLevel(newLvl);
-      newProblem(newLvl);
+  const switchOperation = useCallback(
+    (opId: Operation) => {
+      setOperation(opId);
+      setLevel(1);
+      newProblem(opId, 1);
     },
     [newProblem],
+  );
+
+  const changeLevel = useCallback(
+    (lvl: number) => {
+      setLevel(lvl);
+      newProblem(operation, lvl);
+    },
+    [newProblem, operation],
   );
 
   /* ─── Coach narration ────────────────────────────────────── */
 
   const coach = useMemo(() => {
     if (completed) return null;
-    if (!activeId) return "Click a cell to start, or press any digit.";
-    const cell = state.cells[activeId];
-    if (!cell) return "";
-    if (cell.kind === "carry") {
-      const row = state.rows.find((r) => r.id === cell.row);
-      if (row?.kind === "carry-mult") {
-        return {
-          title: "Carry cell",
-          lines: [
-            `You're in the **${placeName(cell.col).name}** column.`,
-            `Write here the carry from the previous multiplication.`,
-            `_Tip: if the previous multiplication was > 9, write its tens digit here._`,
-          ],
-        };
-      }
-      return {
-        title: "Addition carry",
-        lines: [
-          `When you summed the partial products below, the ${placeName(cell.col - 1).name} column went past 9.`,
-          `Write that carry here before adding the **${placeName(cell.col).name}** column.`,
-        ],
-      };
-    }
-    if (cell.kind === "partial") {
-      const bi = cell.bIndex ?? 0;
-      const bDig = digitAt(state.operandB, bi);
-      const aPos = cell.col - bi;
-      const aDig = digitAt(state.operandA, aPos);
-      const carryIn = carryForPartialAtCol(state.operandA, state.operandB, bi, cell.col);
-      if (aPos < state.aLen) {
-        const product = aDig * bDig;
-        const total = product + carryIn;
-        const carryOut = Math.floor(total / 10);
-        return {
-          title: `Partial row ${bi + 1} · ${placeName(cell.col).name}`,
-          lines: [
-            `Multiply **${bDig} × ${aDig} = ${product}**` +
-              (carryIn ? ` + carry **${carryIn}** = **${total}**` : ""),
-            carryOut > 0
-              ? `Write the ones digit of **${total}** (which is **${total % 10}**), and carry **${carryOut}** to the ${placeName(cell.col + 1).name} column.`
-              : `Write **${total % 10}** here.`,
-          ],
-        };
-      }
-      return {
-        title: `Partial row ${bi + 1} · ${placeName(cell.col).name}`,
-        lines: [
-          `No more digits to multiply — just write the leftover carry, which is **${carryIn}**.`,
-        ],
-      };
-    }
-    if (cell.kind === "final") {
-      const carryIn = carryForAddAtCol(state.operandA, state.operandB, cell.col);
-      const parts: number[] = [];
-      let colSum = carryIn;
-      for (let bi = 0; bi < state.bLen; bi++) {
-        if (cell.col < bi) continue;
-        const pv = fromDigits(state.operandA) * digitAt(state.operandB, bi);
-        const d = digitAt(digitsOf(pv), cell.col - bi);
-        parts.push(d);
-        colSum += d;
-      }
-      return {
-        title: `Sum · ${placeName(cell.col).name}`,
-        lines: [
-          parts.length > 0
-            ? `Add the partial products in this column: **${parts.join(" + ")}${carryIn ? " + " + carryIn : ""} = ${colSum}**.`
-            : `Column sum so far: **${colSum}**.`,
-          colSum >= 10
-            ? `Write **${colSum % 10}** here, and carry **${Math.floor(colSum / 10)}** to the ${placeName(cell.col + 1).name} column.`
-            : `Write **${colSum}** here.`,
-        ],
-      };
-    }
-    return null;
-  }, [activeId, state, completed]);
+    if (!activeId) return null;
+    return opMod.coachFor(state, activeId);
+  }, [activeId, state, completed, opMod]);
 
   /* ─── Natural-order navigation ───────────────────────────── */
 
-  const order = useMemo(() => naturalOrderIds(state), [state]);
+  const order = useMemo(() => opMod.naturalOrderIds(state), [state, opMod]);
 
   const advanceNatural = useCallback(
     (from: string | null = activeId) => {
@@ -429,44 +383,12 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
 
   const showContextualHint = useCallback(
     (cell: Cell) => {
-      let txt = "";
-      if (cell.kind === "partial") {
-        const bi = cell.bIndex ?? 0;
-        const bDig = digitAt(state.operandB, bi);
-        const aPos = cell.col - bi;
-        const aDig = digitAt(state.operandA, aPos);
-        const carryIn = carryForPartialAtCol(
-          state.operandA,
-          state.operandB,
-          bi,
-          cell.col,
-        );
-        if (aPos < state.aLen) {
-          const total = aDig * bDig + carryIn;
-          txt = `Try again: ${bDig} × ${aDig}${carryIn ? ` + ${carryIn}` : ""} = **${total}**. The ones digit of ${total} is **${total % 10}**.`;
-        } else {
-          txt = `Nothing left to multiply — just copy the pending carry here.`;
-        }
-      } else if (cell.kind === "final") {
-        const carryIn = carryForAddAtCol(state.operandA, state.operandB, cell.col);
-        let colSum = carryIn;
-        const parts: number[] = [];
-        for (let bi = 0; bi < state.bLen; bi++) {
-          if (cell.col < bi) continue;
-          const pv = fromDigits(state.operandA) * digitAt(state.operandB, bi);
-          const d = digitAt(digitsOf(pv), cell.col - bi);
-          parts.push(d);
-          colSum += d;
-        }
-        txt = `Column total: ${parts.join(" + ")}${carryIn ? ` + ${carryIn}` : ""} = **${colSum}**. Ones digit: **${colSum % 10}**.`;
-      } else if (cell.kind === "carry") {
-        txt = `This cell needs the tens-digit carry from the previous column's multiplication.`;
-      }
-      setHintText(txt);
+      const txt = opMod.hintFor(state, cell);
+      setHintText(txt || null);
       if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
       hintTimerRef.current = setTimeout(() => setHintText(null), 6000);
     },
-    [state],
+    [state, opMod],
   );
 
   const checkCompletion = useCallback((nextState: TableauState) => {
@@ -487,15 +409,13 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
         setState((prev) => {
           const next = { ...prev, cells: { ...prev.cells } };
           next.cells[cell.id] = { ...next.cells[cell.id], value: digit };
-          const done = checkCompletion(next);
-          if (done) setTimeout(() => setCompleted(true), 50);
+          if (checkCompletion(next)) setTimeout(() => setCompleted(true), 50);
           return next;
         });
         setCounts((c) => ({ ...c, correct: c.correct + 1 }));
         setCorrectFlashId(cell.id);
         if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
         correctTimerRef.current = setTimeout(() => setCorrectFlashId(null), 420);
-        // advance
         setTimeout(() => advanceNatural(cell.id), 0);
       } else {
         setCounts((c) => ({ ...c, wrong: c.wrong + 1 }));
@@ -524,8 +444,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
     setState((prev) => {
       const next = { ...prev, cells: { ...prev.cells } };
       next.cells[cell.id] = { ...next.cells[cell.id], value: cell.correct };
-      const done = checkCompletion(next);
-      if (done) setTimeout(() => setCompleted(true), 50);
+      if (checkCompletion(next)) setTimeout(() => setCompleted(true), 50);
       return next;
     });
     setCorrectFlashId(cell.id);
@@ -539,74 +458,32 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      // Don't hijack typing in form inputs
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
-        return;
-      }
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
       const k = e.key;
       if (/^[0-9]$/.test(k)) {
         fillActive(Number(k));
         e.preventDefault();
         return;
       }
-      if (k === "Backspace" || k === "Delete") {
-        clearActive();
-        e.preventDefault();
-        return;
-      }
-      if (k === "Enter") {
-        advanceNatural();
-        e.preventDefault();
-        return;
-      }
-      if (k === "ArrowLeft") {
-        moveActive(0, +1);
-        e.preventDefault();
-        return;
-      }
-      if (k === "ArrowRight") {
-        moveActive(0, -1);
-        e.preventDefault();
-        return;
-      }
-      if (k === "ArrowUp") {
-        moveActive(-1, 0);
-        e.preventDefault();
-        return;
-      }
-      if (k === "ArrowDown") {
-        moveActive(+1, 0);
-        e.preventDefault();
-        return;
-      }
+      if (k === "Backspace" || k === "Delete") { clearActive(); e.preventDefault(); return; }
+      if (k === "Enter") { advanceNatural(); e.preventDefault(); return; }
+      if (k === "ArrowLeft")  { moveActive(0, +1); e.preventDefault(); return; }
+      if (k === "ArrowRight") { moveActive(0, -1); e.preventDefault(); return; }
+      if (k === "ArrowUp")    { moveActive(-1, 0); e.preventDefault(); return; }
+      if (k === "ArrowDown")  { moveActive(+1, 0); e.preventDefault(); return; }
       if (k === "h" || k === "H") {
         if (activeId) showContextualHint(state.cells[activeId]);
         e.preventDefault();
         return;
       }
-      if (k === "r" || k === "R") {
-        revealActive();
-        e.preventDefault();
-        return;
-      }
-      if (k === "n" || k === "N") {
-        newProblem();
-        e.preventDefault();
-        return;
-      }
+      if (k === "r" || k === "R") { revealActive(); e.preventDefault(); return; }
+      if (k === "n" || k === "N") { newProblem(); e.preventDefault(); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [
-    activeId,
-    state,
-    fillActive,
-    clearActive,
-    advanceNatural,
-    moveActive,
-    showContextualHint,
-    revealActive,
-    newProblem,
+    activeId, state, fillActive, clearActive, advanceNatural,
+    moveActive, showContextualHint, revealActive, newProblem,
   ]);
 
   /* ─── Column hover tooltip ───────────────────────────────── */
@@ -625,11 +502,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
     const handler = (e: MouseEvent) => {
       setTooltip({ x: e.clientX, y: e.clientY });
       const under = document.elementFromPoint(e.clientX, e.clientY);
-      if (
-        under &&
-        !under.closest("[data-col]") &&
-        !under.closest("[data-pv-label]")
-      ) {
+      if (under && !under.closest("[data-col]") && !under.closest("[data-pv-label]")) {
         setHoverCol(null);
         setTooltip(null);
       }
@@ -638,7 +511,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
     return () => document.removeEventListener("mousemove", handler);
   }, [tooltip]);
 
-  /* ─── Confetti (lightweight, one-shot) ───────────────────── */
+  /* ─── Confetti ───────────────────────────────────────────── */
 
   useEffect(() => {
     if (!completed) return;
@@ -655,8 +528,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
     const cy = window.innerHeight / 2.4;
     for (let i = 0; i < 140; i++) {
       pieces.push({
-        x: cx,
-        y: cy,
+        x: cx, y: cy,
         vx: (Math.random() - 0.5) * 14,
         vy: -Math.random() * 14 - 4,
         s: Math.random() * 6 + 3,
@@ -691,25 +563,26 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
 
   /* ─── Render helpers ─────────────────────────────────────── */
 
-  const rowKind = useCallback(
+  const rowKindFor = useCallback(
     (rowId: string) => state.rows.find((r) => r.id === rowId)?.kind,
     [state.rows],
   );
 
   const rowIsVisible = useCallback(
     (rowId: string) => {
-      const k = rowKind(rowId);
-      if (k === "carry-mult" || k === "carry-add") {
+      const k = rowKindFor(rowId);
+      // Hide carry/borrow rows when no cell in them is visible.
+      if (k === "carry-mult" || k === "carry-add" || k === "borrow") {
         return Object.values(state.cells).some(
           (c) => c.row === rowId && !c.hidden,
         );
       }
+      // Hide quotient row's separator if it's right after a separator-less row, etc.
       return true;
     },
-    [rowKind, state.cells],
+    [rowKindFor, state.cells],
   );
 
-  // CSS variables for grid
   const gridVars: React.CSSProperties = {
     // @ts-expect-error css custom property
     "--cols": state.cols,
@@ -718,11 +591,25 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
     "--gap": `${GAP_PX}px`,
   };
 
+  const completionEquation = useMemo(() => {
+    const a = fromDigits(state.operandA);
+    const b = fromDigits(state.operandB);
+    if (state.operation === "add") return `${a} + ${b} = ${a + b}`;
+    if (state.operation === "subtract") return `${a} − ${b} = ${a - b}`;
+    if (state.operation === "multiply") return `${a} × ${b} = ${a * b}`;
+    if (state.operation === "divide") {
+      const q = Math.floor(a / b);
+      const r = a % b;
+      return r > 0 ? `${a} ÷ ${b} = ${q} remainder ${r}` : `${a} ÷ ${b} = ${q}`;
+    }
+    return "";
+  }, [state]);
+
   /* ─── Presentational ─────────────────────────────────────── */
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col items-center ${embedded ? "" : "px-4 pb-10 pt-6 md:pt-10"}`}
+      className="min-h-screen w-full flex flex-col items-center px-4 pb-10 pt-6 md:pt-10"
       style={{
         background:
           "linear-gradient(180deg, #f6f3ed 0%, #f1ede4 40%, #efe9df 100%)",
@@ -732,7 +619,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
       }}
     >
       {/* Top bar */}
-      <header className="w-full max-w-5xl flex items-center justify-between mb-6 md:mb-10">
+      <header className="w-full max-w-5xl flex items-center justify-between mb-5 md:mb-7">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors"
@@ -748,15 +635,49 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
             Carry Lab
           </div>
           <div className="text-xs text-stone-500 mt-0.5">
-            Long multiplication, one column at a time.
+            Arithmetic the way your brain wants to learn it.
           </div>
         </div>
         <div className="px-3 py-1.5 rounded-full bg-white border border-stone-200 text-xs text-stone-600 shadow-sm">
           Level <span className="font-semibold text-stone-900">{level}</span>
           <span className="mx-1.5 text-stone-300">·</span>
-          <span className="text-stone-700">{LEVELS[level - 1].label}</span>
+          <span className="text-stone-700">{opMod.levels[level - 1]?.label}</span>
         </div>
       </header>
+
+      {/* Operation tabs — large, clear */}
+      <div
+        className="w-full max-w-5xl mb-5 grid grid-cols-4 gap-1.5 p-1.5 rounded-2xl border border-stone-200 bg-white"
+        style={{ boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}
+      >
+        {OPERATION_ORDER.map((opId) => {
+          const m = OPERATIONS[opId];
+          const Icon = OPERATION_ICONS[opId];
+          const active = operation === opId;
+          return (
+            <button
+              key={opId}
+              type="button"
+              onClick={() => switchOperation(opId)}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+                active
+                  ? "bg-stone-900 text-white shadow-md"
+                  : "bg-transparent text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+              }`}
+              style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
+              aria-pressed={active}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-sm font-semibold">{m.label}</span>
+              <span
+                className={`text-xs ${active ? "text-white/60" : "text-stone-400"}`}
+              >
+                {m.symbol}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <main className="w-full max-w-5xl grid md:grid-cols-[1fr_320px] gap-6">
         {/* ── Tableau card ── */}
@@ -768,10 +689,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                 "0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05)",
             }}
           >
-            <div
-              className="flex flex-col items-center relative z-10"
-              style={{ gap: 4 }}
-            >
+            <div className="flex flex-col items-center relative z-10" style={{ gap: 4 }}>
               {state.rows.map((row) => {
                 if (row.kind === "separator") {
                   return (
@@ -789,8 +707,10 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                 }
                 if (!rowIsVisible(row.id)) return null;
 
-                const isCarryRow =
-                  row.kind === "carry-mult" || row.kind === "carry-add";
+                const isCompactRow =
+                  row.kind === "carry-mult" ||
+                  row.kind === "carry-add" ||
+                  row.kind === "borrow";
                 const prefix = row.prefix ?? "";
 
                 return (
@@ -805,30 +725,30 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                       alignItems: "center",
                     }}
                   >
-                    {/* × prefix, positioned just to the left */}
                     {prefix && (
                       <span
-                        className="absolute text-stone-400 text-2xl select-none"
+                        className="absolute text-stone-500 text-xl select-none whitespace-nowrap"
                         style={{
-                          right: "calc(100% + 10px)",
+                          right: "calc(100% + 12px)",
                           top: "50%",
                           transform: "translateY(-50%)",
-                          fontWeight: 400,
+                          fontWeight: 500,
+                          fontFamily: "var(--font-outfit), system-ui, sans-serif",
                         }}
                       >
                         {prefix}
                       </span>
                     )}
                     {Array.from({ length: state.cols }).map((_, i) => {
-                      const c = state.cols - 1 - i; // render col from left (high) to right (low=0)
+                      const c = state.cols - 1 - i;
                       const cell = state.cells[`${row.id}-${c}`];
                       if (!cell) {
                         return (
                           <div
                             key={c}
                             style={{
-                              width: isCarryRow ? CARRY_PX : CELL_PX,
-                              height: isCarryRow ? CARRY_PX : CELL_PX,
+                              width: isCompactRow ? CARRY_PX : CELL_PX,
+                              height: isCompactRow ? CARRY_PX : CELL_PX,
                             }}
                           />
                         );
@@ -857,6 +777,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                   gridAutoColumns: "var(--cell)",
                   columnGap: "var(--gap)",
                   justifyItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {Array.from({ length: state.cols }).map((_, i) => {
@@ -879,8 +800,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                       <div
                         className="text-[11px] font-semibold tracking-[0.1em] uppercase"
                         style={{
-                          fontFamily:
-                            "var(--font-outfit), system-ui, sans-serif",
+                          fontFamily: "var(--font-outfit), system-ui, sans-serif",
                         }}
                       >
                         {p.short}
@@ -919,34 +839,41 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
           </div>
 
           {/* Level picker */}
-          <div className="flex flex-wrap gap-1.5 justify-center mt-4">
-            {LEVELS.map((lvl) => {
-              const active = lvl.id === level;
-              return (
-                <button
-                  key={lvl.id}
-                  type="button"
-                  onClick={() => changeLevel(lvl.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all border ${
-                    active
-                      ? "bg-stone-900 text-white border-stone-900 shadow-sm"
-                      : "bg-white text-stone-600 border-stone-200 hover:text-stone-900 hover:border-stone-400"
-                  }`}
-                  style={{
-                    fontFamily: "var(--font-outfit), system-ui, sans-serif",
-                  }}
-                >
-                  Lvl {lvl.id} · {lvl.label}
-                </button>
-              );
-            })}
+          <div className="mt-5">
+            <div
+              className="text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-400 mb-2"
+              style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
+            >
+              Pick a level
+            </div>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {opMod.levels.map((lvl) => {
+                const active = lvl.id === level;
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => changeLevel(lvl.id)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all border ${
+                      active
+                        ? "bg-stone-900 text-white border-stone-900 shadow-sm"
+                        : "bg-white text-stone-600 border-stone-200 hover:text-stone-900 hover:border-stone-400"
+                    }`}
+                    style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
+                  >
+                    <span className="opacity-50 mr-1">Lvl {lvl.id}</span>
+                    {lvl.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
         {/* ── Side panel ── */}
         <aside className="flex flex-col gap-4">
           <Panel title="Coach">
-            {coach && typeof coach === "object" ? (
+            {coach ? (
               <>
                 <div
                   className="text-xs font-semibold uppercase tracking-[0.08em] mb-2"
@@ -966,8 +893,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
                   <Check className="w-5 h-5 text-emerald-600" /> Solved!
                 </div>
                 <div className="inline-block px-3 py-1.5 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-mono tabular-nums text-sm">
-                  {fromDigits(state.operandA)} × {fromDigits(state.operandB)} ={" "}
-                  {fromDigits(state.operandA) * fromDigits(state.operandB)}
+                  {completionEquation}
                 </div>
                 <p className="text-stone-500">
                   Press <Kbd>N</Kbd> for another problem, or try a harder level.
@@ -1040,11 +966,7 @@ export function CarryLab({ initialLevel = 1, embedded = false }: CarryLabProps) 
         </div>
       )}
 
-      {/* Confetti canvas */}
-      <canvas
-        id="carry-confetti"
-        className="fixed inset-0 pointer-events-none z-40"
-      />
+      <canvas id="carry-confetti" className="fixed inset-0 pointer-events-none z-40" />
     </div>
   );
 }
