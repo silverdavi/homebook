@@ -88,6 +88,8 @@ function CellView({
   const isBorrow = cell.kind === "borrow";
   const isGhost = cell.kind === "ghost";
   const isQuotient = cell.kind === "quotient";
+  const isSubtract = cell.kind === "subtract";
+  const isRemainder = cell.kind === "remainder";
   const isReadOnly = !cell.editable;
   const filled = cell.value !== null && cell.value !== undefined;
   const isCorrect = filled && cell.value === cell.correct;
@@ -174,6 +176,18 @@ function CellView({
   if (isQuotient && !filled && !isFocused) {
     border = `1px solid #e7e5e4`;
     bg = "#ffffff";
+  }
+
+  // Subtract row cells (long division product): faint warm tint when empty,
+  // so the "I'm being subtracted" stripe is visually distinguishable.
+  if (isSubtract && !filled && !isFocused) {
+    bg = "#fef7f0";
+    border = "1px dashed #fbbf24";
+  }
+  // Remainder cells: faint cool tint when empty.
+  if (isRemainder && !filled && !isFocused) {
+    bg = "#f0f9ff";
+    border = "1px dashed #93c5fd";
   }
 
   // Focus and flashes — colour and shadow only, no size change.
@@ -571,13 +585,18 @@ export function CarryLab({
   const rowIsVisible = useCallback(
     (rowId: string) => {
       const k = rowKindFor(rowId);
-      // Hide carry/borrow rows when no cell in them is visible.
-      if (k === "carry-mult" || k === "carry-add" || k === "borrow") {
+      // Hide carry/borrow rows, and division step rows, when every cell is hidden.
+      if (
+        k === "carry-mult" ||
+        k === "carry-add" ||
+        k === "borrow" ||
+        k === "div-subtract" ||
+        k === "div-remainder"
+      ) {
         return Object.values(state.cells).some(
           (c) => c.row === rowId && !c.hidden,
         );
       }
-      // Hide quotient row's separator if it's right after a separator-less row, etc.
       return true;
     },
     [rowKindFor, state.cells],
@@ -728,13 +747,23 @@ export function CarryLab({
                     {prefix && (
                       <span
                         className="absolute text-stone-500 text-xl select-none whitespace-nowrap"
-                        style={{
-                          right: "calc(100% + 12px)",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontWeight: 500,
-                          fontFamily: "var(--font-outfit), system-ui, sans-serif",
-                        }}
+                        style={
+                          row.prefixOffsetCols && row.prefixOffsetCols > 0
+                            ? {
+                                left: `calc((var(--cell) + var(--gap)) * ${row.prefixOffsetCols} - 8px)`,
+                                top: "50%",
+                                transform: "translate(-100%, -50%)",
+                                fontWeight: 500,
+                                fontFamily: "var(--font-outfit), system-ui, sans-serif",
+                              }
+                            : {
+                                right: "calc(100% + 12px)",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                fontWeight: 500,
+                                fontFamily: "var(--font-outfit), system-ui, sans-serif",
+                              }
+                        }
                       >
                         {prefix}
                       </span>

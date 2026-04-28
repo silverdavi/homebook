@@ -1,16 +1,24 @@
 /**
- * Division operation — quotient-by-quotient long division.
+ * Division operation — full long division.
  *
- * Layout:
- *   [quotient row]              <- editable, one cell per dividend column
- *   ──────────────
- *   ÷ divisor [dividend row]    <- divisor as prefix, dividend read-only
- *   ──────────────
- *   [remainder row]             <- editable, single cell on the right (if non-zero)
+ * Layout (3-digit dividend, 1-digit divisor):
  *
- * The intermediate "subtract this product, bring down the next digit"
- * computation is narrated by the coach for each focused quotient cell.
- * Only the quotient digits and final remainder need to be typed.
+ *           [q2] [q1] [q0]    <- quotient (above each dividend column)
+ *           ─────────────
+ *   ÷ b  )   D2   D1   D0     <- divisor as prefix; dividend digits read-only
+ *           [p1]               <- step 0 subtract product (1-2 cells)
+ *           [r0]  ↓D1          <- step 0 remainder + ghost bring-down of D1
+ *                [p1] …        <- step 1 subtract product
+ *                [r1]  ↓D0     <- step 1 remainder + ghost bring-down
+ *                     [p2]…    <- step 2 subtract product
+ *                     [r2]     <- final remainder (only shown if non-zero)
+ *
+ * For each step the student fills:
+ *   1. the quotient digit at the top
+ *   2. the subtraction product (q × divisor)
+ *   3. the resulting remainder
+ * The brought-down dividend digit between steps is rendered as a faded
+ * (ghost) read-only cell so the cascade is visible.
  */
 
 import type {
@@ -22,102 +30,135 @@ import type {
 } from "../types";
 import { digitAt, digitsOf, fromDigits, placeName, rnd } from "../shared";
 
+interface DivCfg {
+  aLen: number;
+  /** Divisor range [min, max] inclusive */
+  divisor: [number, number];
+  /** Require the dividend % divisor !== 0 */
+  requireRem?: boolean;
+  /** Require the dividend % divisor === 0 */
+  noRem?: boolean;
+  /** Require the leading dividend digit ≥ divisor (so q1 ≥ 1) */
+  leadingDivisible?: boolean;
+  /** Require an intermediate quotient digit equal to 0 */
+  requireZeroQ?: boolean;
+}
+
 export const LEVELS: Level[] = [
-  { id: 1, label: "2d ÷ 1d · no remainder", cfg: { aLen: 2, divisor: [2, 9], hasRem: false } },
-  { id: 2, label: "2d ÷ 1d · with remainder", cfg: { aLen: 2, divisor: [2, 9], hasRem: true } },
-  { id: 3, label: "3d ÷ 1d · no remainder", cfg: { aLen: 3, divisor: [2, 9], hasRem: false } },
-  { id: 4, label: "3d ÷ 1d · with remainder", cfg: { aLen: 3, divisor: [2, 9], hasRem: true } },
-  { id: 5, label: "4d ÷ 1d · with remainder", cfg: { aLen: 4, divisor: [2, 9], hasRem: true } },
-  { id: 6, label: "3d ÷ 2d · no remainder", cfg: { aLen: 3, divisor: [11, 49], hasRem: false } },
+  { id: 1, label: "2d ÷ 1d · no remainder",  cfg: { aLen: 2, divisor: [2, 9], noRem: true,  leadingDivisible: true } satisfies DivCfg },
+  { id: 2, label: "2d ÷ 1d · with remainder", cfg: { aLen: 2, divisor: [2, 9], requireRem: true, leadingDivisible: true } satisfies DivCfg },
+  { id: 3, label: "3d ÷ 1d · no remainder",  cfg: { aLen: 3, divisor: [2, 9], noRem: true,  leadingDivisible: true } satisfies DivCfg },
+  { id: 4, label: "3d ÷ 1d · with remainder", cfg: { aLen: 3, divisor: [2, 9], requireRem: true, leadingDivisible: true } satisfies DivCfg },
+  { id: 5, label: "4d ÷ 1d · with remainder", cfg: { aLen: 4, divisor: [2, 9], requireRem: true } satisfies DivCfg },
+  { id: 6, label: "4d ÷ 1d · zero in quotient", cfg: { aLen: 4, divisor: [2, 9], noRem: true, leadingDivisible: true, requireZeroQ: true } satisfies DivCfg },
 ];
 
 export function genProblem(level: number): Problem {
-  const cfg = LEVELS[level - 1]?.cfg as
-    | { aLen: number; divisor: [number, number]; hasRem: boolean }
-    | undefined;
+  const cfg = LEVELS[level - 1]?.cfg as DivCfg | undefined;
   if (!cfg) return { a: 24, b: 4 };
   let a = 0;
   let b = 0;
-  for (let tries = 0; tries < 400; tries++) {
+  for (let tries = 0; tries < 800; tries++) {
     const aMin = Math.pow(10, cfg.aLen - 1);
     const aMax = Math.pow(10, cfg.aLen) - 1;
     b = rnd(cfg.divisor[0], cfg.divisor[1]);
-    if (cfg.hasRem) {
-      // Want a remainder > 0
+
+    if (cfg.requireRem) {
       a = rnd(aMin, aMax);
       if (a % b === 0) continue;
-    } else {
-      // Pick a quotient first so a is divisible
+    } else if (cfg.noRem) {
       const qMin = Math.ceil(aMin / b);
       const qMax = Math.floor(aMax / b);
       if (qMax < qMin) continue;
       const q = rnd(qMin, qMax);
       a = q * b;
+      if (a % b !== 0) continue;
+    } else {
+      a = rnd(aMin, aMax);
     }
+
     if (a < aMin || a > aMax) continue;
-    if (b > a) continue; // ensure quotient is at least 1
-    // Make sure dividend has cfg.aLen digits
     if (digitsOf(a).length !== cfg.aLen) continue;
+
+    if (cfg.leadingDivisible) {
+      // Top dividend digit must be ≥ b so the first quotient digit is ≥ 1.
+      const lead = digitsOf(a)[0];
+      if (lead < b) continue;
+    }
+
+    if (cfg.requireZeroQ) {
+      // Need at least one *interior* step with q=0 (a true skip). The first
+      // step is forced ≥ 1 by leadingDivisible, so we only need to look at
+      // steps 1..N-1.
+      const { steps } = computeLongDivision(digitsOf(a), b);
+      const hasZero = steps.slice(1).some((s) => s.q === 0);
+      if (!hasZero) continue;
+    }
+
     break;
   }
   return { a, b };
 }
 
-/**
- * Step-by-step long division trace.
- * Each step processes the next dividend digit from the LEFT.
- * `quotient[c]` is the digit written above dividend column `c`.
- */
-interface DivStep {
-  /** Column index in the dividend that this step's bring-down comes from */
-  col: number;
-  /** Working value going into this step (prevRemainder * 10 + bringDown) */
-  workingIn: number;
-  /** Quotient digit chosen for this step */
+export interface DivStep {
+  /** col index in the dividend that triggered this step (0 = ones, ascending = MSB) */
+  bringDownCol: number;
+  /** Working value at this step = prev remainder × 10 + this dividend digit */
+  workingValue: number;
   q: number;
-  /** Product q × divisor */
   product: number;
-  /** Remainder after this step */
+  /** Number of digits in `product`. >= 1. */
+  productLen: number;
   remainder: number;
+  /** Number of digits in `remainder`. 1 (always single-digit for 1-digit divisor). */
+  remainderLen: number;
 }
 
-export function computeDivision(
+export function computeLongDivision(
   dividendDigits: number[],
   divisor: number,
-): { steps: DivStep[]; quotient: number[]; finalRemainder: number } {
+): { steps: DivStep[]; finalRemainder: number } {
+  const N = dividendDigits.length;
   const steps: DivStep[] = [];
-  const quotient: number[] = [];
   let working = 0;
-  for (let i = 0; i < dividendDigits.length; i++) {
-    const digit = dividendDigits[i]; // MSB-first
-    const col = dividendDigits.length - 1 - i; // 0 = ones
-    working = working * 10 + digit;
+  for (let i = 0; i < N; i++) {
+    const bringDownCol = N - 1 - i;
+    const dividendDigit = dividendDigits[i];
+    working = working * 10 + dividendDigit;
     const q = Math.floor(working / divisor);
     const product = q * divisor;
     const remainder = working - product;
-    quotient[col] = q;
-    steps.push({ col, workingIn: working, q, product, remainder });
+    steps.push({
+      bringDownCol,
+      workingValue: working,
+      q,
+      product,
+      productLen: Math.max(1, String(product).length),
+      remainder,
+      remainderLen: Math.max(1, String(remainder).length),
+    });
     working = remainder;
   }
-  return { steps, quotient, finalRemainder: working };
+  return { steps, finalRemainder: working };
 }
 
 export function buildTableau({ a, b }: Problem): TableauState {
-  const operandA = digitsOf(a); // dividend
-  const operandB = digitsOf(b); // divisor
+  const operandA = digitsOf(a);
+  const operandB = digitsOf(b);
   const aLen = operandA.length;
   const bLen = operandB.length;
   const cols = aLen;
-
-  const { quotient, finalRemainder } = computeDivision(operandA, b);
+  const { steps, finalRemainder } = computeLongDivision(operandA, b);
 
   const rows: TableauState["rows"] = [];
-  const cells: Record<string, Cell> = {};
+  const   cells: Record<string, Cell> = {};
+  void finalRemainder;
 
-  // Quotient row (top, editable)
+  // Quotient row (editable, one cell per dividend column).
   rows.push({ id: "quot", kind: "quotient" });
   for (let c = 0; c < cols; c++) {
-    const expected = quotient[c] ?? 0;
+    const step = steps.find((s) => s.bringDownCol === c);
+    const expected = step?.q ?? 0;
     cells[`quot-${c}`] = {
       id: `quot-${c}`,
       row: "quot",
@@ -132,12 +173,12 @@ export function buildTableau({ a, b }: Problem): TableauState {
 
   rows.push({ id: "sep1", kind: "separator" });
 
-  // Dividend row (read-only, with ÷divisor as prefix)
+  // Dividend with `÷ b )` prefix.
   rows.push({
     id: "opA",
     kind: "operand",
     digits: operandA,
-    prefix: `÷ ${b}`,
+    prefix: `÷ ${b} )`,
   });
   for (let c = 0; c < cols; c++) {
     const d = digitAt(operandA, c);
@@ -153,23 +194,150 @@ export function buildTableau({ a, b }: Problem): TableauState {
     };
   }
 
-  // Only render the remainder row (and its separator) when there's actually
-  // something to write — otherwise we'd leave an awkward empty band below
-  // the dividend.
-  if (finalRemainder > 0) {
-    rows.push({ id: "sep2", kind: "separator" });
-    rows.push({ id: "rem", kind: "final" });
+  // Per-step rows (subtract product, then remainder).
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const isLast = i === steps.length - 1;
+    const nextStep = steps[i + 1];
+
+    // When q=0 there is nothing to subtract — skip both rows entirely. The
+    // user just writes "0" in the quotient and the following step's coach
+    // narrates the bring-down. Matches paper long-division convention.
+    const skipStep = step.q === 0;
+
+    /* ── Subtract row (product) ────────────────────────── */
+
+    const subRowId = `sub${i}`;
+    const productDigits = digitsOf(step.product); // MSB-first
+    const productRightCol = step.bringDownCol;
+    const productLeftCol = step.bringDownCol + step.productLen - 1;
+    // Push the "−" prefix right so it sits just before the leftmost product cell.
+    rows.push({
+      id: subRowId,
+      kind: "div-subtract",
+      stepIndex: i,
+      prefix: skipStep ? undefined : "−",
+      prefixOffsetCols: cols - 1 - productLeftCol,
+    });
+
     for (let c = 0; c < cols; c++) {
-      const visible = c === 0;
-      cells[`rem-${c}`] = {
-        id: `rem-${c}`,
-        row: "rem",
+      const inProduct = !skipStep && c >= productRightCol && c <= productLeftCol;
+      if (!inProduct) {
+        cells[`${subRowId}-${c}`] = {
+          id: `${subRowId}-${c}`,
+          row: subRowId,
+          col: c,
+          value: null,
+          correct: 0,
+          editable: false,
+          hidden: true,
+          kind: "subtract",
+        };
+      } else {
+        const posFromRight = c - step.bringDownCol;
+        const expected = digitAt(productDigits, posFromRight);
+        cells[`${subRowId}-${c}`] = {
+          id: `${subRowId}-${c}`,
+          row: subRowId,
+          col: c,
+          value: null,
+          correct: expected,
+          editable: true,
+          hidden: false,
+          kind: "subtract",
+          stepIndex: i,
+        };
+      }
+    }
+
+    /* ── Remainder row ─────────────────────────────────── */
+
+    const remRowId = `rem${i}`;
+    rows.push({ id: remRowId, kind: "div-remainder", stepIndex: i });
+
+    const remRightCol = step.bringDownCol;
+    const remLeftCol = step.bringDownCol + step.remainderLen - 1;
+
+    if (skipStep) {
+      // No remainder row at all when this step's quotient is zero.
+      for (let c = 0; c < cols; c++) {
+        cells[`${remRowId}-${c}`] = {
+          id: `${remRowId}-${c}`,
+          row: remRowId,
+          col: c,
+          value: null,
+          correct: 0,
+          editable: false,
+          hidden: true,
+          kind: "remainder",
+        };
+      }
+      continue;
+    }
+
+    for (let c = 0; c < cols; c++) {
+      // Ghost copy of the next bring-down dividend digit (only for non-final steps).
+      if (!isLast && nextStep && c === nextStep.bringDownCol) {
+        const broughtDownDigit = digitAt(operandA, c);
+        cells[`${remRowId}-${c}`] = {
+          id: `${remRowId}-${c}`,
+          row: remRowId,
+          col: c,
+          value: broughtDownDigit,
+          correct: broughtDownDigit,
+          editable: false,
+          hidden: false,
+          kind: "ghost",
+          stepIndex: i,
+        };
+        continue;
+      }
+
+      const inRem = c >= remRightCol && c <= remLeftCol;
+
+      if (!inRem) {
+        cells[`${remRowId}-${c}`] = {
+          id: `${remRowId}-${c}`,
+          row: remRowId,
+          col: c,
+          value: null,
+          correct: 0,
+          editable: false,
+          hidden: true,
+          kind: "remainder",
+        };
+        continue;
+      }
+
+      // For the LAST step, only require the user to write the remainder when
+      // it's non-zero. (Otherwise we'd ask them to write a redundant "0" at
+      // the bottom of an exact division.)
+      if (isLast && step.remainder === 0) {
+        cells[`${remRowId}-${c}`] = {
+          id: `${remRowId}-${c}`,
+          row: remRowId,
+          col: c,
+          value: null,
+          correct: 0,
+          editable: false,
+          hidden: true,
+          kind: "remainder",
+        };
+        continue;
+      }
+
+      const posFromRight = c - step.bringDownCol;
+      const expected = digitAt(digitsOf(step.remainder), posFromRight);
+      cells[`${remRowId}-${c}`] = {
+        id: `${remRowId}-${c}`,
+        row: remRowId,
         col: c,
         value: null,
-        correct: c === 0 ? finalRemainder : 0,
-        editable: visible,
-        hidden: !visible,
-        kind: "final",
+        correct: expected,
+        editable: true,
+        hidden: false,
+        kind: "remainder",
+        stepIndex: i,
       };
     }
   }
@@ -183,26 +351,38 @@ export function buildTableau({ a, b }: Problem): TableauState {
     cols,
     rows,
     cells,
-    answer: { quotient: fromDigits(quotient.slice().reverse().filter((d, i, a) => i > 0 || d > 0 || a.length === 1)), remainder: finalRemainder },
+    answer: { quotient: Math.floor(a / b), remainder: a % b },
   };
 }
 
 export function naturalOrderIds(state: TableauState): string[] {
-  // Quotient cells from leftmost (highest col) to rightmost (lowest col),
-  // because long division proceeds left-to-right.
   const order: string[] = [];
-  const quotCells = Object.values(state.cells)
-    .filter((c) => c.row === "quot" && c.editable && !c.hidden)
-    .sort((a, b) => b.col - a.col); // descending: col 2, 1, 0
-  for (const q of quotCells) order.push(q.id);
-  // Then remainder cell, if any
-  const rem = state.cells["rem-0"];
-  if (rem?.editable) order.push(rem.id);
+  const cols = state.cols;
+  // One step per dividend column, processed MSB → LSB.
+  // For each step:  quotient digit → product digits → remainder digit(s).
+  // (When q=0 the product/remainder rows are hidden; the quotient is still filled.)
+  for (let i = 0; i < cols; i++) {
+    const bringDownCol = cols - 1 - i;
+
+    const qId = `quot-${bringDownCol}`;
+    const qCell = state.cells[qId];
+    if (qCell && qCell.editable && !qCell.hidden) order.push(qId);
+
+    const subCells = Object.values(state.cells)
+      .filter((c) => c.row === `sub${i}` && c.editable && !c.hidden)
+      .sort((a, b) => b.col - a.col); // MSB first
+    for (const p of subCells) order.push(p.id);
+
+    const remCells = Object.values(state.cells)
+      .filter((c) => c.row === `rem${i}` && c.editable && !c.hidden)
+      .sort((a, b) => b.col - a.col);
+    for (const r of remCells) order.push(r.id);
+  }
   return order;
 }
 
 export function firstEditableId(state: TableauState): string | null {
-  // Start at the LEFTMOST quotient cell.
+  // Start at the leftmost (highest-col) editable quotient cell.
   const cells = Object.values(state.cells)
     .filter((c) => c.row === "quot" && c.editable && !c.hidden)
     .sort((a, b) => b.col - a.col);
@@ -213,40 +393,40 @@ export function firstEditableId(state: TableauState): string | null {
 export function coachFor(state: TableauState, activeId: string): CoachMessage | null {
   const cell = state.cells[activeId];
   if (!cell) return null;
-
   const divisor = fromDigits(state.operandB);
-  const { steps, finalRemainder } = computeDivision(state.operandA, divisor);
+  const { steps, finalRemainder } = computeLongDivision(state.operandA, divisor);
 
   if (cell.kind === "quotient") {
-    // Find which step corresponds to this column.
-    const step = steps.find((s) => s.col === cell.col);
+    const step = steps.find((s) => s.bringDownCol === cell.col);
     if (!step) return null;
     const stepIdx = steps.indexOf(step);
-    const isFirst = stepIdx === 0;
-    const prevRemainder = isFirst ? 0 : steps[stepIdx - 1].remainder;
+    const prevStep = stepIdx > 0 ? steps[stepIdx - 1] : null;
     const broughtDown = digitAt(state.operandA, cell.col);
 
     const lines: string[] = [];
-    if (isFirst) {
+    if (!prevStep) {
+      lines.push(`Look at the **leftmost** dividend digit: **${broughtDown}**.`);
+    } else if (prevStep.q === 0) {
+      // Previous step had quotient zero, so we just keep going with a
+      // bigger working value. Show the chain explicitly.
       lines.push(
-        `Look at the **leftmost** dividend digit: **${broughtDown}**.`,
+        `**${divisor}** didn't fit before, so we combine and bring down **${broughtDown}** → working value **${step.workingValue}**.`,
       );
+    } else if (prevStep.remainder === 0) {
+      lines.push(`Bring down the next dividend digit: **${broughtDown}**.`);
     } else {
       lines.push(
-        prevRemainder === 0
-          ? `Bring down the next dividend digit: **${broughtDown}**.`
-          : `Bring down **${broughtDown}** next to the previous remainder **${prevRemainder}** to make **${step.workingIn}**.`,
+        `Bring down **${broughtDown}** next to the previous remainder **${prevStep.remainder}** to make **${step.workingValue}**.`,
       );
     }
-    lines.push(
-      `How many whole times does **${divisor}** go into **${step.workingIn}**? **${step.q}** time${step.q === 1 ? "" : "s"} (because ${divisor} × ${step.q} = ${step.product}).`,
-    );
-    if (step.remainder > 0) {
+    if (step.q === 0) {
       lines.push(
-        `That leaves a remainder of **${step.workingIn} − ${step.product} = ${step.remainder}**, which carries to the next step.`,
+        `**${divisor}** is bigger than **${step.workingValue}**, so it fits **0** times — write **0** here and bring down the next digit.`,
       );
     } else {
-      lines.push(`That divides exactly — no remainder this step.`);
+      lines.push(
+        `How many whole times does **${divisor}** go into **${step.workingValue}**? **${step.q}** time${step.q === 1 ? "" : "s"} (because ${divisor} × ${step.q} = ${step.product}).`,
+      );
     }
     return {
       title: `Step ${stepIdx + 1} · quotient at ${placeName(cell.col).name}`,
@@ -254,12 +434,39 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
     };
   }
 
-  if (cell.kind === "final" && cell.row === "rem") {
+  if (cell.kind === "subtract") {
+    const stepIdx = cell.stepIndex ?? 0;
+    const step = steps[stepIdx];
+    if (!step) return null;
+    const posFromRight = cell.col - step.bringDownCol;
+    const productDigits = digitsOf(step.product);
+    const expectedDigit = digitAt(productDigits, posFromRight);
     return {
-      title: "Final remainder",
+      title: `Step ${stepIdx + 1} · subtract`,
       lines: [
-        `After all the dividend digits are used up, what's left over is the **remainder**.`,
-        `Here it's **${finalRemainder}** — write it in this cell.`,
+        `Multiply **${step.q} × ${divisor} = ${step.product}**.`,
+        `Write that under **${step.workingValue}** so you can subtract it.`,
+        step.productLen > 1
+          ? `This cell holds the **${placeName(cell.col).name}** digit of ${step.product}, which is **${expectedDigit}**.`
+          : `Write **${expectedDigit}** here.`,
+      ],
+    };
+  }
+
+  if (cell.kind === "remainder") {
+    const stepIdx = cell.stepIndex ?? 0;
+    const step = steps[stepIdx];
+    if (!step) return null;
+    const isLastStep = stepIdx === steps.length - 1;
+    return {
+      title: isLastStep ? `Final remainder` : `Step ${stepIdx + 1} · remainder`,
+      lines: [
+        `Subtract: **${step.workingValue} − ${step.product} = ${step.remainder}**.`,
+        isLastStep
+          ? finalRemainder > 0
+            ? `That's the **final remainder** — the part of ${fromDigits(state.operandA)} that ${divisor} cannot evenly divide.`
+            : `Zero — the division is exact!`
+          : `Then bring down the next dividend digit.`,
       ],
     };
   }
@@ -269,15 +476,22 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
 
 export function hintFor(state: TableauState, cell: Cell): string {
   const divisor = fromDigits(state.operandB);
-  const { steps, finalRemainder } = computeDivision(state.operandA, divisor);
+  const { steps } = computeLongDivision(state.operandA, divisor);
 
   if (cell.kind === "quotient") {
-    const step = steps.find((s) => s.col === cell.col);
+    const step = steps.find((s) => s.bringDownCol === cell.col);
     if (!step) return "";
-    return `Try again: **${divisor}** × ? ≤ **${step.workingIn}**. The biggest whole number is **${step.q}** (since ${divisor} × ${step.q} = ${step.product}).`;
+    return `Try again: **${divisor}** × ? ≤ **${step.workingValue}**. The biggest whole number is **${step.q}** (since ${divisor} × ${step.q} = ${step.product}).`;
   }
-  if (cell.kind === "final") {
-    return `The remainder after all the steps is **${finalRemainder}**.`;
+  if (cell.kind === "subtract") {
+    const step = steps[cell.stepIndex ?? 0];
+    if (!step) return "";
+    return `Try again: ${step.q} × ${divisor} = **${step.product}**.`;
+  }
+  if (cell.kind === "remainder") {
+    const step = steps[cell.stepIndex ?? 0];
+    if (!step) return "";
+    return `Try again: ${step.workingValue} − ${step.product} = **${step.remainder}**.`;
   }
   return "";
 }

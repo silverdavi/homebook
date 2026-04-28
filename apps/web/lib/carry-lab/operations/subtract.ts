@@ -239,7 +239,7 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
     const lentToRight = borrows[cell.col - 1] ?? 0;
     const receivedHere = borrows[cell.col] ?? 0;
 
-    let effectiveA = aDig - lentToRight + 10 * receivedHere;
+    const effectiveA = aDig - lentToRight + 10 * receivedHere;
     let lines: string[];
 
     if (lentToRight && receivedHere) {

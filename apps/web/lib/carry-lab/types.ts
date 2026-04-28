@@ -52,6 +52,10 @@ export interface Row {
   digits?: number[];
   /** Symbol shown to the left of the row (×, +, −, ÷, etc.) */
   prefix?: string;
+  /** If set, the prefix is shifted right by this many full columns
+   * (so it sits adjacent to the leftmost editable cell rather than the leftmost grid column).
+   * Used for division subtract rows whose product doesn't span the full width. */
+  prefixOffsetCols?: number;
   bIndex?: number;
   /** For division step rows: which step they belong to */
   stepIndex?: number;
