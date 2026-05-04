@@ -38,19 +38,15 @@ interface DivCfg {
   requireRem?: boolean;
   /** Require the dividend % divisor === 0 */
   noRem?: boolean;
-  /** Require the leading dividend digit ≥ divisor (so q1 ≥ 1) */
-  leadingDivisible?: boolean;
-  /** Require an intermediate quotient digit equal to 0 */
-  requireZeroQ?: boolean;
 }
 
 export const LEVELS: Level[] = [
-  { id: 1, label: "2d ÷ 1d · no remainder",  cfg: { aLen: 2, divisor: [2, 9], noRem: true,  leadingDivisible: true } satisfies DivCfg },
-  { id: 2, label: "2d ÷ 1d · with remainder", cfg: { aLen: 2, divisor: [2, 9], requireRem: true, leadingDivisible: true } satisfies DivCfg },
-  { id: 3, label: "3d ÷ 1d · no remainder",  cfg: { aLen: 3, divisor: [2, 9], noRem: true,  leadingDivisible: true } satisfies DivCfg },
-  { id: 4, label: "3d ÷ 1d · with remainder", cfg: { aLen: 3, divisor: [2, 9], requireRem: true, leadingDivisible: true } satisfies DivCfg },
-  { id: 5, label: "4d ÷ 1d · with remainder", cfg: { aLen: 4, divisor: [2, 9], requireRem: true } satisfies DivCfg },
-  { id: 6, label: "4d ÷ 1d · zero in quotient", cfg: { aLen: 4, divisor: [2, 9], noRem: true, leadingDivisible: true, requireZeroQ: true } satisfies DivCfg },
+  { id: 1, label: "2d ÷ 1d · no remainder",  cfg: { aLen: 2, divisor: [2, 9], noRem: true }       satisfies DivCfg },
+  { id: 2, label: "2d ÷ 1d · with remainder", cfg: { aLen: 2, divisor: [2, 9], requireRem: true } satisfies DivCfg },
+  { id: 3, label: "3d ÷ 1d · no remainder",  cfg: { aLen: 3, divisor: [2, 9], noRem: true }       satisfies DivCfg },
+  { id: 4, label: "3d ÷ 1d · with remainder", cfg: { aLen: 3, divisor: [2, 9], requireRem: true } satisfies DivCfg },
+  { id: 5, label: "4d ÷ 1d · no remainder",  cfg: { aLen: 4, divisor: [2, 9], noRem: true }       satisfies DivCfg },
+  { id: 6, label: "4d ÷ 1d · with remainder", cfg: { aLen: 4, divisor: [2, 9], requireRem: true } satisfies DivCfg },
 ];
 
 export function genProblem(level: number): Problem {
@@ -79,21 +75,6 @@ export function genProblem(level: number): Problem {
 
     if (a < aMin || a > aMax) continue;
     if (digitsOf(a).length !== cfg.aLen) continue;
-
-    if (cfg.leadingDivisible) {
-      // Top dividend digit must be ≥ b so the first quotient digit is ≥ 1.
-      const lead = digitsOf(a)[0];
-      if (lead < b) continue;
-    }
-
-    if (cfg.requireZeroQ) {
-      // Need at least one *interior* step with q=0 (a true skip). The first
-      // step is forced ≥ 1 by leadingDivisible, so we only need to look at
-      // steps 1..N-1.
-      const { steps } = computeLongDivision(digitsOf(a), b);
-      const hasZero = steps.slice(1).some((s) => s.q === 0);
-      if (!hasZero) continue;
-    }
 
     break;
   }
@@ -195,15 +176,14 @@ export function buildTableau({ a, b }: Problem): TableauState {
   }
 
   // Per-step rows (subtract product, then remainder).
+  // Every dividend digit gets its own step row, including q=0 steps where the
+  // product is just "0" and the remainder equals the working value (the
+  // school-book convention: "4 doesn't go into 2 — write 0, subtract 0,
+  // bring 2 down").
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     const isLast = i === steps.length - 1;
     const nextStep = steps[i + 1];
-
-    // When q=0 there is nothing to subtract — skip both rows entirely. The
-    // user just writes "0" in the quotient and the following step's coach
-    // narrates the bring-down. Matches paper long-division convention.
-    const skipStep = step.q === 0;
 
     /* ── Subtract row (product) ────────────────────────── */
 
@@ -216,12 +196,12 @@ export function buildTableau({ a, b }: Problem): TableauState {
       id: subRowId,
       kind: "div-subtract",
       stepIndex: i,
-      prefix: skipStep ? undefined : "−",
+      prefix: "−",
       prefixOffsetCols: cols - 1 - productLeftCol,
     });
 
     for (let c = 0; c < cols; c++) {
-      const inProduct = !skipStep && c >= productRightCol && c <= productLeftCol;
+      const inProduct = c >= productRightCol && c <= productLeftCol;
       if (!inProduct) {
         cells[`${subRowId}-${c}`] = {
           id: `${subRowId}-${c}`,
@@ -257,23 +237,6 @@ export function buildTableau({ a, b }: Problem): TableauState {
 
     const remRightCol = step.bringDownCol;
     const remLeftCol = step.bringDownCol + step.remainderLen - 1;
-
-    if (skipStep) {
-      // No remainder row at all when this step's quotient is zero.
-      for (let c = 0; c < cols; c++) {
-        cells[`${remRowId}-${c}`] = {
-          id: `${remRowId}-${c}`,
-          row: remRowId,
-          col: c,
-          value: null,
-          correct: 0,
-          editable: false,
-          hidden: true,
-          kind: "remainder",
-        };
-      }
-      continue;
-    }
 
     for (let c = 0; c < cols; c++) {
       // Ghost copy of the next bring-down dividend digit (only for non-final steps).
@@ -406,12 +369,6 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
     const lines: string[] = [];
     if (!prevStep) {
       lines.push(`Look at the **leftmost** dividend digit: **${broughtDown}**.`);
-    } else if (prevStep.q === 0) {
-      // Previous step had quotient zero, so we just keep going with a
-      // bigger working value. Show the chain explicitly.
-      lines.push(
-        `**${divisor}** didn't fit before, so we combine and bring down **${broughtDown}** → working value **${step.workingValue}**.`,
-      );
     } else if (prevStep.remainder === 0) {
       lines.push(`Bring down the next dividend digit: **${broughtDown}**.`);
     } else {
@@ -421,7 +378,7 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
     }
     if (step.q === 0) {
       lines.push(
-        `**${divisor}** is bigger than **${step.workingValue}**, so it fits **0** times — write **0** here and bring down the next digit.`,
+        `**${divisor}** doesn't fit into **${step.workingValue}**, so it goes in **0** times — write **0** above. We'll subtract **0** below and the **${step.workingValue}** comes straight down.`,
       );
     } else {
       lines.push(
@@ -441,6 +398,15 @@ export function coachFor(state: TableauState, activeId: string): CoachMessage | 
     const posFromRight = cell.col - step.bringDownCol;
     const productDigits = digitsOf(step.product);
     const expectedDigit = digitAt(productDigits, posFromRight);
+    if (step.q === 0) {
+      return {
+        title: `Step ${stepIdx + 1} · subtract`,
+        lines: [
+          `Quotient is **0**, so we subtract **0 × ${divisor} = 0**.`,
+          `Write **0** here. Subtracting 0 leaves the **${step.workingValue}** unchanged below.`,
+        ],
+      };
+    }
     return {
       title: `Step ${stepIdx + 1} · subtract`,
       lines: [

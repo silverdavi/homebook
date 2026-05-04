@@ -107,7 +107,9 @@ function CellView({
   if (compact) {
     content = cell.value ?? "";
   } else if (isGhost) {
-    content = "0";
+    // Multiplication ghosts represent place-value padding zeros and have no
+    // stored value; division ghosts carry the brought-down dividend digit.
+    content = cell.value ?? "0";
   } else if (filled) {
     content = cell.value;
   }
@@ -228,8 +230,10 @@ function CellView({
           ? `Carry cell, ${placeName(cell.col).name} column${filled ? `, value ${cell.value}` : ""}`
           : isBorrow
             ? `Borrow indicator, ${placeName(cell.col).name} column${filled ? `, value ${cell.value}` : ""}`
-            : isGhost
-              ? `Place shift placeholder, ${placeName(cell.col).name}`
+              : isGhost
+                ? cell.value !== null && cell.value !== undefined
+                  ? `Brought-down digit ${cell.value}, ${placeName(cell.col).name}`
+                  : `Place shift placeholder, ${placeName(cell.col).name}`
               : isReadOnly
                 ? `Digit ${cell.value}, ${placeName(cell.col).name}`
                 : filled
@@ -782,6 +786,31 @@ export function CarryLab({
                           />
                         );
                       }
+                      // Division ghost cells (the brought-down digit
+                      // hovering next to the step's remainder) are a reward
+                      // for finishing the step — keep them hidden until the
+                      // student has filled the step's remainder correctly.
+                      if (
+                        state.operation === "divide" &&
+                        cell.kind === "ghost"
+                      ) {
+                        const stepIdx = cell.stepIndex ?? 0;
+                        const remComplete = Object.values(state.cells).every(
+                          (rc) =>
+                            rc.row !== `rem${stepIdx}` ||
+                            !rc.editable ||
+                            rc.hidden ||
+                            rc.value === rc.correct,
+                        );
+                        if (!remComplete) {
+                          return (
+                            <div
+                              key={cell.id}
+                              style={{ width: CELL_PX, height: CELL_PX }}
+                            />
+                          );
+                        }
+                      }
                       return (
                         <CellView
                           key={cell.id}
@@ -794,6 +823,94 @@ export function CarryLab({
                         />
                       );
                     })}
+                    {row.kind === "quotient" &&
+                      state.operation === "divide" &&
+                      (() => {
+                        const ans = state.answer;
+                        if (
+                          !ans ||
+                          typeof ans !== "object" ||
+                          ans.remainder === 0
+                        ) {
+                          return null;
+                        }
+                        const lastSubRow = [...state.rows]
+                          .reverse()
+                          .find((r) => r.kind === "div-subtract");
+                        const lastStepIdx = lastSubRow?.stepIndex ?? 0;
+                        const remCell = Object.values(state.cells).find(
+                          (c) =>
+                            c.row === `rem${lastStepIdx}` &&
+                            c.editable &&
+                            !c.hidden,
+                        );
+                        const remFilled = !!(
+                          remCell && remCell.value === remCell.correct
+                        );
+                        return (
+                          <div
+                            aria-label={`Remainder ${ans.remainder}`}
+                            style={{
+                              position: "absolute",
+                              left: "calc(100% + 14px)",
+                              top: 0,
+                              bottom: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 12,
+                              whiteSpace: "nowrap",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 1,
+                                height: CELL_PX * 0.7,
+                                background: "#d6d3d1",
+                              }}
+                            />
+                            <span
+                              style={{
+                                color: "#78716c",
+                                fontFamily:
+                                  "var(--font-outfit), system-ui, sans-serif",
+                                fontStyle: "italic",
+                                fontSize: 18,
+                                fontWeight: 500,
+                              }}
+                            >
+                              r
+                            </span>
+                            <div
+                              style={{
+                                width: CELL_PX,
+                                height: CELL_PX,
+                                borderRadius: 12,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontFamily:
+                                  "var(--font-outfit), system-ui, sans-serif",
+                                fontSize: 28,
+                                fontWeight: 600,
+                                fontVariantNumeric: "tabular-nums",
+                                background: remFilled ? "#ecfdf5" : "#fafaf7",
+                                border: remFilled
+                                  ? "1px solid #10b981"
+                                  : "1px dashed #d6d3d1",
+                                color: remFilled ? "#047857" : "#a8a29e",
+                                boxShadow: remFilled
+                                  ? "0 1px 3px rgba(16, 185, 129, 0.2)"
+                                  : undefined,
+                                transition:
+                                  "background-color 200ms ease, border-color 200ms ease, color 200ms ease, box-shadow 200ms ease",
+                              }}
+                            >
+                              {remFilled ? ans.remainder : ""}
+                            </div>
+                          </div>
+                        );
+                      })()}
                   </div>
                 );
               })}
