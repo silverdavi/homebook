@@ -47,6 +47,10 @@ export const LEVELS: Level[] = [
   { id: 4, label: "3d ÷ 1d · with remainder", cfg: { aLen: 3, divisor: [2, 9], requireRem: true } satisfies DivCfg },
   { id: 5, label: "4d ÷ 1d · no remainder",  cfg: { aLen: 4, divisor: [2, 9], noRem: true }       satisfies DivCfg },
   { id: 6, label: "4d ÷ 1d · with remainder", cfg: { aLen: 4, divisor: [2, 9], requireRem: true } satisfies DivCfg },
+  { id: 7, label: "3d ÷ 2d · no remainder",  cfg: { aLen: 3, divisor: [11, 99], noRem: true }       satisfies DivCfg },
+  { id: 8, label: "3d ÷ 2d · with remainder", cfg: { aLen: 3, divisor: [11, 99], requireRem: true } satisfies DivCfg },
+  { id: 9, label: "4d ÷ 2d · with remainder", cfg: { aLen: 4, divisor: [11, 99], requireRem: true } satisfies DivCfg },
+  { id: 10, label: "4d ÷ 3d · with remainder", cfg: { aLen: 4, divisor: [101, 999], requireRem: true } satisfies DivCfg },
 ];
 
 export function genProblem(level: number): Problem {
