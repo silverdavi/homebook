@@ -26,15 +26,23 @@ export interface SendEmailResult {
 }
 
 /**
- * Send an email via Resend. Default `from` is the Resend onboarding sender
- * which works without DNS verification.
+ * Send an email via Resend.
+ *
+ * Default `from` is `dad@dichotomies.me` because Resend (in test mode for
+ * other domains) only allows sending to the account owner's address, which
+ * silently drops yersilver@gmail.com. dichotomies.me is verified in the
+ * account so messages reach both parents reliably.
+ *
+ * Override per-call via args.from, or globally via the DAILY_EMAIL_FROM env
+ * var (handy if a future reverse-DNS or Reply-To convention changes).
  */
 export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
   const key = getEnv("RESEND_API_KEY");
   if (!key) {
     return { id: null, ok: false, error: "RESEND_API_KEY not set" };
   }
-  const from = args.from ?? "Daily Trial <onboarding@resend.dev>";
+  const fromEnv = getEnv("DAILY_EMAIL_FROM");
+  const from = args.from ?? fromEnv ?? "Daily Trial <dad@dichotomies.me>";
   const body = {
     from,
     to: args.to,
