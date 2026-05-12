@@ -33,27 +33,41 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             
-            cd apps/web
-
             # ── Seed server-side env from GitHub secrets ────────────────
-            # Next.js auto-loads apps/web/.env.local at start. We rewrite
-            # it on every deploy so secret rotation just works.
-            ENV_FILE=.env.local
-            : > "$ENV_FILE.tmp"
-            if [ -n "${OPENAI_API_KEY:-}" ]; then
-              echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> "$ENV_FILE.tmp"
-              echo "  · seeded OPENAI_API_KEY"
-            fi
-            if [ -n "${RESEND_API_KEY:-}" ]; then
-              echo "RESEND_API_KEY=${RESEND_API_KEY}" >> "$ENV_FILE.tmp"
-              echo "  · seeded RESEND_API_KEY"
-            fi
-            if [ -n "${GEMINI_API_KEY:-}" ]; then
-              echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> "$ENV_FILE.tmp"
-              echo "  · seeded GEMINI_API_KEY"
-            fi
-            mv "$ENV_FILE.tmp" "$ENV_FILE"
-            chmod 600 "$ENV_FILE"
+            # apps/web/lib/daily/env.ts reads process.env first and falls
+            # back to <repo-root>/.env and <repo-root>/resend.txt. We
+            # rewrite both files (preserving any unrelated keys in .env)
+            # on every deploy so secret rotation Just Works without SSH.
+            #
+            # In addition, we mirror them into apps/web/.env.local so
+            # `next build` and `next start` load them via Next.js' own
+            # env machinery.
+            seed_kv() {
+              local file="$1" key="$2" value="$3"
+              [ -z "$value" ] && return 0
+              touch "$file"
+              chmod 600 "$file"
+              # Drop any prior value of $key, then append the new one.
+              local tmp; tmp=$(mktemp)
+              grep -v "^${key}=" "$file" > "$tmp" || true
+              echo "${key}=${value}" >> "$tmp"
+              mv "$tmp" "$file"
+              chmod 600 "$file"
+              echo "  · seeded $key into $file"
+            }
+
+            cd ~/homebook
+            seed_kv ".env"       "OPENAI_API_KEY" "${OPENAI_API_KEY:-}"
+            seed_kv ".env"       "RESEND_API_KEY" "${RESEND_API_KEY:-}"
+            seed_kv ".env"       "GEMINI_API_KEY" "${GEMINI_API_KEY:-}"
+            seed_kv "resend.txt" "RESEND_API_KEY" "${RESEND_API_KEY:-}"
+
+            cd apps/web
+            : > .env.local
+            chmod 600 .env.local
+            seed_kv ".env.local" "OPENAI_API_KEY" "${OPENAI_API_KEY:-}"
+            seed_kv ".env.local" "RESEND_API_KEY" "${RESEND_API_KEY:-}"
+            seed_kv ".env.local" "GEMINI_API_KEY" "${GEMINI_API_KEY:-}"
 
             rm -rf .next/lock
             npm ci --silent
