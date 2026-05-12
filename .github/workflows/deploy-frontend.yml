@@ -15,15 +15,19 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        # appleboy/ssh-action only forwards env vars that are *also*
+        # present on the runner; `envs:` only names which to forward.
+        # The block below maps the GitHub secrets onto the runner so the
+        # SSH session can see them.
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 5m
-          # Forward server-only secrets into the SSH session so the script
-          # can write them into the Next.js .env.local on every deploy.
-          # Empty values are silently skipped — adding a secret in the
-          # GitHub repo settings is enough; nothing else needs to change.
           envs: OPENAI_API_KEY,RESEND_API_KEY,GEMINI_API_KEY
           script: |
             set -e
