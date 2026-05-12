@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -201,6 +201,7 @@ export function NumberPuzzleGame() {
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
   const [puzzleStartTime, setPuzzleStartTime] = useState(Date.now());
+  const [practiceMode, setPracticeMode] = useState(false);
 
   useGameMusic();
 
@@ -241,16 +242,21 @@ export function NumberPuzzleGame() {
     return () => clearTimeout(t);
   }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     setTiles(shuffleTiles(gridSize));
     if (puzzleMode === "math") setMathTiles(generateMathTiles(gridSize * gridSize - 1));
     setMoves(0);
     setElapsed(0);
     setNewAchievements([]);
-    setCountdown(3);
-    setPhase("countdown");
     setPuzzleStartTime(Date.now());
     sfxClick();
+    if (practice) {
+      setPhase("playing");
+    } else {
+      setCountdown(3);
+      setPhase("countdown");
+    }
   }, [gridSize, puzzleMode]);
 
   const handleTileClick = useCallback((clickedIdx: number) => {
@@ -268,13 +274,15 @@ export function NumberPuzzleGame() {
       const solveTime = (Date.now() - puzzleStartTime) / 1000;
       const fast = solveTime < (gridSize === 3 ? 60 : gridSize === 4 ? 180 : 300);
       setAdaptive(prev => adaptiveUpdate(prev, true, fast));
-      const key = hsKey(gridSize, puzzleMode);
-      const prev = getLocalHighScore(key);
-      if (prev === 0 || nm < prev) { setLocalHighScore(key, nm); setBestScore(nm); }
-      trackGamePlayed(GAME_ID, nm);
-      const p = getProfile();
-      const ach = checkAchievements({ gameId: GAME_ID, score: nm, moves: nm, elapsed, level: gridSize }, p.totalGamesPlayed, p.gamesPlayedByGameId);
-      if (ach.length > 0) setNewAchievements(ach);
+      if (!practiceMode) {
+        const key = hsKey(gridSize, puzzleMode);
+        const prev = getLocalHighScore(key);
+        if (prev === 0 || nm < prev) { setLocalHighScore(key, nm); setBestScore(nm); }
+        trackGamePlayed(GAME_ID, nm);
+        const p = getProfile();
+        const ach = checkAchievements({ gameId: GAME_ID, score: nm, moves: nm, elapsed, level: gridSize }, p.totalGamesPlayed, p.gamesPlayedByGameId);
+        if (ach.length > 0) setNewAchievements(ach);
+      }
       setPhase("complete");
     } else { sfxCorrect(); }
   }, [phase, tiles, gridSize, moves, elapsed, puzzleMode]);
@@ -364,6 +372,17 @@ export function NumberPuzzleGame() {
               )}
             </div>
 
+            {/* Educational section */}
+            <div className={cx(eink, "border-2 border-black p-4 mb-6", "bg-indigo-500/10 border border-indigo-400/20 rounded-xl p-4 mb-6")}>
+              <h3 className={cx(eink, "font-bold text-lg mb-1", "font-bold text-sm text-indigo-300 mb-1.5")}>🔢 How to Play</h3>
+              <p className={cx(eink, "text-sm mb-1", "text-xs text-slate-400 leading-relaxed mb-2")}>
+                Slide the numbered tiles to put them in order from 1 to the last number. You can only move a tile into the empty space next to it!
+              </p>
+              <p className={cx(eink, "text-xs italic", "text-[10px] text-slate-500 italic")}>
+                Tip: Try solving one row at a time, starting from the top. The 15-puzzle was one of the first viral puzzles ever — in the 1880s!
+              </p>
+            </div>
+
             {/* Best Score */}
             {bestScore > 0 && (
               <div className={cx(eink, "text-center mb-6 border-2 border-black p-3", "text-center mb-6 bg-gray-800/50 rounded-lg p-3")}>
@@ -372,8 +391,18 @@ export function NumberPuzzleGame() {
               </div>
             )}
 
-            <div className="flex justify-center">
-              <button onClick={startGame} className={actionBtn(eink, true)}>Start Puzzle</button>
+            <div className="flex flex-col items-center gap-3">
+              <button onClick={() => startGame(false)} className={actionBtn(eink, true)}>Start Puzzle</button>
+              <button
+                onClick={() => startGame(true)}
+                className={cx(
+                  eink,
+                  "flex items-center gap-2 px-5 py-2.5 border-2 border-black font-bold",
+                  "flex items-center gap-2 px-5 py-2.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 rounded-xl font-medium transition-all"
+                )}
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
             </div>
           </div>
         )}
@@ -396,6 +425,14 @@ export function NumberPuzzleGame() {
         {/* ── Playing Phase ── */}
         {phase === "playing" && (
           <div>
+            {/* Practice mode banner */}
+            {practiceMode && (
+              <div className={cx(eink, "flex items-center justify-between border-2 border-black p-2 mb-3",
+                "flex items-center justify-between mb-3")}>
+                <span className={cx(eink, "text-sm font-bold", "text-xs text-teal-400 font-medium flex items-center gap-1")}>{!eink && <BookOpen className="w-3 h-3" />} Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className={cx(eink, "text-sm underline font-bold", "text-xs text-slate-500 hover:text-white transition-colors underline")}>End Practice</button>
+              </div>
+            )}
             {/* Stats */}
             <div className={cx(eink, "flex justify-between items-center border-2 border-black p-3 mb-4 flex-wrap gap-2",
               "flex justify-between items-center bg-gray-800/50 rounded-lg p-3 mb-4 flex-wrap gap-2")}>
@@ -453,7 +490,7 @@ export function NumberPuzzleGame() {
             </p>
 
             <div className="flex justify-center gap-3">
-              <button onClick={startGame} className={cx(eink,
+              <button onClick={() => startGame(practiceMode)} className={cx(eink,
                 "flex items-center gap-2 px-4 py-2 border-2 border-black font-bold",
                 "flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors")}>
                 <RotateCcw className="w-4 h-4" /> New Puzzle
@@ -523,12 +560,14 @@ export function NumberPuzzleGame() {
               </div>
             </div>
 
-            <div className="max-w-xs mx-auto mb-4">
-              <ScoreSubmit game="number-puzzle" score={moves} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
-            </div>
+            {!practiceMode && (
+              <div className="max-w-xs mx-auto mb-4">
+                <ScoreSubmit game="number-puzzle" score={moves} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
+              </div>
+            )}
 
             <div className="flex justify-center gap-3 flex-wrap">
-              <button onClick={startGame} className={actionBtn(eink, true)}>Play Again</button>
+              <button onClick={() => startGame(practiceMode)} className={actionBtn(eink, true)}>Play Again</button>
               <button onClick={() => setPhase("menu")} className={actionBtn(eink)}>Menu</button>
             </div>
           </div>

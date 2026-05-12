@@ -548,7 +548,10 @@ export function FractionFighterGame() {
     gameModeRef.current = mode;
     setScore(0);
     setLives(INITIAL_LIVES);
-    startingLevelRef.current = level;
+    if (phase === "menu") {
+      startingLevelRef.current = level;
+    }
+    setLevel(startingLevelRef.current);
     setStreak(0);
     setBestStreak(0);
     setShowHeartRecovery(false);
@@ -561,11 +564,11 @@ export function FractionFighterGame() {
     setPracticeCorrect(0);
     setPracticeTotal(0);
     setWaitingForNext(false);
-    setAdaptive(createAdaptiveState(level));
+    setAdaptive(createAdaptiveState(startingLevelRef.current));
 
     if (mode === "practice") {
       // Skip countdown in practice mode
-      nextProblem(level);
+      nextProblem(startingLevelRef.current);
     } else {
       setPhase("countdown");
     }

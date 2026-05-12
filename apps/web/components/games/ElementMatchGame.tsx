@@ -61,8 +61,10 @@ const CHEMISTRY_TIPS = [
 const GRID_OPTIONS: { label: string; pairs: number; cols: number; difficulty: Difficulty }[] = [
   { label: "4 pairs (8 cards)", pairs: 4, cols: 4, difficulty: "easy" },
   { label: "6 pairs (12 cards)", pairs: 6, cols: 4, difficulty: "medium" },
-  { label: "8 pairs (16 cards)", pairs: 8, cols: 4, difficulty: "hard" },
+  { label: "8 pairs (16 cards)", pairs: 8, cols: 4, difficulty: "medium" },
   { label: "10 pairs (20 cards)", pairs: 10, cols: 5, difficulty: "hard" },
+  { label: "12 pairs (24 cards)", pairs: 12, cols: 6, difficulty: "hard" },
+  { label: "15 pairs (30 cards)", pairs: 15, cols: 6, difficulty: "hard" },
 ];
 
 export function ElementMatchGame() {

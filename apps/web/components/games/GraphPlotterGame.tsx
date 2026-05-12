@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Timer } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Timer, BookOpen } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -207,6 +207,12 @@ export function GraphPlotterGame() {
   const [showGridLines, setShowGridLines] = useState(true);
   const [gameDuration, setGameDuration] = useState(60);
 
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+  const [practiceExplanation, setPracticeExplanation] = useState<string | null>(null);
+
   // Get adaptive-derived current mode
   const pickAdaptiveMode = useCallback((): GameMode => {
     const modes = getAdaptiveModes(adaptive.level);
@@ -223,6 +229,16 @@ export function GraphPlotterGame() {
   // Countdown
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      sfxCountdownGo();
+      setPhase("playing");
+      const startMode = pickAdaptiveMode();
+      const startRange = getAdaptiveGridRange(adaptive.level);
+      const p = generateProblem(startMode, startRange);
+      setProblem(p);
+      problemStartRef.current = Date.now();
+      return;
+    }
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -242,11 +258,11 @@ export function GraphPlotterGame() {
       });
     }, 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown, adaptive.level, pickAdaptiveMode]);
+  }, [phase, countdown, adaptive.level, pickAdaptiveMode, practiceMode]);
 
-  // Timer
+  // Timer (not in practice mode)
   useEffect(() => {
-    if (phase !== "playing") return;
+    if (phase !== "playing" || practiceMode) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -265,6 +281,7 @@ export function GraphPlotterGame() {
   // On complete
   useEffect(() => {
     if (phase !== "complete") return;
+    if (practiceMode) return;
     const acc = totalProblems > 0 ? solved / totalProblems : 0;
     if (acc >= 1.0) sfxPerfect();
     else sfxGameOver();
@@ -489,9 +506,14 @@ export function GraphPlotterGame() {
       ctx.font = "bold 28px system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(showResult === "correct" ? "✓ Correct!" : "✗ Try again", w / 2, h / 2);
+      ctx.fillText(showResult === "correct" ? "✓ Correct!" : "✗ Wrong", w / 2, h / 2 - (practiceExplanation ? 16 : 0));
+      if (practiceExplanation && showResult === "wrong") {
+        ctx.fillStyle = "#fca5a5";
+        ctx.font = "bold 16px system-ui, sans-serif";
+        ctx.fillText(practiceExplanation, w / 2, h / 2 + 20);
+      }
     }
-  }, [problem, gridRange, showGridLines, placedPoints, showResult]);
+  }, [problem, gridRange, showGridLines, placedPoints, showResult, practiceExplanation]);
 
   useEffect(() => {
     drawCanvas();
@@ -526,6 +548,49 @@ export function GraphPlotterGame() {
   const handleProblemResult = useCallback((correct: boolean) => {
     setTotalProblems((t) => t + 1);
     const elapsed = (Date.now() - problemStartRef.current) / 1000;
+
+    if (practiceMode) {
+      setPracticeTotal((t) => t + 1);
+      if (correct) {
+        sfxCorrect();
+        setPracticeCorrect((c) => c + 1);
+        setShowResult("correct");
+        setFlash("correct");
+        setPracticeExplanation(null);
+      } else {
+        sfxWrong();
+        setShowResult("wrong");
+        setFlash("wrong");
+        // Build correct answer explanation
+        if (problem) {
+          if (problem.mode === "plot") {
+            setPracticeExplanation(`The correct point was (${problem.targetX}, ${problem.targetY})`);
+          } else if (problem.mode === "slope") {
+            setPracticeExplanation(`The correct slope is ${problem.slope}`);
+          } else if (problem.mode === "line") {
+            setPracticeExplanation(`The correct line is ${problem.equation}`);
+          }
+        }
+      }
+      setAdaptive(prev => adaptiveUpdate(prev, correct, false));
+      setTimeout(() => setFlash(null), 200);
+      // In practice mode, show result longer (3s for wrong, 2s for correct)
+      setTimeout(() => {
+        setShowResult(null);
+        setPracticeExplanation(null);
+        setPlacedPoints([]);
+        setSlopeAnswer("");
+        const nextMode = pickAdaptiveMode();
+        const nextRange = getAdaptiveGridRange(adaptive.level);
+        const p = generateProblem(nextMode, nextRange);
+        setProblem(p);
+        setProblemNumber((n) => n + 1);
+        setTipIdx(Math.floor(Math.random() * TIPS[nextMode].length));
+        problemStartRef.current = Date.now();
+      }, correct ? 2000 : 3000);
+      return;
+    }
+
     if (correct) {
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -562,7 +627,7 @@ export function GraphPlotterGame() {
       setTipIdx(Math.floor(Math.random() * TIPS[nextMode].length));
       problemStartRef.current = Date.now();
     }, 800);
-  }, [streak, adaptive.level, pickAdaptiveMode]);
+  }, [streak, adaptive.level, pickAdaptiveMode, practiceMode]);
 
   // Handle canvas click (for plot and line modes)
   const handleCanvasPointer = useCallback(
@@ -659,7 +724,7 @@ export function GraphPlotterGame() {
     setSolved(0);
     setTotalProblems(0);
     setAdaptive(createAdaptiveState(1));
-    const dur = getAdaptiveGraphTimer(1);
+    const dur = Math.max(gameDuration, getAdaptiveGraphTimer(1));
     setTimeLeft(dur);
     setCountdown(COUNTDOWN_SECS);
     setPlacedPoints([]);
@@ -668,6 +733,8 @@ export function GraphPlotterGame() {
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     setProblemNumber(0);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
     setTipIdx(Math.floor(Math.random() * TIPS[mode].length));
     setPhase("countdown");
   };
@@ -679,7 +746,8 @@ export function GraphPlotterGame() {
   };
 
   const timerColor = timeLeft > 20 ? "text-green-400" : timeLeft > 10 ? "text-yellow-400" : "text-red-400";
-  const timerBarWidth = (timeLeft / gameDuration) * 100;
+  const effectiveDuration = Math.max(gameDuration, getAdaptiveGraphTimer(1));
+  const timerBarWidth = Math.min(100, (timeLeft / effectiveDuration) * 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-teal-950 to-slate-950 flex flex-col items-center">
@@ -701,6 +769,26 @@ export function GraphPlotterGame() {
             <p className="text-slate-400 mb-6 max-w-sm mx-auto">
               Plot points, find slopes, and draw lines on the coordinate grid!
             </p>
+
+            {/* What is Graph Plotting? */}
+            <div className="max-w-xs mx-auto mb-5 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-teal-400 mb-1">📈 What is Graph Plotting?</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Graphs are pictures of numbers that help us see patterns and relationships. When you plot points on a grid, you can see how things are connected — like plotting your height each birthday shows you&apos;re growing!
+              </p>
+              <p className="text-xs text-slate-500 mt-2 italic">
+                📍 Every point has an (x, y) address on the grid. • 📊 Scientists use graphs to discover patterns in data.
+              </p>
+            </div>
+
+            {/* Practice button */}
+            <div className="max-w-xs mx-auto mb-4">
+              <button onClick={() => { setPracticeMode(true); startGame(); }}
+                className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 hover:bg-emerald-500/30 flex items-center justify-center gap-2">
+                <BookOpen className="w-4 h-4" /> Practice Mode
+                <span className="text-[10px] text-emerald-500/80 font-normal">— No timer, learn at your pace</span>
+              </button>
+            </div>
 
             {/* Mode selector */}
             <div className="max-w-xs mx-auto mb-4 space-y-1.5">
@@ -760,7 +848,7 @@ export function GraphPlotterGame() {
             </div>
 
             <button
-              onClick={startGame}
+              onClick={() => { setPracticeMode(false); startGame(); }}
               className="px-10 py-4 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-teal-500/30"
             >
               Start
@@ -785,7 +873,30 @@ export function GraphPlotterGame() {
         {/* PLAYING */}
         {phase === "playing" && problem && (
           <div className="w-full space-y-3">
-            {/* Timer bar */}
+            {/* Practice Mode banner */}
+            {practiceMode && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                    Practice Mode
+                  </span>
+                </div>
+                <div className="text-sm text-slate-400 tabular-nums">
+                  {practiceTotal > 0 ? (
+                    <>{practiceCorrect}/{practiceTotal} correct</>
+                  ) : (
+                    "Learn at your pace!"
+                  )}
+                </div>
+                <button onClick={() => setPhase("complete")}
+                  className="text-xs text-slate-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5">
+                  End
+                </button>
+              </div>
+            )}
+
+            {/* Timer bar (not in practice mode) */}
+            {!practiceMode && (
             <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
@@ -795,8 +906,10 @@ export function GraphPlotterGame() {
                 }}
               />
             </div>
+            )}
 
-            {/* HUD */}
+            {/* HUD (non-practice) */}
+            {!practiceMode && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Timer className={`w-4 h-4 ${timerColor}`} />
@@ -823,6 +936,7 @@ export function GraphPlotterGame() {
                 <div className="text-xs text-slate-400">{solved} correct</div>
               </div>
             </div>
+            )}
 
             {/* Problem prompt */}
             <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl border border-white/10 p-4 text-center">
@@ -902,8 +1016,13 @@ export function GraphPlotterGame() {
         {phase === "complete" && (
           <div className="text-center">
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mx-auto mb-4" />
-            <h3 className="text-3xl font-bold text-white mb-2">Time&apos;s Up!</h3>
-            <div className="text-5xl font-bold text-teal-400 mb-2">{score}</div>
+            <h3 className="text-3xl font-bold text-white mb-2">{practiceMode ? "Practice Complete!" : "Time\u0027s Up!"}</h3>
+            {!practiceMode && <div className="text-5xl font-bold text-teal-400 mb-2">{score}</div>}
+            {practiceMode && (
+              <div className="text-slate-400 space-y-1 mb-6">
+                <p>{practiceCorrect}/{practiceTotal} correct</p>
+              </div>
+            )}
             {/* Final adaptive level */}
             {(() => {
               const dl = getDifficultyLabel(adaptive.level);
@@ -921,14 +1040,16 @@ export function GraphPlotterGame() {
               <p>Accuracy: {totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0}%</p>
               <p>Best streak: x{bestStreak}</p>
             </div>
-            {score >= highScore && score > 0 && (
+            {!practiceMode && score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="graph-plotter" score={score} level={Math.round(adaptive.level)} stats={{ solved, totalProblems, bestStreak, accuracy: totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="graph-plotter" score={score} level={Math.round(adaptive.level)} stats={{ solved, totalProblems, bestStreak, accuracy: totalProblems > 0 ? Math.round((solved / totalProblems) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -941,7 +1062,7 @@ export function GraphPlotterGame() {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={startGame}
+                onClick={() => { setPracticeMode(false); startGame(); }}
                 className="px-6 py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" /> Play Again

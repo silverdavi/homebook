@@ -168,6 +168,10 @@ function mathSymbolPath(symbol: string, w: number, h: number, pad: number): Poin
     "÷": [[-0.7,0],[0.7,0],[],[0,-0.6],[0,-0.55],[],[0,0.55],[0,0.6]],
     "=": [[-0.7,-0.25],[0.7,-0.25],[],[-0.7,0.25],[0.7,0.25]],
     "π": [[-0.7,-0.7],[0.7,-0.7],[],[-0.3,-0.7],[-0.3,0.7],[],[0.3,-0.7],[0.4,0.7]],
+    "%": [[0.6,-0.7],[-0.6,0.7],[],[-0.4,-0.4],[0.4,-0.4],[],[0.4,0.4],[-0.4,0.4]],
+    "<": [[0.5,0],[-0.5,-0.6],[-0.5,0.6],[0.5,0]],
+    ">": [[-0.5,0],[0.5,-0.6],[0.5,0.6],[-0.5,0]],
+    "√": [[-0.6,0.5],[0,-0.6],[0.5,0.6]],
   };
 
   const glyph = glyphs[symbol];
@@ -218,6 +222,35 @@ function shapePath(shape: string, w: number, h: number, pad: number): Point[] {
       points.push(points[0]); // close
       break;
     }
+    case "hexagon":
+      for (let i = 0; i <= 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+        points.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, pressure: 0.5 });
+      }
+      break;
+    case "pentagon":
+      for (let i = 0; i <= 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        points.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, pressure: 0.5 });
+      }
+      break;
+    case "diamond":
+      points.push({ x: cx, y: cy - r, pressure: 0.5 });
+      points.push({ x: cx + r * 0.7, y: cy, pressure: 0.5 });
+      points.push({ x: cx, y: cy + r, pressure: 0.5 });
+      points.push({ x: cx - r * 0.7, y: cy, pressure: 0.5 });
+      points.push({ x: cx, y: cy - r, pressure: 0.5 });
+      break;
+    case "heart": {
+      const scale = r / 16;
+      for (let i = 0; i <= 40; i++) {
+        const t = (i / 40) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        points.push({ x: cx + x * scale, y: cy + y * scale, pressure: 0.5 });
+      }
+      break;
+    }
   }
   return points;
 }
@@ -226,14 +259,18 @@ function shapePath(shape: string, w: number, h: number, pad: number): Point[] {
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const DIGITS = "0123456789".split("");
-const MATH_SYMBOLS = ["+", "-", "×", "÷", "=", "π"];
-const SHAPES = ["circle", "triangle", "square", "star"];
+const MATH_SYMBOLS = ["+", "-", "×", "÷", "=", "π", "%", "<", ">", "√"];
+const SHAPES = ["circle", "triangle", "square", "star", "hexagon", "pentagon", "diamond", "heart"];
 
 const SHAPE_DESCRIPTIONS: Record<string, string> = {
   circle: "A circle has no corners and every point is equally distant from the center.",
   triangle: "A triangle has 3 sides and 3 angles that add up to 180°.",
   square: "A square has 4 equal sides and 4 right angles.",
   star: "A five-pointed star has 5 outer vertices and 5 inner vertices.",
+  hexagon: "A hexagon has 6 sides and 6 angles. Honeycombs are made of hexagons!",
+  pentagon: "A pentagon has 5 sides and 5 angles. A regular pentagon has equal sides.",
+  diamond: "A diamond (rhombus) has 4 equal sides. Two opposite angles are equal.",
+  heart: "A heart shape symbolizes love. It has two rounded lobes at the top.",
 };
 
 const MATH_DESCRIPTIONS: Record<string, string> = {
@@ -243,6 +280,10 @@ const MATH_DESCRIPTIONS: Record<string, string> = {
   "÷": "Divided by — splits a number into equal parts.",
   "=": "Equals — shows two sides have the same value.",
   "π": "Pi — approximately 3.14159, the ratio of circumference to diameter.",
+  "%": "Percent — means per hundred. 50% equals 0.5 or ½.",
+  "<": "Less than — the left side is smaller than the right.",
+  ">": "Greater than — the left side is larger than the right.",
+  "√": "Square root — finds the number that when squared gives the value inside.",
 };
 
 function getTargets(category: Category, count: number): TraceTarget[] {
@@ -553,7 +594,8 @@ export function TraceLearnGame() {
   // Start game
   const startGame = useCallback(() => {
     sfxClick();
-    const params = getTraceDiffParams(adaptive.level);
+    setAdaptive(createAdaptiveState(1));
+    const params = getTraceDiffParams(1);
     const newTargets = getTargets(params.category, ITEMS_PER_ROUND);
     setTargets(newTargets);
     setCurrentIndex(0);
@@ -569,7 +611,7 @@ export function TraceLearnGame() {
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     traceStartTimeRef.current = Date.now();
-  }, [adaptive.level]);
+  }, []);
 
   // Submit current trace
   const submitTrace = useCallback(() => {
@@ -583,14 +625,14 @@ export function TraceLearnGame() {
     const elapsed = Date.now() - traceStartTimeRef.current;
     const fast = elapsed < 8000; // completed trace quickly
 
-    const { mult } = getMultiplierFromStreak(combo);
+    const newCombo = acc >= 70 ? combo + 1 : combo;
+    const { mult } = getMultiplierFromStreak(newCombo);
     const points = Math.round(acc * mult);
     setScore((s) => s + points);
 
     if (acc >= 70) {
       sfxCorrect();
       setAdaptive(prev => adaptiveUpdate(prev, true, fast));
-      const newCombo = combo + 1;
       setCombo(newCombo);
       if (newCombo > bestCombo) setBestCombo(newCombo);
       if (newCombo >= 5 && newCombo % 5 === 0) sfxCombo(newCombo);

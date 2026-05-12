@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, BookOpen, Zap, RotateCcw, ChevronRight, CheckCircle2, XCircle, Lightbulb, Trophy, Star, Globe } from "lucide-react";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
-import { trackGamePlayed, setLocalHighScore, getLocalHighScore } from "@/lib/games/use-scores";
+import { trackGamePlayed, setLocalHighScore, getLocalHighScore, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 
@@ -286,7 +286,8 @@ export function GeographyChallengeGame() {
     if (score > prev) setLocalHighScore(highKey, score);
     trackGamePlayed("geography", score);
     const stats: GameStats = { gameId: "geography", score, accuracy: correct + wrong > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0, bestStreak, solved: correct };
-    checkAchievements(stats, 0, {});
+    const profile = getProfile();
+    checkAchievements(stats, profile.totalGamesPlayed, profile.gamesPlayedByGameId);
     setPhase("result");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [score, correct, wrong, bestStreak]);

@@ -6,6 +6,7 @@ import {
   FileDown,
   BookCheck,
   Gamepad2,
+  CalendarDays,
 } from "lucide-react";
 
 const FEATURES = [
@@ -53,6 +54,13 @@ export default function HomePage() {
             teacher<span className="text-subject-math">.ninja</span>
           </span>
           <div className="flex items-center gap-4">
+            <Link
+              href="/daily"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              <CalendarDays className="w-4 h-4" />
+              Daily
+            </Link>
             <Link
               href="/games"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
@@ -138,6 +146,53 @@ export default function HomePage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Daily homeschool trial */}
+      <section className="border-t border-slate-100 bg-gradient-to-r from-amber-50 to-orange-50">
+        <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-100 rounded-full px-3 py-1 mb-4">
+                <CalendarDays className="w-3.5 h-3.5" />
+                Independent learner trial
+              </div>
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900">
+                Daily — own your school day
+              </h2>
+              <p className="mt-3 text-slate-600 max-w-md">
+                Four days of math, periodic table, history, and biology. Read
+                the brief, decide how to study, take the exam. One attempt
+                per day. No coaching. Notes on every question.
+              </p>
+              <Link
+                href="/daily"
+                className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-500 transition-all active:scale-[0.98]"
+              >
+                Open Daily
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex flex-col items-center justify-center border border-slate-100 text-amber-700">
+                <CalendarDays className="w-6 h-6" />
+                <span className="text-xs mt-1 font-semibold">Day 1</span>
+              </div>
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex flex-col items-center justify-center border border-slate-100 text-slate-400">
+                <CalendarDays className="w-6 h-6" />
+                <span className="text-xs mt-1 font-semibold">Day 2</span>
+              </div>
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex flex-col items-center justify-center border border-slate-100 text-slate-400">
+                <CalendarDays className="w-6 h-6" />
+                <span className="text-xs mt-1 font-semibold">Day 3</span>
+              </div>
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-md flex flex-col items-center justify-center border border-slate-100 text-slate-400">
+                <CalendarDays className="w-6 h-6" />
+                <span className="text-xs mt-1 font-semibold">Day 4</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

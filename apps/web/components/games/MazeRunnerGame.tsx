@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Heart, Trophy, RotateCcw, Star, Compass } from "lucide-react";
+import { ArrowLeft, Heart, Trophy, RotateCcw, Star, Compass, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
@@ -257,6 +257,9 @@ export function MazeRunnerGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ medalId: string; name: string; tier: MedalTier }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [dragStartCell, setDragStartCell] = useState<[number, number] | null>(null);
+  const [finalMazeCount, setFinalMazeCount] = useState<number | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [wrongFeedback, setWrongFeedback] = useState<string | null>(null);
 
   // Responsive scaling
   useEffect(() => {
@@ -306,29 +309,33 @@ export function MazeRunnerGame() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lives]);
 
-  const endGame = useCallback(() => {
+  const endGame = useCallback((override?: { mazeCount?: number }) => {
+    if (override?.mazeCount !== undefined) setFinalMazeCount(override.mazeCount);
     setPhase("complete");
     const acc = questionsTotal > 0 ? questionsCorrect / questionsTotal : 0;
     if (acc >= 1.0) sfxPerfect();
     else sfxGameOver();
-    const finalScore = score;
-    if (finalScore > highScore) {
-      setHighScore(finalScore);
-      setLocalHighScore("mazeRunner_highScore", finalScore);
+    if (!practiceMode) {
+      const finalScore = score;
+      if (finalScore > highScore) {
+        setHighScore(finalScore);
+        setLocalHighScore("mazeRunner_highScore", finalScore);
+      }
+      trackGamePlayed("maze-runner", finalScore);
+      const profile = getProfile();
+      const accPct = questionsTotal > 0 ? Math.round((questionsCorrect / questionsTotal) * 100) : 100;
+      const newOnes = checkAchievements(
+        { gameId: "maze-runner", score: finalScore, level: Math.round(adaptive.level), accuracy: accPct, bestCombo, bestStreak: bestCombo },
+        profile.totalGamesPlayed, profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
     }
-    trackGamePlayed("maze-runner", finalScore);
-    const profile = getProfile();
-    const accPct = questionsTotal > 0 ? Math.round((questionsCorrect / questionsTotal) * 100) : 100;
-    const newOnes = checkAchievements(
-      { gameId: "maze-runner", score: finalScore, level: Math.round(adaptive.level), accuracy: accPct, bestCombo, bestStreak: bestCombo },
-      profile.totalGamesPlayed, profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [score, highScore, adaptive.level, questionsCorrect, questionsTotal, bestCombo]);
+  }, [score, highScore, adaptive.level, questionsCorrect, questionsTotal, bestCombo, practiceMode]);
 
   // Start game
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     sfxClick();
     const initSize = getMazeSizeForLevel(startLevel);
     const cols = initSize;
@@ -356,6 +363,7 @@ export function MazeRunnerGame() {
     setPhase("countdown");
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setFinalMazeCount(null);
   }, [startLevel]);
 
   // Move player
@@ -396,12 +404,23 @@ export function MazeRunnerGame() {
     // Check goal
     if (nx === goalPos[0] && ny === goalPos[1]) {
       // Level complete!
+      if (mazeCount >= 9) {
+        // Won! Completing 10th maze
+        const timeBonus = Math.max(0, 300 - elapsedSecs * 2);
+        const levelPoints = 100 + timeBonus + questionsCorrect * 50;
+        const { mult } = getMultiplierFromStreak(combo);
+        const earned = Math.round(levelPoints * mult);
+        if (!practiceMode) setScore((s) => s + earned);
+        setMazeCount(10);
+        endGame({ mazeCount: 10 });
+        return;
+      }
       sfxLevelUp();
       const timeBonus = Math.max(0, 300 - elapsedSecs * 2);
       const levelPoints = 100 + timeBonus + questionsCorrect * 50;
       const { mult } = getMultiplierFromStreak(combo);
       const earned = Math.round(levelPoints * mult);
-      setScore((s) => s + earned);
+      if (!practiceMode) setScore((s) => s + earned);
       setMazeCount((c) => c + 1);
 
       // Generate next maze sized by adaptive level
@@ -416,7 +435,7 @@ export function MazeRunnerGame() {
       forks.forEach(([fx, fy]) => forkQuestionsRef.current.set(`${fx},${fy}`, false));
       setStartTime(Date.now());
     }
-  }, [phase, maze, playerPos, goalPos, subject, adaptive.level, elapsedSecs, questionsCorrect, combo]);
+  }, [phase, maze, playerPos, goalPos, subject, adaptive.level, elapsedSecs, questionsCorrect, combo, mazeCount, endGame, practiceMode]);
 
   // Answer question
   const answerQuestion = useCallback((ansIndex: number) => {
@@ -433,7 +452,7 @@ export function MazeRunnerGame() {
         if (nc >= 5 && nc % 5 === 0) sfxCombo(nc);
         return nc;
       });
-      setScore((s) => s + 25);
+      if (!practiceMode) setScore((s) => s + 25);
       // Adaptive: fast = answered in < 3 seconds
       setAdaptive(prev => adaptiveUpdate(prev, true, answerTime < 3));
 
@@ -444,12 +463,24 @@ export function MazeRunnerGame() {
 
         // Check if this cell is the goal
         if (dragStartCell[0] === goalPos[0] && dragStartCell[1] === goalPos[1] && maze) {
+          if (mazeCount >= 9) {
+            const timeBonus = Math.max(0, 300 - elapsedSecs * 2);
+            const levelPoints = 100 + timeBonus + (questionsCorrect + 1) * 50;
+            const { mult } = getMultiplierFromStreak(combo + 1);
+            const earned = Math.round(levelPoints * mult);
+            if (!practiceMode) setScore((s) => s + earned);
+            setMazeCount(10);
+            setCurrentQuestion(null);
+            setDragStartCell(null);
+            endGame({ mazeCount: 10 });
+            return;
+          }
           sfxLevelUp();
           const timeBonus = Math.max(0, 300 - elapsedSecs * 2);
           const levelPoints = 100 + timeBonus + (questionsCorrect + 1) * 50;
           const { mult } = getMultiplierFromStreak(combo + 1);
           const earned = Math.round(levelPoints * mult);
-          setScore((s) => s + earned);
+          if (!practiceMode) setScore((s) => s + earned);
           setMazeCount((c) => c + 1);
           const nextSize = getMazeSizeForLevel(adaptive.level);
           const newMaze = generateMaze(nextSize, nextSize);
@@ -467,14 +498,26 @@ export function MazeRunnerGame() {
       if (combo > 0) sfxStreakLost();
       sfxWrong();
       setCombo(0);
-      setLives((l) => l - 1);
+      if (!practiceMode) {
+        setLives((l) => l - 1);
+      }
       setAdaptive(prev => adaptiveUpdate(prev, false, false));
+      // Show the correct answer for 2 seconds before resuming
+      const correctText = currentQuestion.answers[currentQuestion.correctIndex];
+      setWrongFeedback(`Correct answer: ${correctText}`);
+      setTimeout(() => {
+        setWrongFeedback(null);
+        setCurrentQuestion(null);
+        setDragStartCell(null);
+        setPhase("playing");
+      }, 2000);
+      return;
     }
 
     setCurrentQuestion(null);
     setDragStartCell(null);
     setPhase("playing");
-  }, [currentQuestion, dragStartCell, goalPos, maze, elapsedSecs, questionsCorrect, combo, bestCombo, adaptive.level]);
+  }, [currentQuestion, dragStartCell, goalPos, maze, elapsedSecs, questionsCorrect, combo, bestCombo, adaptive.level, mazeCount, endGame, practiceMode]);
 
   // Canvas rendering
   useEffect(() => {
@@ -676,6 +719,16 @@ export function MazeRunnerGame() {
         <AudioToggles />
       </div>
 
+      {/* Practice mode banner */}
+      {practiceMode && (phase === "playing" || phase === "question") && (
+        <div className="w-full max-w-[750px] px-4 mb-1">
+          <div className="flex items-center justify-between bg-teal-500/10 border border-teal-400/20 rounded-lg px-3 py-1.5">
+            <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode</span>
+            <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+          </div>
+        </div>
+      )}
+
       {/* Live HUD */}
       {(phase === "playing" || phase === "question") && (
         <div className="w-full max-w-[750px] px-4 mb-1">
@@ -786,9 +839,14 @@ export function MazeRunnerGame() {
                   </div>
                 </div>
 
-                <button onClick={startGame} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
-                  Play
-                </button>
+                <div className="flex flex-col gap-2 w-full max-w-xs">
+                  <button onClick={() => startGame(false)} className="w-full px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
+                    Play
+                  </button>
+                  <button onClick={() => startGame(true)} className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Practice
+                  </button>
+                </div>
               </div>
             )}
 
@@ -821,22 +879,31 @@ export function MazeRunnerGame() {
             {phase === "question" && currentQuestion && (
               <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/60 backdrop-blur-sm">
                 <div className="bg-slate-900/95 border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-                  <div className="text-center mb-4">
-                    <span className="text-xs text-indigo-400 uppercase font-bold tracking-wider">Question</span>
-                    <h3 className="text-xl font-bold text-white mt-1">{currentQuestion.question}</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {currentQuestion.answers.map((ans, i) => (
-                      <button
-                        key={i}
-                        onClick={() => answerQuestion(i)}
-                        className="px-4 py-3 bg-white/5 hover:bg-indigo-500/30 border border-white/10 hover:border-indigo-400/50 rounded-xl text-white font-medium transition-all hover:scale-[1.02] active:scale-95"
-                      >
-                        {ans}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-slate-500 text-center italic">{currentQuestion.tip}</p>
+                  {wrongFeedback ? (
+                    <div className="text-center py-4">
+                      <div className="text-red-400 text-lg font-bold mb-2">✗ Wrong!</div>
+                      <div className="text-white font-medium">{wrongFeedback}</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center mb-4">
+                        <span className="text-xs text-indigo-400 uppercase font-bold tracking-wider">Question</span>
+                        <h3 className="text-xl font-bold text-white mt-1">{currentQuestion.question}</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {currentQuestion.answers.map((ans, i) => (
+                          <button
+                            key={i}
+                            onClick={() => answerQuestion(i)}
+                            className="px-4 py-3 bg-white/5 hover:bg-indigo-500/30 border border-white/10 hover:border-indigo-400/50 rounded-xl text-white font-medium transition-all hover:scale-[1.02] active:scale-95"
+                          >
+                            {ans}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-500 text-center italic">{currentQuestion.tip}</p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -846,7 +913,7 @@ export function MazeRunnerGame() {
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/50 backdrop-blur-sm px-6">
                 <Star className="w-12 h-12 text-yellow-400 fill-yellow-400 mb-2 animate-bounce" />
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  {lives > 0 ? "Maze Conquered!" : "Game Over"}
+                  {(finalMazeCount ?? mazeCount) >= 10 ? "Maze Conquered!" : "Game Over"}
                 </h3>
                 <div className="text-4xl font-bold text-indigo-400 mb-3">{score.toLocaleString()}</div>
                 {score >= highScore && score > 0 && (
@@ -867,7 +934,7 @@ export function MazeRunnerGame() {
                   );
                 })()}
                 <div className="grid grid-cols-4 gap-3 mb-3 text-center w-full max-w-sm">
-                  <div><div className="text-xl font-bold text-white">{mazeCount}</div><div className="text-[9px] text-slate-500 uppercase">Mazes</div></div>
+                  <div><div className="text-xl font-bold text-white">{finalMazeCount ?? mazeCount}</div><div className="text-[9px] text-slate-500 uppercase">Mazes</div></div>
                   <div><div className="text-xl font-bold text-green-400">{accuracy}%</div><div className="text-[9px] text-slate-500 uppercase">Accuracy</div></div>
                   <div><div className="text-xl font-bold text-cyan-400">{formatTime(elapsedSecs)}</div><div className="text-[9px] text-slate-500 uppercase">Time</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">x{bestCombo}</div><div className="text-[9px] text-slate-500 uppercase">Combo</div></div>
@@ -876,7 +943,7 @@ export function MazeRunnerGame() {
                   <ScoreSubmit game="maze-runner" score={score} level={Math.round(adaptive.level)} stats={{ accuracy: `${accuracy}%`, time: formatTime(elapsedSecs), bestCombo, finalLevel: adaptive.level.toFixed(1) }} />
                 </div>
                 <div className="flex gap-3 mt-2">
-                  <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">
+                  <button onClick={() => startGame(practiceMode)} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">
                     <RotateCcw className="w-4 h-4" /> Again
                   </button>
                   <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl text-sm transition-all">

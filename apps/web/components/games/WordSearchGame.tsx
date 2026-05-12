@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Trophy, Clock, Search } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, Search, BookOpen } from "lucide-react";
 import { AudioToggles, useGameMusic } from "@/components/games/AudioToggles";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
 import { AchievementToast } from "@/components/games/AchievementToast";
@@ -237,6 +237,7 @@ export function WordSearchGame() {
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
   const wordFoundTimeRef = useRef(Date.now());
+  const [practiceMode, setPracticeMode] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -285,7 +286,8 @@ export function WordSearchGame() {
     return () => clearTimeout(t);
   }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     const result = generateGrid(gridSize, category, wordCount);
     setGrid(result.grid);
     setPlacedWords(result.placed);
@@ -293,10 +295,14 @@ export function WordSearchGame() {
     setFoundCells(new Set());
     setElapsed(0);
     setScore(0);
-    setCountdown(3);
-    setPhase("countdown");
     wordFoundTimeRef.current = Date.now();
     if (!einkMode && isSfxEnabled()) sfxClick();
+    if (practice) {
+      setPhase("playing");
+    } else {
+      setCountdown(3);
+      setPhase("countdown");
+    }
   }, [gridSize, category, wordCount, einkMode]);
 
   const handleCellClick = useCallback(
@@ -363,33 +369,35 @@ export function WordSearchGame() {
 
             if (!einkMode && isSfxEnabled()) sfxLevelUp();
 
-            try {
-              const prev = getLocalHighScore("word-search") ?? 0;
-              if (finalScore > prev) {
-                setLocalHighScore("word-search", finalScore);
-                setHighScore(finalScore);
-              }
-            } catch {}
+            if (!practiceMode) {
+              try {
+                const prev = getLocalHighScore("word-search") ?? 0;
+                if (finalScore > prev) {
+                  setLocalHighScore("word-search", finalScore);
+                  setHighScore(finalScore);
+                }
+              } catch {}
 
-            try {
-              trackGamePlayed("word-search", finalScore);
-              const profile = getProfile();
-              const medals = checkAchievements(
-                {
-                  gameId: "word-search",
-                  score: finalScore,
-                  wordsBuilt: newPlaced.length,
-                  timeSeconds: elapsed,
-                },
-                profile.totalGamesPlayed,
-                profile.gamesPlayedByGameId,
-              );
-              if (medals.length > 0) {
-                setAchievementQueue(
-                  medals.map((m) => ({ name: m.name, tier: m.tier })),
+              try {
+                trackGamePlayed("word-search", finalScore);
+                const profile = getProfile();
+                const medals = checkAchievements(
+                  {
+                    gameId: "word-search",
+                    score: finalScore,
+                    wordsBuilt: newPlaced.length,
+                    timeSeconds: elapsed,
+                  },
+                  profile.totalGamesPlayed,
+                  profile.gamesPlayedByGameId,
                 );
-              }
-            } catch {}
+                if (medals.length > 0) {
+                  setAchievementQueue(
+                    medals.map((m) => ({ name: m.name, tier: m.tier })),
+                  );
+                }
+              } catch {}
+            }
           }
           break;
         }
@@ -442,9 +450,20 @@ export function WordSearchGame() {
           {phase === "menu" && (
             <div style={{ padding: "20px 0", textAlign: "center" }}>
               <h2 style={{ fontSize: 28, marginBottom: 8 }}>Word Search</h2>
-              <p style={{ fontSize: 18, marginBottom: 24 }}>
+              <p style={{ fontSize: 18, marginBottom: 16 }}>
                 Find hidden words by tapping the first and last letters.
               </p>
+
+              {/* Educational section */}
+              <div style={{ border: "2px solid #000", padding: 12, marginBottom: 16, textAlign: "left" }}>
+                <p style={{ fontWeight: "bold", fontSize: 16, marginBottom: 4 }}>🔍 What is a Word Search?</p>
+                <p style={{ fontSize: 14, marginBottom: 4 }}>
+                  Find hidden words in a grid of letters! Words can go across, down, or diagonally.
+                </p>
+                <p style={{ fontSize: 12, fontStyle: "italic", color: "#666" }}>
+                  Tip: Start with the longest words — they&apos;re easier to spot. Look for uncommon letters like Q or Z to find word starts.
+                </p>
+              </div>
 
               {/* Category */}
               <p style={{ fontWeight: "bold", marginBottom: 8 }}>Category:</p>
@@ -515,7 +534,7 @@ export function WordSearchGame() {
               </div>
 
               <button
-                onClick={startGame}
+                onClick={() => startGame(false)}
                 style={{
                   display: "block",
                   width: "100%",
@@ -531,6 +550,24 @@ export function WordSearchGame() {
               >
                 Start Game
               </button>
+              <button
+                onClick={() => startGame(true)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  border: "2px solid #000",
+                  padding: "12px",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  background: "#fff",
+                  color: "#000",
+                  cursor: "pointer",
+                  minHeight: 48,
+                  marginTop: 8,
+                }}
+              >
+                📖 Practice Mode
+              </button>
             </div>
           )}
 
@@ -544,6 +581,12 @@ export function WordSearchGame() {
 
           {phase === "playing" && (
             <div style={{ padding: "8px 0" }}>
+              {practiceMode && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", border: "2px solid #000", padding: "6px 10px", marginBottom: 8, fontSize: 14, fontWeight: "bold" }}>
+                  <span>📖 Practice Mode — no scores saved</span>
+                  <button onClick={() => setPhase("menu")} style={{ textDecoration: "underline", cursor: "pointer", background: "none", border: "none", fontSize: 14 }}>End Practice</button>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -723,9 +766,20 @@ export function WordSearchGame() {
             <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
               Word Search
             </h2>
-            <p className="text-slate-400 mb-8">
+            <p className="text-slate-400 mb-5">
               Find hidden words by clicking the first and last letters.
             </p>
+
+            {/* Educational section */}
+            <div className="max-w-sm mx-auto mb-6 bg-emerald-500/10 border border-emerald-400/20 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-emerald-300 mb-1.5">🔍 What is a Word Search?</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-2">
+                Find hidden words in a grid of letters! Words can go across, down, or diagonally. Click the first letter, then the last letter to select a word.
+              </p>
+              <p className="text-[10px] text-slate-500 italic">
+                Tip: Start with the longest words — they&apos;re easier to spot. Look for uncommon letters like Q or Z to find word starts!
+              </p>
+            </div>
 
             {highScore > 0 && (
               <div className="mb-4 text-sm text-yellow-400 flex items-center justify-center gap-1">
@@ -789,12 +843,20 @@ export function WordSearchGame() {
               ))}
             </div>
 
-            <button
-              onClick={startGame}
-              className="px-10 py-3 rounded-lg font-bold text-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-            >
-              Start Game
-            </button>
+            <div className="flex flex-col gap-2 max-w-xs mx-auto">
+              <button
+                onClick={() => startGame(false)}
+                className="px-10 py-3 rounded-lg font-bold text-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+              >
+                Start Game
+              </button>
+              <button
+                onClick={() => startGame(true)}
+                className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
+            </div>
           </div>
         )}
 
@@ -808,6 +870,12 @@ export function WordSearchGame() {
 
         {phase === "playing" && (
           <div>
+            {practiceMode && (
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-2 flex-wrap gap-2">
               <span>
                 Found: {foundCount}/{placedWords.length}
@@ -926,20 +994,22 @@ export function WordSearchGame() {
               {score} pts
             </div>
 
-            <div className="max-w-xs mx-auto mb-6">
-              <ScoreSubmit
-                game="word-search"
-                score={score}
-                level={Math.round(adaptive.level)}
-                stats={{
-                  wordsBuilt: placedWords.length,
-                  timeSeconds: elapsed,
-                }}
-              />
-            </div>
+            {!practiceMode && (
+              <div className="max-w-xs mx-auto mb-6">
+                <ScoreSubmit
+                  game="word-search"
+                  score={score}
+                  level={Math.round(adaptive.level)}
+                  stats={{
+                    wordsBuilt: placedWords.length,
+                    timeSeconds: elapsed,
+                  }}
+                />
+              </div>
+            )}
 
             <button
-              onClick={() => setPhase("menu")}
+              onClick={() => startGame(practiceMode)}
               className="px-8 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
             >
               Play Again

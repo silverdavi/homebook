@@ -128,6 +128,18 @@ export function getDb(): Database.Database {
       value TEXT NOT NULL,
       UNIQUE(profile_id, key)
     );
+
+    CREATE TABLE IF NOT EXISTS daily_exams (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id TEXT NOT NULL REFERENCES profiles(id),
+      date TEXT NOT NULL,
+      version TEXT NOT NULL CHECK(version IN ('a','b')),
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      score INTEGER NOT NULL,
+      total INTEGER NOT NULL,
+      answers_json TEXT NOT NULL,
+      UNIQUE(profile_id, date)
+    );
   `);
 
   return _db;
@@ -384,6 +396,98 @@ export function savePreference(
     `INSERT OR REPLACE INTO preferences (profile_id, key, value)
      VALUES (?, ?, ?)`
   ).run(profileId, key, value);
+}
+
+// ---------------------------------------------------------------------------
+// Daily exams (one-attempt-per-day, see /daily route)
+// ---------------------------------------------------------------------------
+
+export interface DailyExamRow {
+  profileId: string;
+  date: string;
+  version: "a" | "b";
+  submittedAt: string;
+  score: number;
+  total: number;
+  /** Already-graded answers, JSON-stringified GradedAnswer[]. */
+  answersJson: string;
+}
+
+/**
+ * Insert a graded exam submission. Returns null if a submission for this
+ * (profile_id, date) already exists — the UNIQUE constraint enforces the
+ * "single attempt" rule.
+ */
+export function saveDailyExam(args: {
+  profileId: string;
+  date: string;
+  version: "a" | "b";
+  score: number;
+  total: number;
+  answersJson: string;
+}): DailyExamRow | null {
+  const db = getDb();
+  try {
+    db.prepare(
+      `INSERT INTO daily_exams (profile_id, date, version, score, total, answers_json)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(
+      args.profileId,
+      args.date,
+      args.version,
+      args.score,
+      args.total,
+      args.answersJson,
+    );
+  } catch (err) {
+    const e = err as { code?: string };
+    if (e.code === "SQLITE_CONSTRAINT_UNIQUE") return null;
+    throw err;
+  }
+  return getDailyExam(args.profileId, args.date);
+}
+
+export function getDailyExam(
+  profileId: string,
+  date: string,
+): DailyExamRow | null {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT profile_id, date, version, submitted_at, score, total, answers_json
+       FROM daily_exams WHERE profile_id = ? AND date = ?`
+    )
+    .get(profileId, date) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    profileId: row.profile_id as string,
+    date: row.date as string,
+    version: row.version as "a" | "b",
+    submittedAt: row.submitted_at as string,
+    score: row.score as number,
+    total: row.total as number,
+    answersJson: row.answers_json as string,
+  };
+}
+
+/** All exam rows for a profile, ordered by date ascending. */
+export function listDailyExams(profileId: string): DailyExamRow[] {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT profile_id, date, version, submitted_at, score, total, answers_json
+       FROM daily_exams WHERE profile_id = ? ORDER BY date ASC`
+    )
+    .all(profileId) as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    profileId: row.profile_id as string,
+    date: row.date as string,
+    version: row.version as "a" | "b",
+    submittedAt: row.submitted_at as string,
+    score: row.score as number,
+    total: row.total as number,
+    answersJson: row.answers_json as string,
+  }));
 }
 
 export function syncFromLocalStorage(profileId: string, data: SyncData): void {

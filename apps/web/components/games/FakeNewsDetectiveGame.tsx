@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Shield, AlertTriangle, CheckCircle2, XCircle, Search, Eye } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Shield, AlertTriangle, CheckCircle2, XCircle, Search, Eye, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -190,6 +190,7 @@ export function FakeNewsDetectiveGame() {
   const [highScore, setHighScoreState] = useState(0);
   const [medals, setMedals] = useState<NewAchievement[]>([]);
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
   const roundStartRef = useRef(Date.now());
 
   useGameMusic();
@@ -217,7 +218,8 @@ export function FakeNewsDetectiveGame() {
   }, [phase, countdown, adaptive.level]);
 
   // Start game
-  const startGame = useCallback((startLevel: number) => {
+  const startGame = useCallback((startLevel: number, practice = false) => {
+    setPracticeMode(practice);
     setAdaptive(createAdaptiveState(startLevel));
     setScore(0);
     setStreak(0);
@@ -257,18 +259,17 @@ export function FakeNewsDetectiveGame() {
     const { mult } = getMultiplierFromStreak(streak);
     let pts = 0;
     if (bothCorrect) {
-      pts = Math.round((fast ? 150 : 100) * mult);
+      pts = practiceMode ? 0 : Math.round((fast ? 150 : 100) * mult);
       sfxCorrect();
     } else if (partialCorrect) {
-      pts = Math.round(50 * mult);
+      pts = practiceMode ? 0 : Math.round(50 * mult);
       sfxCorrect();
     } else {
       if (streak > 0) sfxStreakLost();
       sfxWrong();
     }
 
-    const newScore = score + pts;
-    setScore(newScore);
+    if (!practiceMode) setScore((s) => s + pts);
 
     // Streak
     const newStreak = bothCorrect ? streak + 1 : 0;
@@ -307,26 +308,29 @@ export function FakeNewsDetectiveGame() {
     if (currentIdx + 1 >= stories.length) {
       // Game over
       const finalScore = score;
-      if (finalScore > highScore) {
-        setLocalHighScore(GAME_ID, finalScore);
-        setHighScoreState(finalScore);
+      if (!practiceMode) {
+        if (finalScore > highScore) {
+          setLocalHighScore(GAME_ID, finalScore);
+          setHighScoreState(finalScore);
+        }
+        const profile = getProfile();
+        const correctCount = results.filter(r => r.correct).length;
+        const gameStats = {
+          gameId: GAME_ID,
+          score: finalScore,
+          bestStreak: maxStreak,
+          bestCombo: maxStreak,
+          accuracy: Math.round(correctCount / Math.max(1, results.length) * 100),
+          perfectLevels: correctCount === results.length ? 1 : 0,
+        };
+        const gamesPlayedByGameId = profile?.gamesPlayedByGameId ?? {};
+        const totalPlayed = profile?.totalGamesPlayed ?? 0;
+        const newMedals = checkAchievements(gameStats, totalPlayed, gamesPlayedByGameId);
+        setMedals(newMedals);
+        if (newMedals.length > 0) sfxAchievement();
+        trackGamePlayed(GAME_ID, finalScore, { bestStreak: maxStreak, adaptiveLevel: Math.round(adaptive.level) });
       }
-      const profile = getProfile();
       const correctCount = results.filter(r => r.correct).length;
-      const gameStats = {
-        gameId: GAME_ID,
-        score: finalScore,
-        bestStreak: maxStreak,
-        bestCombo: maxStreak,
-        accuracy: Math.round(correctCount / Math.max(1, results.length) * 100),
-        perfectLevels: correctCount === results.length ? 1 : 0,
-      };
-      const gamesPlayedByGameId = profile?.gamesPlayedByGameId ?? {};
-      const totalPlayed = profile?.totalGamesPlayed ?? 0;
-      const newMedals = checkAchievements(gameStats, totalPlayed, gamesPlayedByGameId);
-      setMedals(newMedals);
-      if (newMedals.length > 0) sfxAchievement();
-      trackGamePlayed(GAME_ID, finalScore, { bestStreak: maxStreak, adaptiveLevel: Math.round(adaptive.level) });
       const acc = results.length > 0 ? correctCount / results.length : 0;
       if (acc >= 1.0) sfxPerfect();
       else if (acc >= 0.8) sfxLevelUp();
@@ -395,6 +399,12 @@ export function FakeNewsDetectiveGame() {
                 <span className="text-white/50 text-xs font-normal">{opt.desc}</span>
               </button>
             ))}
+            <button
+              onClick={() => startGame(1, true)}
+              className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <BookOpen className="w-5 h-5" /> Practice
+            </button>
           </div>
 
           {highScore > 0 && (
@@ -419,11 +429,18 @@ export function FakeNewsDetectiveGame() {
 
   // ── HUD ──
   const HUD = (
-    <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
+    <div>
+      {practiceMode && (
+        <div className="px-3 py-1.5 bg-teal-500/10 border-b border-teal-400/20 flex items-center justify-between">
+          <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode — Learn at your own pace</span>
+          <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+        </div>
+      )}
+      <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
       <div className="flex items-center gap-2">
         <Link href="/games" className="text-white/40 hover:text-white"><ArrowLeft size={18} /></Link>
         <Shield size={16} className="text-amber-400" />
-        <span className="font-bold">{score.toLocaleString()}</span>
+        {!practiceMode && <span className="font-bold">{score.toLocaleString()}</span>}
         {streak >= 3 && <StreakBadge streak={streak} />}
       </div>
       <div className="flex items-center gap-2">
@@ -438,6 +455,7 @@ export function FakeNewsDetectiveGame() {
       <div className="text-xs text-white/40">
         {currentIdx + 1}/{stories.length}
       </div>
+    </div>
     </div>
   );
 
@@ -547,6 +565,16 @@ export function FakeNewsDetectiveGame() {
               <span className="text-xs font-bold text-amber-400 uppercase">{categoryLabel(story.category)}</span>
             </div>
             <p className="text-white/80 text-sm leading-relaxed mb-3">{story.explanation}</p>
+            {practiceMode && story.redFlags.length > 0 && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-3">
+                <p className="text-xs font-bold text-red-400 mb-1">All Red Flags</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {story.redFlags.map((flag, i) => (
+                    <li key={i} className="text-sm text-white/80">{flag}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
               <p className="text-xs font-bold text-amber-400 mb-1">Key Lesson</p>
               <p className="text-sm text-white/90">{story.teachingPoint}</p>
@@ -668,7 +696,7 @@ export function FakeNewsDetectiveGame() {
 
           <div className="flex gap-3 w-full">
             <button
-              onClick={() => startGame(adaptive.level)}
+              onClick={() => startGame(adaptive.level, practiceMode)}
               className="flex-1 py-3 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 transition flex items-center justify-center gap-2"
             >
               <RotateCcw size={16} /> Play Again

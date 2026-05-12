@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, BookOpen, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -421,6 +421,8 @@ export function ColorHarmonyGame() {
   const [aq, setAq] = useState<NewAchievement[]>([]);
   const [ai, setAi] = useState(0);
   const tr = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(false);
 
   useEffect(() => {
     if (phase !== "countdown") return;
@@ -431,20 +433,23 @@ export function ColorHarmonyGame() {
   }, [phase, countdown]);
 
   useEffect(() => {
-    if (phase === "playing" || phase === "feedback") {
+    if (!practiceMode && (phase === "playing" || phase === "feedback")) {
       tr.current = setInterval(() => setElapsed(e => e + 1), 1000);
       return () => { if (tr.current) clearInterval(tr.current); };
     }
     if (tr.current) clearInterval(tr.current);
-  }, [phase]);
+  }, [phase, practiceMode]);
 
   const dl = getDifficultyLabel(adaptive.level);
   const gi = getGradeForLevel(Math.floor(adaptive.level));
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     setQuestions(pickQ(QS, 1, QPS)); setCi(0); setSel(null); setScore(0); setCc(0);
     setBs(0); setElapsed(0); setAdaptive(createAdaptiveState(1));
-    setCountdown(CD); setAq([]); setAi(0); setPhase("countdown");
+    setCountdown(CD); setAq([]); setAi(0);
+    if (practice) { setPhase("playing"); setQs(Date.now()); }
+    else { setPhase("countdown"); }
   }, []);
 
   const handleSelect = useCallback((id: string) => {
@@ -457,14 +462,16 @@ export function ColorHarmonyGame() {
     setAdaptive(na);
     if (ok) {
       sfxCorrect(); setCc(c => c + 1);
-      const { mult } = getMultiplierFromStreak(na.streak);
-      const tb = Math.max(0, Math.round((TL - at) * 5));
-      setScore(s => s + Math.round((100 + tb) * mult));
-      if (na.streak > 2) sfxCombo(na.streak);
-      if (na.streak > bs) setBs(na.streak);
-    } else { if (adaptive.streak > 0) sfxStreakLost(); sfxWrong(); }
+      if (!practiceMode) {
+        const { mult } = getMultiplierFromStreak(na.streak);
+        const tb = Math.max(0, Math.round((TL - at) * 5));
+        setScore(s => s + Math.round((100 + tb) * mult));
+        if (na.streak > 2) sfxCombo(na.streak);
+        if (na.streak > bs) setBs(na.streak);
+      }
+    } else { if (!practiceMode && adaptive.streak > 0) sfxStreakLost(); sfxWrong(); }
     setPhase("feedback");
-  }, [phase, sel, questions, ci, qs, adaptive, bs]);
+  }, [phase, sel, questions, ci, qs, adaptive, bs, practiceMode]);
 
   const next = useCallback(() => {
     if (ci + 1 >= questions.length) {
@@ -473,14 +480,16 @@ export function ColorHarmonyGame() {
       if (acc >= 100) sfxPerfect();
       else if (acc >= 80) sfxLevelUp();
       else sfxGameOver();
-      if (score > hi) { setHi(score); setLocalHighScore(GAME_ID, score); }
-      trackGamePlayed(GAME_ID, score, { bestStreak: bs, adaptiveLevel: Math.floor(adaptive.level) });
-      const p = getProfile();
-      const na = checkAchievements(
-        { gameId: GAME_ID, score, level: Math.floor(adaptive.level), accuracy: acc, bestStreak: bs },
-        p.totalGamesPlayed, p.gamesPlayedByGameId,
-      );
-      if (na.length > 0) { sfxAchievement(); setAq(na); }
+      if (!practiceMode) {
+        if (score > hi) { setHi(score); setLocalHighScore(GAME_ID, score); }
+        trackGamePlayed(GAME_ID, score, { bestStreak: bs, adaptiveLevel: Math.floor(adaptive.level) });
+        const p = getProfile();
+        const na = checkAchievements(
+          { gameId: GAME_ID, score, level: Math.floor(adaptive.level), accuracy: acc, bestStreak: bs },
+          p.totalGamesPlayed, p.gamesPlayedByGameId,
+        );
+        if (na.length > 0) { sfxAchievement(); setAq(na); }
+      }
       setPhase("complete");
     } else {
       const used = new Set(questions.slice(0, ci + 1).map(q => q.question));
@@ -488,7 +497,7 @@ export function ColorHarmonyGame() {
       if (nx.length > 0) setQuestions(prev => { const u = [...prev]; u[ci + 1] = nx[0]; return u; });
       setCi(i => i + 1); setSel(null); setQs(Date.now()); setPhase("playing");
     }
-  }, [ci, questions, cc, score, hi, bs, adaptive]);
+  }, [ci, questions, cc, score, hi, bs, adaptive, practiceMode]);
 
   const q = questions[ci];
   const acc = questions.length > 0 && phase === "complete" ? Math.round((cc / questions.length) * 100) : 0;
@@ -516,7 +525,25 @@ export function ColorHarmonyGame() {
           {hi > 0 && <div className="text-xs text-slate-500 mb-4 flex items-center gap-1"><Trophy className="w-3 h-3 text-yellow-500" /> Best: {hi.toLocaleString()}</div>}
           {/* Mini color wheel decoration */}
           <div className="flex gap-1 mb-5">{["#EF4444","#F97316","#EAB308","#22C55E","#3B82F6","#8B5CF6","#EC4899"].map(c=><div key={c} className="w-6 h-6 rounded-full" style={{backgroundColor:c}} />)}</div>
-          <button onClick={startGame} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">Play</button>
+          {/* Learn First section */}
+          <div className="w-full mb-5">
+            <button onClick={() => setLearnOpen(!learnOpen)} className="flex items-center gap-2 text-sm text-teal-400 hover:text-teal-300 transition-colors mx-auto">
+              <BookOpen className="w-4 h-4" />
+              <span>What is Color Harmony?</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${learnOpen ? "rotate-180" : ""}`} />
+            </button>
+            {learnOpen && (
+              <div className="mt-3 bg-slate-800/60 rounded-xl p-4 text-left border border-white/5">
+                <p className="text-slate-300 text-sm mb-2">Some colors look great together (like blue and orange) and others clash. Color harmony means picking colors that work well as a team — there are simple rules to find colors that match!</p>
+                <p className="text-slate-400 text-xs mb-2">🌈 <strong className="text-slate-300">Example:</strong> A sunset uses warm colors together (red, orange, yellow) and it looks beautiful because those colors are neighbors on the color wheel.</p>
+                <p className="text-slate-400 text-xs">🎯 <strong className="text-slate-300">Think of it like:</strong> Colors have best friends! Colors that sit next to each other on the color wheel get along great, and colors on opposite sides create exciting contrast.</p>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => startGame(false)} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">Play</button>
+            <button onClick={() => startGame(true)} className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-teal-600/25 flex items-center gap-2"><BookOpen className="w-4 h-4" /> Practice</button>
+          </div>
         </div>
       )}
 
@@ -528,13 +555,21 @@ export function ColorHarmonyGame() {
 
       {(phase === "playing" || phase === "feedback") && q && (
         <div className="w-full max-w-2xl px-4 flex flex-col gap-3 mt-2">
+          {practiceMode && (
+            <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg px-3 py-1.5 text-center">
+              <span className="text-teal-400 text-xs font-semibold flex items-center justify-center gap-1.5"><BookOpen className="w-3 h-3" /> Practice Mode — No timer, no score. Learn at your own pace!</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-xs sm:text-sm text-slate-400">
             <div className="flex items-center gap-2">
-              <span>Q{ci + 1}/{questions.length}</span><span>|</span><span>{ft(elapsed)}</span>
+              <span>Q{ci + 1}/{questions.length}</span>
+              {!practiceMode && <><span>|</span><span>{ft(elapsed)}</span>
               <span>|</span><span style={{ color: dl.color }}>{dl.label}</span>
-              <span className="text-[10px] text-slate-600">({gi.label})</span>
+              <span className="text-[10px] text-slate-600">({gi.label})</span></>}
             </div>
-            <div className="flex items-center gap-2"><StreakBadge streak={adaptive.streak} /><span className="text-lg font-bold text-white">{score.toLocaleString()}</span></div>
+            {practiceMode
+              ? <div className="flex items-center gap-1.5 text-teal-400"><BookOpen className="w-3.5 h-3.5" /><span className="text-xs font-semibold">Practice</span></div>
+              : <div className="flex items-center gap-2"><StreakBadge streak={adaptive.streak} /><span className="text-lg font-bold text-white">{score.toLocaleString()}</span></div>}
           </div>
 
           {/* Context swatches */}
@@ -591,22 +626,37 @@ export function ColorHarmonyGame() {
 
       {phase === "complete" && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center max-w-md">
-          <Trophy className="w-12 h-12 text-yellow-400 mb-2" />
-          <h3 className="text-2xl font-bold text-white mb-1">{acc === 100 ? "Perfect Score!" : acc >= 80 ? "Great Job!" : "Keep Practicing!"}</h3>
-          <div className="text-4xl font-bold text-indigo-400 mb-4">{score.toLocaleString()}</div>
-          <div className="grid grid-cols-3 gap-4 mb-4 text-center w-full max-w-xs">
-            <div><div className="text-xl font-bold text-green-400">{acc}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
-            <div><div className="text-xl font-bold text-cyan-400">{ft(elapsed)}</div><div className="text-[10px] text-slate-500 uppercase">Time</div></div>
-            <div><div className="text-xl font-bold text-amber-400">{bs}</div><div className="text-[10px] text-slate-500 uppercase">Best Streak</div></div>
-          </div>
-          <div className="text-xs text-slate-500 mb-3">Final level: <span style={{ color: dl.color }}>{dl.label}</span> ({gi.label})</div>
-          <div className="mb-3 w-full max-w-xs">
-            <ScoreSubmit game={GAME_ID} score={score} level={Math.floor(adaptive.level)} stats={{ accuracy: `${acc}%`, bestStreak: bs, time: ft(elapsed) }} />
-          </div>
-          <div className="flex gap-3">
-            <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all"><RotateCcw className="w-4 h-4" /> Play Again</button>
-            <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl text-sm transition-all">Back</Link>
-          </div>
+          {practiceMode ? (
+            <>
+              <BookOpen className="w-12 h-12 text-teal-400 mb-2" />
+              <h3 className="text-2xl font-bold text-white mb-1">Practice Complete!</h3>
+              <p className="text-slate-400 text-sm mb-4">You got {cc} out of {questions.length} correct ({acc}%)</p>
+              <div className="flex gap-3 flex-wrap justify-center">
+                <button onClick={() => startGame(true)} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all"><RotateCcw className="w-4 h-4" /> Practice Again</button>
+                <button onClick={() => startGame(false)} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl text-sm transition-all">Play for Score</button>
+                <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl text-sm transition-all">Back</Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <Trophy className="w-12 h-12 text-yellow-400 mb-2" />
+              <h3 className="text-2xl font-bold text-white mb-1">{acc === 100 ? "Perfect Score!" : acc >= 80 ? "Great Job!" : "Keep Practicing!"}</h3>
+              <div className="text-4xl font-bold text-indigo-400 mb-4">{score.toLocaleString()}</div>
+              <div className="grid grid-cols-3 gap-4 mb-4 text-center w-full max-w-xs">
+                <div><div className="text-xl font-bold text-green-400">{acc}%</div><div className="text-[10px] text-slate-500 uppercase">Accuracy</div></div>
+                <div><div className="text-xl font-bold text-cyan-400">{ft(elapsed)}</div><div className="text-[10px] text-slate-500 uppercase">Time</div></div>
+                <div><div className="text-xl font-bold text-amber-400">{bs}</div><div className="text-[10px] text-slate-500 uppercase">Best Streak</div></div>
+              </div>
+              <div className="text-xs text-slate-500 mb-3">Final level: <span style={{ color: dl.color }}>{dl.label}</span> ({gi.label})</div>
+              <div className="mb-3 w-full max-w-xs">
+                <ScoreSubmit game={GAME_ID} score={score} level={Math.floor(adaptive.level)} stats={{ accuracy: `${acc}%`, bestStreak: bs, time: ft(elapsed) }} />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => startGame(false)} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all"><RotateCcw className="w-4 h-4" /> Play Again</button>
+                <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl text-sm transition-all">Back</Link>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

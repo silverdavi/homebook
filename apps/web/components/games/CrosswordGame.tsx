@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Check, Eraser } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Check, Eraser, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -265,6 +265,7 @@ export function CrosswordGame() {
   const [countdown, setCountdown] = useState(3);
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(3));
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wordStartTimeRef = useRef(Date.now());
 
@@ -332,15 +333,21 @@ export function CrosswordGame() {
   );
 
   const startGame = useCallback(
-    (idx: number) => {
+    (idx: number, practice = false) => {
+      setPracticeMode(practice);
       setPuzzleIdx(idx);
       initGrid(PUZZLES[idx]);
-      setCountdown(3);
-      setPhase("countdown");
       setElapsed(0);
       setScore(0);
       wordStartTimeRef.current = Date.now();
       if (!eink) sfxClick();
+      if (practice) {
+        setPhase("playing");
+        setStartTime(Date.now());
+      } else {
+        setCountdown(3);
+        setPhase("countdown");
+      }
     },
     [eink, initGrid]
   );
@@ -457,24 +464,26 @@ export function CrosswordGame() {
       const timeBonus = Math.max(0, 500 - elapsed * 2);
       const finalScore = 1000 + timeBonus;
       setScore(finalScore);
-      if (finalScore > highScore) {
-        setLocalHighScore("crossword", finalScore);
-        setHighScore(finalScore);
-      }
 
-      trackGamePlayed("crossword", finalScore);
-      const profile = getProfile();
-      const newAch = checkAchievements(
-        {
-          gameId: "crossword",
-          score: finalScore,
-          timeSeconds: elapsed,
-          accuracy: totalFilled > 0 ? (correctCount / totalFilled) * 100 : 100,
-        },
-        profile.totalGamesPlayed,
-        profile.gamesPlayedByGameId
-      );
-      setAchievements(newAch);
+      if (!practiceMode) {
+        if (finalScore > highScore) {
+          setLocalHighScore("crossword", finalScore);
+          setHighScore(finalScore);
+        }
+        trackGamePlayed("crossword", finalScore);
+        const profile = getProfile();
+        const newAch = checkAchievements(
+          {
+            gameId: "crossword",
+            score: finalScore,
+            timeSeconds: elapsed,
+            accuracy: totalFilled > 0 ? (correctCount / totalFilled) * 100 : 100,
+          },
+          profile.totalGamesPlayed,
+          profile.gamesPlayedByGameId
+        );
+        setAchievements(newAch);
+      }
       setPhase("complete");
 
       if (!eink) sfxLevelUp();
@@ -690,6 +699,18 @@ export function CrosswordGame() {
             </p>
           )}
 
+          {/* Educational section */}
+          <div className={`mb-6 p-4 rounded-xl text-left ${eink ? "border-2 border-black" : "bg-indigo-500/10 border border-indigo-400/20"}`}>
+            <h3 className={`text-sm font-bold mb-1.5 ${eink ? "text-black" : "text-indigo-300"}`}>📝 What is a Crossword?</h3>
+            <p className={`text-xs leading-relaxed mb-2 ${eink ? "text-black" : "text-slate-400"}`}>
+              Fill in words that cross each other using clues! Each clue tells you what word goes in a row (across) or column (down).
+              Where words cross, they share the same letter.
+            </p>
+            <p className={`text-[10px] italic ${eink ? "text-gray-600" : "text-slate-500"}`}>
+              Tip: Start with the clues you know for sure — the shared letters will help you solve harder ones!
+            </p>
+          </div>
+
           {/* Puzzle selection */}
           <div className="flex flex-col gap-3">
             {PUZZLES.map((p, i) => (
@@ -709,6 +730,18 @@ export function CrosswordGame() {
               </button>
             ))}
           </div>
+
+          {/* Practice button */}
+          <button
+            onClick={() => startGame(0, true)}
+            className={`w-full mt-4 py-3 font-medium flex items-center justify-center gap-2 ${
+              eink
+                ? "border-2 border-black text-black"
+                : "bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 rounded-xl transition-all"
+            }`}
+          >
+            <BookOpen className="w-5 h-5" /> Practice Mode (no timer, hints visible)
+          </button>
         </div>
       </div>
     );
@@ -755,11 +788,11 @@ export function CrosswordGame() {
             <AchievementToast key={a.medalId} name={a.name} tier={a.tier} />
           ))}
 
-          <ScoreSubmit game="crossword" score={score} level={Math.round(adaptive.level)} />
+          {!practiceMode && <ScoreSubmit game="crossword" score={score} level={Math.round(adaptive.level)} />}
 
           <div className="flex gap-3 justify-center mt-6">
             <button
-              onClick={() => setPhase("menu")}
+              onClick={() => startGame(puzzleIdx, practiceMode)}
               className={`px-6 py-3 ${eink ? einkBtn : stdBtn}`}
             >
               <RotateCcw className="inline w-4 h-4 mr-2" />
@@ -821,6 +854,13 @@ export function CrosswordGame() {
             {!eink && <AudioToggles />}
           </div>
         </div>
+
+        {practiceMode && (
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-xs font-medium flex items-center gap-1 ${eink ? "text-black" : "text-teal-400"}`}><BookOpen className="w-3 h-3" /> Practice Mode — no scores saved</span>
+            <button onClick={() => setPhase("menu")} className={`text-xs underline ${eink ? "text-black" : "text-slate-500 hover:text-white transition-colors"}`}>End Practice</button>
+          </div>
+        )}
 
         <h2 className={`text-center font-bold ${text} mb-3`}>
           {puzzle.name}

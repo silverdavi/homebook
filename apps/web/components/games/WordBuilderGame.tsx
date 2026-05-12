@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, Lightbulb, SkipForward, Star } from "lucide-react";
+import { ArrowLeft, Trophy, Lightbulb, SkipForward, Star, Heart } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { AchievementToast } from "@/components/games/AchievementToast";
@@ -143,11 +143,14 @@ export function WordBuilderGame() {
   const [selected, setSelected] = useState<number[]>([]);
   const [showHint, setShowHint] = useState(false);
   const [skips, setSkips] = useState(3);
+  const [lives, setLives] = useState(3);
   const [usedWords] = useState<Set<number>>(new Set());
   const [highScore, setHighScore] = useState(() => getLocalHighScore("wordBuilder_highScore"));
   const [achievementQueue, setAchievementQueue] = useState<Array<{ name: string; tier: "bronze" | "silver" | "gold" }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const hasTrackedSessionRef = useRef(false);
+  const scoreRef = useRef(0);
+  const practiceModeRef = useRef(false);
   const [countdown, setCountdown] = useState(3);
   const [wordStartTime, setWordStartTime] = useState(0);
 
@@ -165,19 +168,33 @@ export function WordBuilderGame() {
   // Extra hint letters revealed in practice mode at low adaptive levels
   const [revealedHintLetters, setRevealedHintLetters] = useState<number[]>([]);
 
+  // Keep refs in sync
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { practiceModeRef.current = practiceMode; }, [practiceMode]);
+
   useEffect(() => {
     if (phase !== "gameOver") return;
     if (practiceMode && practiceTotal > 0 && practiceCorrect === practiceTotal) sfxPerfect();
-  }, [phase, practiceMode, practiceTotal, practiceCorrect]);
-
-  useEffect(() => {
-    if (phase !== "correct") return;
-    const wordsBuilt = level;
+    // Track game play with final score on game over
     if (!hasTrackedSessionRef.current && !practiceMode) {
       trackGamePlayed("word-builder", score);
       hasTrackedSessionRef.current = true;
     }
+  }, [phase, practiceMode, practiceTotal, practiceCorrect, score]);
+
+  // Track on component unmount for normal mode (user navigates away mid-session)
+  useEffect(() => {
+    return () => {
+      if (!hasTrackedSessionRef.current && scoreRef.current > 0 && !practiceModeRef.current) {
+        trackGamePlayed("word-builder", scoreRef.current);
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: run only on unmount
+
+  useEffect(() => {
+    if (phase !== "correct") return;
     if (!practiceMode) {
+      const wordsBuilt = level;
       const profile = getProfile();
       const newOnes = checkAchievements(
         { gameId: "word-builder", score, wordsBuilt },
@@ -309,8 +326,18 @@ export function WordBuilderGame() {
     }
     if (skips <= 0) return;
     setSkips((s) => s - 1);
+    // Lose a life on skip
+    setLives((l) => {
+      const newLives = l - 1;
+      if (newLives <= 0) {
+        saveHighScore(score);
+        setPhase("gameOver");
+        return 0;
+      }
+      return newLives;
+    });
     loadWord();
-  }, [skips, loadWord, practiceMode]);
+  }, [skips, loadWord, practiceMode, score, saveHighScore]);
 
   const handlePracticeNext = useCallback(() => {
     setLevel((l) => l + 1);
@@ -325,6 +352,7 @@ export function WordBuilderGame() {
     setScore(0);
     setLevel(0);
     setSkips(3);
+    setLives(3);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
     hasTrackedSessionRef.current = false;
@@ -443,6 +471,11 @@ export function WordBuilderGame() {
                   <>
                     <span className="text-white font-bold">{score}</span>
                     <span>· Word {level + 1}</span>
+                    <span className="flex items-center gap-0.5 ml-1">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Heart key={i} className={`w-3.5 h-3.5 transition-all duration-300 ${i < lives ? "text-red-400 fill-red-400" : "text-slate-700 scale-75"}`} />
+                      ))}
+                    </span>
                   </>
                 )}
               </div>

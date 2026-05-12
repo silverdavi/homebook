@@ -479,12 +479,14 @@ export function DecimalDashGame() {
           sfxWrong();
           setFlash("wrong");
         }
-        setAdaptive(prev => adaptiveUpdate(prev, isCorrect, false));
+        const newAdaptivePractice = adaptiveUpdate(adaptive, isCorrect, false);
+        setAdaptive(newAdaptivePractice);
         setLastAnswer({ correct: isCorrect, problem });
         setPracticeWaiting(true);
         return;
       }
 
+      let newAdaptive: AdaptiveState;
       if (isCorrect) {
         const newStreak = streak + 1;
         const { mult } = getMultiplierFromStreak(newStreak);
@@ -498,19 +500,19 @@ export function DecimalDashGame() {
         setFlash("correct");
         if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
         else sfxCorrect();
-        // Adaptive: fast = answered in < 50% of timer (< 5s for a 10s window)
         const wasFast = elapsed < (duration * 0.5 / (duration / 10));
-        setAdaptive(prev => adaptiveUpdate(prev, true, wasFast));
+        newAdaptive = adaptiveUpdate(adaptive, true, wasFast);
       } else {
         sfxWrong();
         setStreak(0);
         setWrong((w) => w + 1);
         setFlash("wrong");
-        setAdaptive(prev => adaptiveUpdate(prev, false, false));
+        newAdaptive = adaptiveUpdate(adaptive, false, false);
       }
+      setAdaptive(newAdaptive);
 
       setTimeout(() => setFlash(null), 200);
-      const params = getDecimalParams(adaptive.level);
+      const params = getDecimalParams(newAdaptive.level);
       setProblem(generateProblem(enabledModes, params.decimalPlaces, params));
       setTipIdx(Math.floor(Math.random() * DECIMAL_TIPS.length));
     },

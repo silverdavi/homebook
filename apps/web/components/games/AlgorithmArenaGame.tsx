@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Zap, BarChart3, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Zap, BarChart3, CheckCircle2, XCircle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -151,6 +151,8 @@ export function AlgorithmArenaGame() {
   const [highScore, setHighScoreState] = useState(0);
   const [medals, setMedals] = useState<NewAchievement[]>([]);
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [showLearn, setShowLearn] = useState(false);
   const roundStartRef = useRef(Date.now());
 
   useGameMusic();
@@ -173,7 +175,8 @@ export function AlgorithmArenaGame() {
     return () => clearTimeout(t);
   }, [phase, countdown, adaptive.level]);
 
-  const startGame = useCallback((sl: number) => {
+  const startGame = useCallback((sl: number, practice = false) => {
+    setPracticeMode(practice);
     setAdaptive(createAdaptiveState(sl));
     setScore(0);
     setStreak(0);
@@ -194,71 +197,77 @@ export function AlgorithmArenaGame() {
       const correct = idx === q.correctIndex;
       const elapsed = Date.now() - roundStartRef.current;
       const fast = elapsed < 8000;
-      const { mult } = getMultiplierFromStreak(streak);
-      let pts = 0;
-      if (correct) {
-        pts = Math.round((fast ? 150 : 100) * mult);
-        sfxCorrect();
-      } else {
-        if (streak > 0) sfxStreakLost();
-        sfxWrong();
+
+      if (!practiceMode) {
+        const ns = correct ? streak + 1 : 0;
+        const { mult } = getMultiplierFromStreak(ns);
+        let pts = 0;
+        if (correct) {
+          pts = Math.round((fast ? 150 : 100) * mult);
+          sfxCorrect();
+        } else {
+          if (streak > 0) sfxStreakLost();
+          sfxWrong();
+        }
+        setScore((s) => s + pts);
+        setStreak(ns);
+        if (ns > maxStreak) setMaxStreak(ns);
+        if (ns > 0 && ns % 5 === 0) sfxCombo(ns);
+        const na = adaptiveUpdate(adaptive, correct, fast && correct);
+        setAdaptive(na);
+        if (na.lastAdjust && na.lastAdjustTime > adaptive.lastAdjustTime) {
+          setAdjustAnim(na.lastAdjust);
+          setTimeout(() => setAdjustAnim(null), 1200);
+          if (na.lastAdjust === "up") sfxLevelUp();
+        }
       }
-      setScore((s) => s + pts);
-      const ns = correct ? streak + 1 : 0;
-      setStreak(ns);
-      if (ns > maxStreak) setMaxStreak(ns);
-      if (ns > 0 && ns % 5 === 0) sfxCombo(ns);
-      const na = adaptiveUpdate(adaptive, correct, fast && correct);
-      setAdaptive(na);
-      if (na.lastAdjust && na.lastAdjustTime > adaptive.lastAdjustTime) {
-        setAdjustAnim(na.lastAdjust);
-        setTimeout(() => setAdjustAnim(null), 1200);
-        if (na.lastAdjust === "up") sfxLevelUp();
-      }
+
       setResults((p) => [
         ...p,
         { question: q, selectedIndex: idx, correct, fast },
       ]);
       setPhase("feedback");
     },
-    [q, selectedChoice, streak, maxStreak, adaptive],
+    [q, selectedChoice, streak, maxStreak, adaptive, practiceMode],
   );
 
   const nextQuestion = useCallback(() => {
     if (currentIdx + 1 >= questions.length) {
-      const fs = score;
-      if (fs > highScore) {
-        setLocalHighScore(GAME_ID, fs);
-        setHighScoreState(fs);
+      if (!practiceMode) {
+        const fs = score;
+        if (fs > highScore) {
+          setLocalHighScore(GAME_ID, fs);
+          setHighScoreState(fs);
+        }
+        const pr = getProfile();
+        const cc = results.filter((r) => r.correct).length;
+        const gs = {
+          gameId: GAME_ID,
+          score: fs,
+          bestStreak: maxStreak,
+          bestCombo: maxStreak,
+          accuracy: Math.round(
+            (cc / Math.max(1, results.length)) * 100,
+          ),
+          solved: cc,
+          perfectLevels: cc === results.length ? 1 : 0,
+        };
+        const nm = checkAchievements(
+          gs,
+          pr.totalGamesPlayed,
+          pr.gamesPlayedByGameId,
+        );
+        setMedals(nm);
+        if (nm.length > 0) sfxAchievement();
+        trackGamePlayed(GAME_ID, fs, {
+          bestStreak: maxStreak,
+          adaptiveLevel: Math.round(adaptive.level),
+        });
+        const acc = results.length > 0 ? cc / results.length : 0;
+        if (acc >= 1.0) sfxPerfect();
+        else if (acc >= 0.8) sfxLevelUp();
+        else sfxGameOver();
       }
-      const pr = getProfile();
-      const cc = results.filter((r) => r.correct).length;
-      const gs = {
-        gameId: GAME_ID,
-        score: fs,
-        bestStreak: maxStreak,
-        bestCombo: maxStreak,
-        accuracy: Math.round(
-          (cc / Math.max(1, results.length)) * 100,
-        ),
-        solved: cc,
-        perfectLevels: cc === results.length ? 1 : 0,
-      };
-      const nm = checkAchievements(
-        gs,
-        pr.totalGamesPlayed,
-        pr.gamesPlayedByGameId,
-      );
-      setMedals(nm);
-      if (nm.length > 0) sfxAchievement();
-      trackGamePlayed(GAME_ID, fs, {
-        bestStreak: maxStreak,
-        adaptiveLevel: Math.round(adaptive.level),
-      });
-      const acc = results.length > 0 ? cc / results.length : 0;
-      if (acc >= 1.0) sfxPerfect();
-      else if (acc >= 0.8) sfxLevelUp();
-      else sfxGameOver();
       setPhase("complete");
     } else {
       setCurrentIdx((i) => i + 1);
@@ -266,7 +275,7 @@ export function AlgorithmArenaGame() {
       roundStartRef.current = Date.now();
       setPhase("playing");
     }
-  }, [currentIdx, questions.length, score, highScore, maxStreak, results, adaptive]);
+  }, [currentIdx, questions.length, score, highScore, maxStreak, results, adaptive, practiceMode]);
 
   const dl = getDifficultyLabel(adaptive.level);
   const gi = getGradeForLevel(adaptive.level);
@@ -299,6 +308,34 @@ export function AlgorithmArenaGame() {
               step!
             </p>
           </div>
+
+          {/* Learn First section */}
+          <div className="w-full">
+            <button
+              onClick={() => setShowLearn(!showLearn)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors text-sm font-semibold"
+            >
+              <span>🤔 What are Algorithms?</span>
+              {showLearn ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {showLearn && (
+              <div className="mt-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-left text-sm text-slate-300 space-y-2">
+                <p>
+                  An <strong className="text-violet-300">algorithm</strong> is just a set of step-by-step instructions for solving a problem — like a recipe for making a sandwich!
+                </p>
+                <p>
+                  Computers follow algorithms to do everything — from sorting your photos to finding the fastest route to school.
+                </p>
+                <div className="bg-violet-500/10 rounded-lg px-3 py-2 text-xs">
+                  <p className="font-semibold text-violet-300 mb-1">Real-world example:</p>
+                  <p>🥪 Making a PB&amp;J sandwich is an algorithm:</p>
+                  <p className="ml-3">1) Get bread → 2) Spread peanut butter → 3) Spread jelly → 4) Put slices together</p>
+                  <p className="mt-1">🗺️ Directions to school are an algorithm too — step-by-step instructions to get somewhere!</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="w-full bg-white/5 rounded-xl p-4 border border-white/10">
             <h3 className="text-sm font-bold text-violet-400 mb-2">
               Skills You&apos;ll Learn
@@ -360,6 +397,12 @@ export function AlgorithmArenaGame() {
               </button>
             ))}
           </div>
+          <button
+            onClick={() => startGame(1, true)}
+            className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-teal-600 hover:bg-teal-500 text-white transition-colors flex items-center justify-center gap-2"
+          >
+            <BookOpen size={18} /> Practice Mode (No scoring, learn at your own pace)
+          </button>
           {highScore > 0 && (
             <p className="text-xs text-white/40">
               Personal best: {highScore.toLocaleString()}
@@ -386,32 +429,41 @@ export function AlgorithmArenaGame() {
 
   /* ---- HUD ---- */
   const HUD = (
-    <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
-      <div className="flex items-center gap-2">
-        <Link href="/games" className="text-white/40 hover:text-white">
-          <ArrowLeft size={18} />
-        </Link>
-        <Zap size={16} className="text-violet-400" />
-        <span className="font-bold">{score.toLocaleString()}</span>
-        {streak >= 3 && <StreakBadge streak={streak} />}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-bold" style={{ color: dl.color }}>
-          {dl.emoji} {dl.label}
-        </span>
-        <span className="text-xs text-white/50">
-          Lvl {Math.round(adaptive.level)} &middot; {gi.label}
-        </span>
-        {adjustAnim && (
-          <span
-            className={`text-xs font-bold animate-bounce ${adjustAnim === "up" ? "text-green-400" : "text-red-400"}`}
-          >
-            {adjustAnim === "up" ? "▲" : "▼"}
-          </span>
+    <div>
+      {practiceMode && (
+        <div className="bg-teal-600/20 border-b border-teal-500/30 px-3 py-1.5 text-center text-sm font-semibold text-teal-400">
+          📖 Practice Mode — No scoring. Learn at your own pace!
+        </div>
+      )}
+      <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
+        <div className="flex items-center gap-2">
+          <Link href="/games" className="text-white/40 hover:text-white">
+            <ArrowLeft size={18} />
+          </Link>
+          <Zap size={16} className="text-violet-400" />
+          {!practiceMode && <span className="font-bold">{score.toLocaleString()}</span>}
+          {!practiceMode && streak >= 3 && <StreakBadge streak={streak} />}
+        </div>
+        {!practiceMode && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold" style={{ color: dl.color }}>
+              {dl.emoji} {dl.label}
+            </span>
+            <span className="text-xs text-white/50">
+              Lvl {Math.round(adaptive.level)} &middot; {gi.label}
+            </span>
+            {adjustAnim && (
+              <span
+                className={`text-xs font-bold animate-bounce ${adjustAnim === "up" ? "text-green-400" : "text-red-400"}`}
+              >
+                {adjustAnim === "up" ? "▲" : "▼"}
+              </span>
+            )}
+          </div>
         )}
-      </div>
-      <div className="text-xs text-white/40">
-        {currentIdx + 1}/{questions.length}
+        <div className="text-xs text-white/40">
+          {currentIdx + 1}/{questions.length}
+        </div>
       </div>
     </div>
   );
@@ -532,6 +584,64 @@ export function AlgorithmArenaGame() {
   /* ---- COMPLETE ---- */
   if (phase === "complete") {
     const cc = results.filter((r) => r.correct).length;
+
+    if (practiceMode) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950/30 to-slate-900 text-white flex flex-col">
+          <div className="p-4 flex items-center gap-3">
+            <Link href="/games" className="text-white/60 hover:text-white">
+              <ArrowLeft size={24} />
+            </Link>
+            <h1 className="text-xl font-bold">Practice Complete</h1>
+          </div>
+          <div className="flex-1 flex flex-col items-center p-4 max-w-lg mx-auto gap-4">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📖</div>
+              <h2 className="text-3xl font-extrabold mb-2 text-teal-400">Practice Complete!</h2>
+              <p className="text-white/60 text-sm">Great job practicing! You got {cc} out of {results.length} right.</p>
+              <p className="text-white/40 text-xs mt-2">Keep practicing to build your confidence, or try the real game when you&apos;re ready!</p>
+            </div>
+            <div className="w-full bg-white/5 rounded-xl p-3">
+              <p className="text-xs font-bold text-white/60 mb-2">
+                Round by Round
+              </p>
+              <div className="space-y-1">
+                {results.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${r.correct ? "bg-emerald-600/30 text-emerald-400" : "bg-red-600/30 text-red-400"}`}
+                    >
+                      {r.correct ? "✓" : "✗"}
+                    </span>
+                    <span className="text-white/60 truncate flex-1">
+                      {r.question.question}
+                    </span>
+                    <span className="text-white/30 text-[10px]">
+                      {r.question.category}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => startGame(1, true)}
+                className="flex-1 py-3 rounded-xl font-bold bg-teal-600 hover:bg-teal-500 transition flex items-center justify-center gap-2"
+              >
+                <BookOpen size={16} /> Practice Again
+              </button>
+              <button
+                onClick={() => setPhase("menu")}
+                className="flex-1 py-3 rounded-xl font-bold bg-white/10 hover:bg-white/20 transition text-center"
+              >
+                Back to Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950/30 to-slate-900 text-white flex flex-col">
         <div className="p-4 flex items-center gap-3">

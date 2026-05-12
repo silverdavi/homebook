@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Check } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Check, BookOpen } from "lucide-react";
 import Link from "next/link";
 import {
   getLocalHighScore,
@@ -493,6 +493,7 @@ export function NonogramGame() {
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
   const [adjustAnim, setAdjustAnim] = useState<"up" | "down" | null>(null);
   const [puzzleStartTime, setPuzzleStartTime] = useState(Date.now());
+  const [practiceMode, setPracticeMode] = useState(false);
 
   useGameMusic();
 
@@ -536,7 +537,8 @@ export function NonogramGame() {
   }, [adaptive.lastAdjustTime, adaptive.lastAdjust]);
 
   const startPresetGame = useCallback(
-    (idx?: number) => {
+    (idx?: number, practice = false) => {
+      setPracticeMode(practice);
       const puzzles = getPuzzlesForSize(gridSize);
       const pi = idx ?? puzzleIndex;
       const puzzle = puzzles[pi % puzzles.length];
@@ -553,15 +555,20 @@ export function NonogramGame() {
       setPuzzleIndex(pi % puzzles.length);
       setPuzzleLabel(`Puzzle #${(pi % puzzles.length) + 1}`);
       setPuzzleMode("preset");
-      setCountdown(3);
-      setPhase("countdown");
       setPuzzleStartTime(Date.now());
       sfxClick();
+      if (practice) {
+        setPhase("playing");
+      } else {
+        setCountdown(3);
+        setPhase("countdown");
+      }
     },
     [gridSize, puzzleIndex]
   );
 
-  const startRandomGame = useCallback(() => {
+  const startRandomGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     const sol = generateRandomPuzzle(gridSize, density / 100, symmetry);
     setClues(generateClues(sol));
     setBoard(createEmptyBoard(gridSize));
@@ -574,10 +581,14 @@ export function NonogramGame() {
     const symLabel = symmetry === "none" ? "" : ` (${SYMMETRY_OPTIONS.find(s => s.key === symmetry)?.label ?? ""})`;
     setPuzzleLabel(`Random ${density}%${symLabel}`);
     setPuzzleMode("random");
-    setCountdown(3);
-    setPhase("countdown");
     setPuzzleStartTime(Date.now());
     sfxClick();
+    if (practice) {
+      setPhase("playing");
+    } else {
+      setCountdown(3);
+      setPhase("countdown");
+    }
   }, [gridSize, density, symmetry]);
 
   const handleCellClick = useCallback(
@@ -608,27 +619,29 @@ export function NonogramGame() {
       setPlayerBoard(board.map((row) => [...row]));
       const finalScore = calculateScore(gridSize, elapsed, moves);
       setScore(finalScore);
-      const key = hsKey(gridSize);
-      const prev = getLocalHighScore(key);
-      if (finalScore > prev) {
-        setLocalHighScore(key, finalScore);
-        setBestScore(finalScore);
+      if (!practiceMode) {
+        const key = hsKey(gridSize);
+        const prev = getLocalHighScore(key);
+        if (finalScore > prev) {
+          setLocalHighScore(key, finalScore);
+          setBestScore(finalScore);
+        }
+        trackGamePlayed(GAME_ID, finalScore);
+        const p = getProfile();
+        const ach = checkAchievements(
+          {
+            gameId: GAME_ID,
+            score: finalScore,
+            moves,
+            elapsed,
+            level: gridSize,
+            accuracy: 100,
+          },
+          p.totalGamesPlayed,
+          p.gamesPlayedByGameId
+        );
+        if (ach.length > 0) setNewAchievements(ach);
       }
-      trackGamePlayed(GAME_ID, finalScore);
-      const p = getProfile();
-      const ach = checkAchievements(
-        {
-          gameId: GAME_ID,
-          score: finalScore,
-          moves,
-          elapsed,
-          level: gridSize,
-          accuracy: 100,
-        },
-        p.totalGamesPlayed,
-        p.gamesPlayedByGameId
-      );
-      if (ach.length > 0) setNewAchievements(ach);
       setPhase("complete");
     } else {
       sfxWrong();
@@ -887,6 +900,44 @@ export function NonogramGame() {
               </div>
             )}
 
+            {/* What is a Nonogram? */}
+            <div
+              className={cx(
+                eink,
+                "border-2 border-black p-4 mb-4",
+                "bg-indigo-500/10 border border-indigo-400/20 rounded-xl p-4 mb-4"
+              )}
+            >
+              <h3
+                className={cx(
+                  eink,
+                  "font-bold text-lg mb-1",
+                  "font-bold text-sm text-indigo-300 mb-1.5"
+                )}
+              >
+                🧩 What is a Nonogram?
+              </h3>
+              <p
+                className={cx(
+                  eink,
+                  "text-sm mb-1",
+                  "text-xs text-slate-400 leading-relaxed mb-2"
+                )}
+              >
+                Use number clues to fill in a grid and reveal a hidden picture — it&apos;s like a logic puzzle!
+                The numbers tell you how many squares in a row should be filled in.
+              </p>
+              <p
+                className={cx(
+                  eink,
+                  "text-xs italic",
+                  "text-[10px] text-slate-500 italic"
+                )}
+              >
+                Tip: Nonograms are also called Picross or Griddlers. They were invented in Japan!
+              </p>
+            </div>
+
             {/* How to Play */}
             <div
               className={cx(
@@ -929,16 +980,28 @@ export function NonogramGame() {
               </ul>
             </div>
 
-            <div className="flex justify-center gap-3">
-              {puzzleMode === "preset" ? (
-                <button onClick={() => startPresetGame()} className={actionBtn(eink, true)}>
-                  Start Puzzle
-                </button>
-              ) : (
-                <button onClick={startRandomGame} className={actionBtn(eink, true)}>
-                  Generate &amp; Play
-                </button>
-              )}
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex justify-center gap-3">
+                {puzzleMode === "preset" ? (
+                  <button onClick={() => startPresetGame()} className={actionBtn(eink, true)}>
+                    Start Puzzle
+                  </button>
+                ) : (
+                  <button onClick={() => startRandomGame()} className={actionBtn(eink, true)}>
+                    Generate &amp; Play
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => puzzleMode === "preset" ? startPresetGame(undefined, true) : startRandomGame(true)}
+                className={cx(
+                  eink,
+                  "flex items-center gap-2 px-5 py-2.5 border-2 border-black font-bold",
+                  "flex items-center gap-2 px-5 py-2.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 rounded-xl font-medium transition-all"
+                )}
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
             </div>
           </div>
         )}
@@ -961,6 +1024,19 @@ export function NonogramGame() {
         {/* ── Playing Phase ── */}
         {phase === "playing" && (
           <div>
+            {/* Practice mode banner */}
+            {practiceMode && (
+              <div
+                className={cx(
+                  eink,
+                  "flex items-center justify-between border-2 border-black p-2 mb-3",
+                  "flex items-center justify-between mb-3"
+                )}
+              >
+                <span className={cx(eink, "text-sm font-bold", "text-xs text-teal-400 font-medium flex items-center gap-1")}>{!eink && <BookOpen className="w-3 h-3" />} Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className={cx(eink, "text-sm underline font-bold", "text-xs text-slate-500 hover:text-white transition-colors underline")}>End Practice</button>
+              </div>
+            )}
             {/* Stats Bar */}
             <div
               className={cx(
@@ -1353,9 +1429,11 @@ export function NonogramGame() {
               )}
             </div>
 
-            <div className="max-w-xs mx-auto mb-4">
-              <ScoreSubmit game="nonogram" score={score} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
-            </div>
+            {!practiceMode && (
+              <div className="max-w-xs mx-auto mb-4">
+                <ScoreSubmit game="nonogram" score={score} level={Math.round(adaptive.level)} stats={{ moves, timeSeconds: elapsed, gridSize }} />
+              </div>
+            )}
 
             <div className="flex justify-center gap-3 flex-wrap">
               {puzzleMode === "preset" ? (
@@ -1364,14 +1442,14 @@ export function NonogramGame() {
                     onClick={() => {
                       const nextIdx = (puzzleIndex + 1) % puzzles.length;
                       setPuzzleIndex(nextIdx);
-                      startPresetGame(nextIdx);
+                      startPresetGame(nextIdx, practiceMode);
                     }}
                     className={actionBtn(eink, true)}
                   >
                     Next Puzzle
                   </button>
                   <button
-                    onClick={() => startPresetGame()}
+                    onClick={() => startPresetGame(undefined, practiceMode)}
                     className={actionBtn(eink)}
                   >
                     Replay
@@ -1379,7 +1457,7 @@ export function NonogramGame() {
                 </>
               ) : (
                 <button
-                  onClick={startRandomGame}
+                  onClick={() => startRandomGame(practiceMode)}
                   className={actionBtn(eink, true)}
                 >
                   Generate Another

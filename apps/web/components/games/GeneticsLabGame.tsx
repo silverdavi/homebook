@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Dna, HelpCircle } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Dna, HelpCircle, BookOpen } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -175,9 +175,22 @@ export function GeneticsLabGame() {
   const [gameMode, setGameMode] = useState<GameMode>("fill");
   const [totalRounds, setTotalRounds] = useState(10);
 
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceWaiting, setPracticeWaiting] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+
   // ── Countdown ──
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      // Skip countdown in practice mode
+      sfxCountdownGo();
+      setPhase("playing");
+      loadNextProblem();
+      return;
+    }
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -199,6 +212,10 @@ export function GeneticsLabGame() {
   // ── Game over ──
   useEffect(() => {
     if (phase !== "gameOver") return;
+    if (practiceMode) {
+      // No tracking in practice mode
+      return;
+    }
     const acc = totalRounds > 0 ? solved / totalRounds : 0;
     if (acc >= 1.0) sfxPerfect();
     else sfxGameOver();
@@ -258,6 +275,16 @@ export function GeneticsLabGame() {
   }, []);
 
   const handleCorrectAnswer = () => {
+    if (practiceMode) {
+      sfxCorrect();
+      setPracticeTotal((t) => t + 1);
+      setPracticeCorrect((c) => c + 1);
+      setFlash("correct");
+      setShowResult("correct");
+      setPracticeWaiting(true);
+      setAdaptive(prev => adaptiveUpdate(prev, true, false));
+      return;
+    }
     const newStreak = streak + 1;
     const { mult } = getMultiplierFromStreak(newStreak);
     const elapsed = (Date.now() - roundStartRef.current) / 1000;
@@ -277,12 +304,33 @@ export function GeneticsLabGame() {
   };
 
   const handleWrongAnswer = () => {
+    if (practiceMode) {
+      sfxWrong();
+      setPracticeTotal((t) => t + 1);
+      setFlash("wrong");
+      setShowResult("wrong");
+      setPracticeWaiting(true);
+      setAdaptive(prev => adaptiveUpdate(prev, false, false));
+      return;
+    }
     if (streak > 0) sfxStreakLost();
     sfxWrong();
     setStreak(0);
     setFlash("wrong");
     setShowResult("wrong");
     setAdaptive(prev => adaptiveUpdate(prev, false, false));
+  };
+
+  const practiceNext = () => {
+    setPracticeWaiting(false);
+    setFlash(null);
+    setShowResult(null);
+    if (round + 1 >= totalRounds) {
+      endGame();
+    } else {
+      setRound((r) => r + 1);
+      loadNextProblem();
+    }
   };
 
   const advanceRound = () => {
@@ -329,7 +377,7 @@ export function GeneticsLabGame() {
     }
     if (allCorrect) handleCorrectAnswer();
     else handleWrongAnswer();
-    advanceRound();
+    if (!practiceMode) advanceRound();
   };
 
   // ── Ratio mode ──
@@ -339,7 +387,7 @@ export function GeneticsLabGame() {
     const correctRatio = ratioString(dominant, recessive);
     if (selectedRatio === correctRatio) handleCorrectAnswer();
     else handleWrongAnswer();
-    advanceRound();
+    if (!practiceMode) advanceRound();
   };
 
   // ── Parents mode ──
@@ -358,7 +406,7 @@ export function GeneticsLabGame() {
     } else {
       handleWrongAnswer();
     }
-    advanceRound();
+    if (!practiceMode) advanceRound();
   };
 
   const startGame = () => {
@@ -371,6 +419,9 @@ export function GeneticsLabGame() {
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
+    setPracticeWaiting(false);
     setPhase("countdown");
   };
 
@@ -425,6 +476,26 @@ export function GeneticsLabGame() {
               Master Mendelian genetics with interactive Punnett squares!
             </p>
 
+            {/* What is Genetics? */}
+            <div className="max-w-xs mx-auto mb-5 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-purple-400 mb-1">🧬 What is Genetics?</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Genetics is how living things pass on traits — like eye color, hair color, and height — from parents to children. Think of it like a recipe book inside every cell that decides how you look and grow!
+              </p>
+              <p className="text-xs text-slate-500 mt-2 italic">
+                🌻 Gregor Mendel discovered these rules using pea plants! • 👀 Your eye color comes from the genes your parents gave you.
+              </p>
+            </div>
+
+            {/* Practice button */}
+            <div className="max-w-xs mx-auto mb-4">
+              <button onClick={() => { setPracticeMode(true); startGame(); }}
+                className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-teal-500/20 border border-teal-400/40 text-teal-400 hover:bg-teal-500/30 flex items-center justify-center gap-2">
+                <BookOpen className="w-4 h-4" /> Practice Mode
+                <span className="text-[10px] text-teal-500/80 font-normal">— No timer, learn at your pace</span>
+              </button>
+            </div>
+
             {/* Mode selector */}
             <div className="max-w-xs mx-auto mb-4 space-y-1.5">
               <div className="text-xs text-slate-500 text-left mb-1">Mode</div>
@@ -465,7 +536,7 @@ export function GeneticsLabGame() {
               </button>
             </div>
 
-            <button onClick={startGame}
+            <button onClick={() => { setPracticeMode(false); startGame(); }}
               className="px-10 py-4 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/30">
               Start
             </button>
@@ -489,12 +560,37 @@ export function GeneticsLabGame() {
         {/* ── PLAYING ── */}
         {phase === "playing" && problem && (
           <div className="w-full space-y-4">
-            {/* Tip */}
-            <div className="text-center text-[11px] text-slate-500 italic px-4">
-              💡 {GENETICS_TIPS[tipIdx % GENETICS_TIPS.length]}
-            </div>
+            {/* Practice Mode banner */}
+            {practiceMode && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-500/30 text-teal-400 text-xs font-bold">
+                    Practice Mode
+                  </span>
+                </div>
+                <div className="text-sm text-slate-400 tabular-nums">
+                  {practiceTotal > 0 ? (
+                    <>{practiceCorrect}/{practiceTotal} correct</>
+                  ) : (
+                    "Learn at your pace!"
+                  )}
+                </div>
+                <button onClick={() => setPhase("gameOver")}
+                  className="text-xs text-slate-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5">
+                  End
+                </button>
+              </div>
+            )}
 
-            {/* HUD */}
+            {/* Tip */}
+            {!practiceWaiting && (
+              <div className="text-center text-[11px] text-slate-500 italic px-4">
+                💡 {GENETICS_TIPS[tipIdx % GENETICS_TIPS.length]}
+              </div>
+            )}
+
+            {/* HUD (non-practice) */}
+            {!practiceMode && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-400">{round + 1}/{totalRounds}</span>
               <div className="flex items-center gap-2">
@@ -518,6 +614,7 @@ export function GeneticsLabGame() {
                 <div className="text-xs text-slate-400">{solved} correct</div>
               </div>
             </div>
+            )}
 
             {/* Flash overlay */}
             {flash && (
@@ -542,7 +639,7 @@ export function GeneticsLabGame() {
             </div>
 
             {/* Result overlay */}
-            {showResult && (
+            {showResult && !practiceMode && (
               <div className={`text-center text-lg font-bold ${showResult === "correct" ? "text-green-400" : "text-red-400"}`}>
                 {showResult === "correct" ? "✓ Correct!" : "✗ Not quite"}
                 {showResult === "wrong" && gameMode === "fill" && (
@@ -555,6 +652,30 @@ export function GeneticsLabGame() {
                     Correct ratio: {ratioString(computeRatio(problem.parent1, problem.parent2).dominant, computeRatio(problem.parent1, problem.parent2).recessive)} (dominant:recessive)
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Practice mode: feedback + explanation + Next */}
+            {practiceMode && practiceWaiting && showResult && (
+              <div className="space-y-3">
+                <div className={`rounded-xl border p-4 text-center ${showResult === "correct" ? "border-green-400/30 bg-green-500/10" : "border-red-400/30 bg-red-500/10"}`}>
+                  <div className={`text-lg font-bold ${showResult === "correct" ? "text-green-400" : "text-red-400"}`}>
+                    {showResult === "correct" ? "✓ Correct!" : "✗ Not quite"}
+                  </div>
+                </div>
+                <div className="text-xs text-slate-400 text-left bg-white/5 rounded-lg px-4 py-3 border border-white/10 space-y-1">
+                  <div className="font-bold text-purple-400 mb-1">Explanation</div>
+                  <p>Parents: {formatGenotype(problem.parent1, problem.trait)} × {formatGenotype(problem.parent2, problem.trait)}</p>
+                  <p>Correct grid: {makePunnettGrid(problem.parent1, problem.parent2).flat().map((g) => formatGenotype(normalizeGenotype(g), problem.trait)).join(", ")}</p>
+                  <p>Ratio: {ratioString(computeRatio(problem.parent1, problem.parent2).dominant, computeRatio(problem.parent1, problem.parent2).recessive)} (dominant : recessive)</p>
+                  {isDominantPhenotype(problem.parent1) && isDominantPhenotype(problem.parent2) && (
+                    <p className="text-purple-300/70 italic">Both parents show the dominant trait ({problem.trait.dominantPhenotype}).</p>
+                  )}
+                </div>
+                <button onClick={practiceNext}
+                  className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl text-base transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                  Next Question →
+                </button>
               </div>
             )}
 
@@ -732,8 +853,13 @@ export function GeneticsLabGame() {
         {phase === "gameOver" && (
           <div className="text-center">
             <Dna className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-            <h3 className="text-3xl font-bold text-white mb-2">Lab Complete!</h3>
-            <div className="text-5xl font-bold text-purple-400 mb-2">{score}</div>
+            <h3 className="text-3xl font-bold text-white mb-2">{practiceMode ? "Practice Complete!" : "Lab Complete!"}</h3>
+            {!practiceMode && <div className="text-5xl font-bold text-purple-400 mb-2">{score}</div>}
+            {practiceMode && (
+              <div className="text-slate-400 space-y-1 mb-6">
+                <p>{practiceCorrect}/{practiceTotal} correct</p>
+              </div>
+            )}
             {/* Final adaptive level */}
             {(() => {
               const dl = getDifficultyLabel(adaptive.level);
@@ -750,15 +876,17 @@ export function GeneticsLabGame() {
               <p>{solved}/{totalRounds} correct ({accuracy}%)</p>
               <p>Best streak: x{bestStreak}</p>
             </div>
-            {score >= highScore && score > 0 && (
+            {!practiceMode && score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="genetics-lab" score={score} level={Math.round(adaptive.level)}
-                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="genetics-lab" score={score} level={Math.round(adaptive.level)}
+                  stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -770,7 +898,7 @@ export function GeneticsLabGame() {
               />
             )}
             <div className="flex gap-3 justify-center">
-              <button onClick={startGame}
+              <button onClick={() => { setPracticeMode(false); startGame(); }}
                 className="px-6 py-3 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Play Again
               </button>

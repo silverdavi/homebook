@@ -45,3 +45,13 @@ packages/generator/templates/tests/output/
 
 # LLM Cache
 .cache/
+
+# Local SQLite databases (created by the Next.js profile system at runtime)
+apps/web/.data/
+.data/
+
+# Smoke / E2E preview artifacts
+apps/web/preview.html
+
+# Local dev resend secret (key is per-account, kept out of source)
+resend.txt

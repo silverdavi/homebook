@@ -101,3 +101,45 @@ input[type="range"]::-moz-range-thumb {
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
+
+/* ──────────────────────────────────────────────────────────
+ * Game Arena — Dark-theme text readability overrides
+ *
+ * All games use dark backgrounds (slate-950/blue-950).
+ * Default Tailwind slate text colors are too faint against
+ * these backgrounds. These overrides boost readability by
+ * targeting TEXT-specific color utilities.
+ *
+ * This is the SINGLE SOURCE OF TRUTH for game text colors.
+ * Individual games should NOT hardcode lighter overrides.
+ * ────────────────────────────────────────────────────────── */
+
+/* Slate text brightening — only affects color, not bg/border */
+.game-arena .text-slate-500 { color: #94a3b8 !important; }  /* #64748b → slate-400 equivalent */
+.game-arena .text-slate-600 { color: #8492a6 !important; }  /* #475569 → between slate-400 & 500 */
+.game-arena .text-slate-700 { color: #64748b !important; }  /* #334155 → slate-500 equivalent */
+
+/* White text with low opacity — boost for dark backgrounds */
+.game-arena .text-white\/20 { color: rgb(255 255 255 / 0.45) !important; }
+.game-arena .text-white\/30 { color: rgb(255 255 255 / 0.50) !important; }
+.game-arena .text-white\/40 { color: rgb(255 255 255 / 0.62) !important; }
+.game-arena .text-white\/50 { color: rgb(255 255 255 / 0.68) !important; }
+.game-arena .text-white\/60 { color: rgb(255 255 255 / 0.78) !important; }
+
+/* Game arena semantic text tokens — use these for new games */
+.game-arena {
+  --game-text:           #f1f5f9; /* slate-100 — primary text */
+  --game-text-secondary: #cbd5e1; /* slate-300 — secondary labels */
+  --game-text-muted:     #94a3b8; /* slate-400 — lowest priority text */
+  --game-text-accent:    #818cf8; /* indigo-400 — accent/link text */
+}
+
+/* Border readability for subtle borders */
+.game-arena .border-white\/5 { border-color: rgb(255 255 255 / 0.10) !important; }
+
+/* Also improve placeholder text readability */
+.game-arena input::placeholder,
+.game-arena textarea::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}

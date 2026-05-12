@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Palette, Check, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Palette, Check, Eye, EyeOff, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
@@ -387,6 +387,7 @@ export function ColorLabGame() {
   const [achievementQueue, setAchievementQueue] = useState<Array<{ medalId: string; name: string; tier: MedalTier }>>([]);
   const [showAchievementIndex, setShowAchievementIndex] = useState(0);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  const [practiceMode, setPracticeMode] = useState(false);
 
   const diagram = DIAGRAMS.find((d) => d.id === selectedDiagramId) || DIAGRAMS[0];
 
@@ -457,8 +458,9 @@ export function ColorLabGame() {
   }, [regionStates, phase]);
 
   // Start game
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
     sfxClick();
+    setPracticeMode(practice);
     const d = DIAGRAMS.find((dd) => dd.id === selectedDiagramId) || DIAGRAMS[0];
     setRegionStates(d.regions.map((r) => ({ regionId: r.id, filledColor: null })));
     setScore(0);
@@ -466,10 +468,15 @@ export function ColorLabGame() {
     setTotalFilled(0);
     setElapsedSecs(0);
     setSelectedColor(d.palette[0]?.color || null);
-    setCountdownVal(COUNTDOWN_SECS);
-    setPhase("countdown");
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    if (practice) {
+      setPhase("playing");
+      setStartTime(Date.now());
+    } else {
+      setCountdownVal(COUNTDOWN_SECS);
+      setPhase("countdown");
+    }
   }, [selectedDiagramId]);
 
   // Fill region
@@ -526,17 +533,19 @@ export function ColorLabGame() {
       setTimeout(() => setShowBonus(false), 2000);
     }
 
-    if (finalScore > highScore) {
-      setHighScore(finalScore);
-      setLocalHighScore("colorLab_highScore", finalScore);
+    if (!practiceMode) {
+      if (finalScore > highScore) {
+        setHighScore(finalScore);
+        setLocalHighScore("colorLab_highScore", finalScore);
+      }
+      trackGamePlayed("color-lab", finalScore);
+      const profile = getProfile();
+      const newOnes = checkAchievements(
+        { gameId: "color-lab", score: finalScore, level: 1, accuracy },
+        profile.totalGamesPlayed, profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
     }
-    trackGamePlayed("color-lab", finalScore);
-    const profile = getProfile();
-    const newOnes = checkAchievements(
-      { gameId: "color-lab", score: finalScore, level: 1, accuracy },
-      profile.totalGamesPlayed, profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDiagramId, regionStates, score, highScore, elapsedSecs]);
 
@@ -579,6 +588,12 @@ export function ColorLabGame() {
       {/* HUD */}
       {phase === "playing" && (
         <div className="w-full max-w-[750px] px-4 mb-1">
+          {practiceMode && (
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode — no scores saved</span>
+              <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
             <div className="flex items-center gap-2 text-slate-400">
               <span>{completion}% filled</span>
@@ -655,9 +670,26 @@ export function ColorLabGame() {
                   </div>
                 </div>
 
-                <button onClick={startGame} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
-                  Play
-                </button>
+                {/* Educational section */}
+                <div className="w-full max-w-sm mb-5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl p-4 text-left">
+                  <h3 className="text-sm font-bold text-indigo-300 mb-1.5">🎨 What is Color Coding?</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-2">
+                    Color coding means assigning specific colors to different parts of a diagram to organize information.
+                    Scientists use it to label parts of cells, regions on maps, and groups of elements!
+                  </p>
+                  <p className="text-[10px] text-slate-500 italic">
+                    Tip: In this game you&apos;ll color-code educational diagrams — cells, continents, and the periodic table.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 w-full max-w-sm">
+                  <button onClick={() => startGame(false)} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
+                    Play
+                  </button>
+                  <button onClick={() => startGame(true)} className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Practice Mode
+                  </button>
+                </div>
               </div>
             )}
 
@@ -727,7 +759,7 @@ export function ColorLabGame() {
                 </svg>
 
                 {/* Color guide legend */}
-                {showGuide && (
+                {(showGuide || practiceMode) && (
                   <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg p-2 text-[9px] space-y-1 z-10">
                     {diagram.regions.map((r) => (
                       <div key={r.id} className="flex items-center gap-1.5">
@@ -738,8 +770,8 @@ export function ColorLabGame() {
                   </div>
                 )}
 
-                {/* Description on hover */}
-                {hoveredRegion && (
+                {/* Description on hover (always shown in practice mode) */}
+                {(hoveredRegion || practiceMode) && (
                   <div className="absolute top-2 left-2 right-[120px] bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 z-10">
                     <span className="text-xs text-white/90">
                       {diagram.regions.find((r) => r.id === hoveredRegion)?.description}
@@ -782,11 +814,13 @@ export function ColorLabGame() {
                   <div><div className="text-xl font-bold text-cyan-400">{formatTime(elapsedSecs)}</div><div className="text-[9px] text-slate-500 uppercase">Time</div></div>
                   <div><div className="text-xl font-bold text-yellow-400">{diagram.regions.length}</div><div className="text-[9px] text-slate-500 uppercase">Regions</div></div>
                 </div>
-                <div className="mb-2 w-full max-w-xs">
-                  <ScoreSubmit game="color-lab" score={score} level={1} stats={{ accuracy: `${computeAccuracy()}%`, time: formatTime(elapsedSecs), diagram: diagram.name }} />
-                </div>
+                {!practiceMode && (
+                  <div className="mb-2 w-full max-w-xs">
+                    <ScoreSubmit game="color-lab" score={score} level={1} stats={{ accuracy: `${computeAccuracy()}%`, time: formatTime(elapsedSecs), diagram: diagram.name }} />
+                  </div>
+                )}
                 <div className="flex gap-3 mt-2">
-                  <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">
+                  <button onClick={() => startGame(practiceMode)} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl flex items-center gap-2 text-sm transition-all">
                     <RotateCcw className="w-4 h-4" /> Again
                   </button>
                   <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl text-sm transition-all">

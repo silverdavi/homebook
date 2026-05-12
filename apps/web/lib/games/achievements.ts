@@ -150,8 +150,8 @@ export const MEDALS: MedalDef[] = [
     id: "chemist",
     name: "Chemist",
     bronze: { requirement: "Match 6 elements", check: (c) => c.stats.gameId === "element-match" && (c.stats.totalPairs ?? 0) >= 6 },
-    silver: { requirement: "Match 10 elements", check: (c) => c.stats.gameId === "element-match" && (c.stats.totalPairs ?? 0) >= 10 },
-    gold: { requirement: "Match 15 in under 60s", check: (c) => c.stats.gameId === "element-match" && (c.stats.totalPairs ?? 0) >= 15 && ((c.stats.timeSeconds ?? c.stats.elapsed ?? 999) as number) < 60 },
+    silver: { requirement: "Match 10 elements in under 120s", check: (c) => c.stats.gameId === "element-match" && (c.stats.totalPairs ?? 0) >= 10 && ((c.stats.timeSeconds ?? c.stats.elapsed ?? 999) as number) < 120 },
+    gold: { requirement: "Match 15 elements in under 120s", check: (c) => c.stats.gameId === "element-match" && (c.stats.totalPairs ?? 0) >= 15 && ((c.stats.timeSeconds ?? c.stats.elapsed ?? 999) as number) < 120 },
   },
   {
     id: "equation-wizard",
@@ -216,11 +216,13 @@ export const MEDALS: MedalDef[] = [
 
 const GAME_IDS = [
   "letter-rain", "word-builder",
-  "math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter",
+  "math-blitz", "fraction-fighter", "times-table", "fraction-lab", "decimal-dash", "graph-plotter", "graph-reading",
   "element-match", "equation-balancer", "genetics-lab", "unit-converter", "science-study",
-  "timeline-dash", "geography",
+  "timeline-dash", "geography", "fake-news-detective",
   "maze-runner", "trace-learn", "color-lab", "connect-dots", "scratch-reveal",
   "sudoku", "crossword", "word-search", "trivia-quiz", "nonogram", "number-puzzle",
+  "pattern-machine", "binary-bits", "debug-detective", "algorithm-arena",
+  "design-eye", "font-explorer", "layout-lab", "color-harmony",
   "daily-challenge",
 ] as const;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Heart, Star, Trophy, RotateCcw, ArrowLeft, Target, Gauge } from "lucide-react";
+import { Heart, Star, Trophy, RotateCcw, ArrowLeft, Target, Gauge, BookOpen } from "lucide-react";
 import { pickSentence, CATEGORIES } from "@/lib/games/sentences";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -143,6 +143,7 @@ export function LetterRainGame() {
   const [sentenceCategory, setSentenceCategory] = useState("");
   const [nextCharIndex, setNextCharIndex] = useState(0);
   const [letters, setLetters] = useState<FallingLetter[]>([]);
+  const lettersRef = useRef<FallingLetter[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [flash, setFlash] = useState<"good" | "bad" | null>(null);
   const [usedSentences] = useState<Set<number>>(new Set());
@@ -166,6 +167,8 @@ export function LetterRainGame() {
   const [speed, setSpeed] = useState(4); // 1-10
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [includeSpaces, setIncludeSpaces] = useState(false);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const practiceModeRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => { nextCharRef.current = nextCharIndex; }, [nextCharIndex]);
@@ -175,6 +178,7 @@ export function LetterRainGame() {
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { highScoreRef.current = highScore; }, [highScore]);
   useEffect(() => { adaptiveLevelRef.current = adaptive.level; }, [adaptive]);
+  useEffect(() => { practiceModeRef.current = practiceMode; }, [practiceMode]);
 
   // Tip rotation
   useEffect(() => {
@@ -204,15 +208,17 @@ export function LetterRainGame() {
     const accRatio = totalCaught + totalMissed > 0 ? totalCaught / (totalCaught + totalMissed) : 1;
     if (accRatio >= 1.0 && totalCaught > 0) sfxPerfect();
     else sfxGameOver();
-    trackGamePlayed("letter-rain", score);
-    const profile = getProfile();
-    const acc = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
-    const l = elapsedSecs > 0 ? Math.round((totalCaught / elapsedSecs) * 60) : 0;
-    const newOnes = checkAchievements(
-      { gameId: "letter-rain", score, level, accuracy: acc, lpm: l, bestCombo, perfectLevels },
-      profile.totalGamesPlayed, profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+    if (!practiceModeRef.current) {
+      trackGamePlayed("letter-rain", scoreRef.current, { bestStreak: bestCombo, adaptiveLevel: Math.round(adaptive.level) });
+      const profile = getProfile();
+      const acc = totalCaught + totalMissed > 0 ? Math.round((totalCaught / (totalCaught + totalMissed)) * 100) : 100;
+      const l = elapsedSecs > 0 ? Math.round((totalCaught / elapsedSecs) * 60) : 0;
+      const newOnes = checkAchievements(
+        { gameId: "letter-rain", score, level, accuracy: acc, lpm: l, bestCombo, perfectLevels },
+        profile.totalGamesPlayed, profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
+    }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown timer
@@ -271,7 +277,9 @@ export function LetterRainGame() {
       setSentenceCategory(picked.category);
       setNextCharIndex(0);
       nextCharRef.current = 0;
-      setLetters(prepareLetters(picked.text, includeSpaces, caseSensitive));
+      const prepared = prepareLetters(picked.text, includeSpaces, caseSensitive);
+      lettersRef.current = prepared;
+      setLetters(prepared);
       spawnTimerRef.current = 0;
       setElapsedSecs(0);
       setPhase("intro");
@@ -313,39 +321,30 @@ export function LetterRainGame() {
     setParticles((prev) => [...prev, ...newP]);
   }, []);
 
-  // ── Click handler — side-effects OUTSIDE of setLetters updater ──
+  // ── Click handler — uses lettersRef to avoid side-effects inside state updaters ──
   const handleLetterClick = useCallback(
     (letterId: string) => {
       if (phase !== "playing") return;
 
-      // eslint-disable-next-line prefer-const -- mutated inside setLetters callback
-      let hitLetter: FallingLetter | null = null as FallingLetter | null;
-      let wasWrong = false;
+      // Read current letters from ref (synchronous, always up-to-date)
+      const currentLetters = lettersRef.current;
+      const letter = currentLetters.find((l) => l.id === letterId);
+      if (!letter || letter.caught || letter.missed) return;
 
-      // Pure updater: only computes new state, no side effects
-      setLetters((prev) => {
-        const letter = prev.find((l) => l.id === letterId);
-        if (!letter || letter.caught || letter.missed) return prev;
+      let expectedIndex = nextCharRef.current;
+      if (!includeSpaces) {
+        while (expectedIndex < sentence.length && sentence[expectedIndex] === " ") expectedIndex++;
+      }
 
-        // Use ref for always-current nextCharIndex
-        let expectedIndex = nextCharRef.current;
-        if (!includeSpaces) {
-          while (expectedIndex < sentence.length && sentence[expectedIndex] === " ") expectedIndex++;
-        }
+      if (letter.sentenceIndex === expectedIndex) {
+        // ── Correct letter ──
+        const now = performance.now();
+        const newLetters = currentLetters.map((l) =>
+          l.id === letterId ? { ...l, caught: true, catchTime: now } : l
+        );
+        lettersRef.current = newLetters;
+        setLetters(newLetters);
 
-        if (letter.sentenceIndex === expectedIndex) {
-          hitLetter = letter;
-          const now = performance.now();
-          return prev.map((l) => (l.id === letterId ? { ...l, caught: true, catchTime: now } : l));
-        } else {
-          wasWrong = true;
-          return prev;
-        }
-      });
-
-      // ── Side effects OUTSIDE the updater ──
-      if (hitLetter) {
-        const letter = hitLetter;
         const newNextChar = letter.sentenceIndex + 1;
         nextCharRef.current = newNextChar;
         setNextCharIndex(newNextChar);
@@ -354,6 +353,7 @@ export function LetterRainGame() {
         comboRef.current = newCombo;
         const { mult } = getMultiplierFromStreak(newCombo);
         const points = Math.round(10 * mult);
+        scoreRef.current += points;
         setScore((s) => s + points);
         setCombo(newCombo);
         setBestCombo((bc) => Math.max(bc, newCombo));
@@ -390,23 +390,34 @@ export function LetterRainGame() {
           : !remaining.split("").some((c) => c !== " ");
         if (done) {
           sfxLevelUp();
-          setScore((s) => s + 50 * levelRef.current);
+          const lvlBonus = 50 * levelRef.current;
+          scoreRef.current += lvlBonus;
+          setScore((s) => s + lvlBonus);
           setTimeout(() => {
             const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
             if (missesThisLevel === 0) {
+              scoreRef.current += 100;
               setScore((s) => s + 100);
               setPerfectLevels((p) => p + 1);
               setShowPerfectToast(true);
               setTimeout(() => setShowPerfectToast(false), 2000);
             }
+            // Save high score on level complete too (not just game over)
+            if (!practiceModeRef.current && scoreRef.current > highScoreRef.current) {
+              setLocalHighScore("letterRain_highScore", scoreRef.current);
+              setHighScore(scoreRef.current);
+              highScoreRef.current = scoreRef.current;
+            }
             setPhase("levelComplete");
           }, 300);
         }
-      } else if (wasWrong) {
+      } else {
+        // ── Wrong letter ──
         if (comboRef.current > 0) sfxStreakLost();
         comboRef.current = 0;
         sfxWrong();
         setCombo(0);
+        scoreRef.current = Math.max(0, scoreRef.current - 5);
         setScore((s) => Math.max(0, s - 5));
         setTotalMissed((m) => m + 1);
         setAdaptive(prev => adaptiveUpdate(prev, false, false));
@@ -418,9 +429,7 @@ export function LetterRainGame() {
   );
 
   // ── Keyboard typing handler ──
-  // Self-contained: uses refs for all mutable values to avoid stale closures.
-  // Does NOT delegate to handleLetterClick (which uses setTimeout and causes
-  // race conditions when typing fast).
+  // Uses refs for all mutable values to avoid stale closures and React 18 batching issues.
   useEffect(() => {
     if (phase !== "playing") return;
 
@@ -454,25 +463,27 @@ export function LetterRainGame() {
         const curLevel = levelRef.current;
         const now = performance.now();
 
-        // Mark letter as caught in state
-        let caughtLetterY = GAME_HEIGHT;
-        setLetters((prev) => {
-          const letter = prev.find(
-            (l) => l.sentenceIndex === expectedIdx && !l.caught && !l.missed
-          );
-          if (!letter) return prev;
+        // Find the letter from ref (synchronous, no side-effects in updater)
+        const currentLetters = lettersRef.current;
+        const letterToMark = currentLetters.find(
+          (l) => l.sentenceIndex === expectedIdx && !l.caught && !l.missed
+        );
 
-          caughtLetterY = letter.spawned ? letter.y : 0;
+        let caughtLetterY = GAME_HEIGHT;
+        if (letterToMark) {
+          caughtLetterY = letterToMark.spawned ? letterToMark.y : 0;
 
           // Spawn splash at letter position (use center if not yet spawned)
-          const lx = letter.spawned ? letter.x : GAME_WIDTH / 2 - LETTER_SIZE / 2;
-          const ly = letter.spawned ? letter.y : GAME_HEIGHT / 3;
-          spawnSplash(lx + LETTER_SIZE / 2, ly + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letter.char);
+          const lx = letterToMark.spawned ? letterToMark.x : GAME_WIDTH / 2 - LETTER_SIZE / 2;
+          const ly = letterToMark.spawned ? letterToMark.y : GAME_HEIGHT / 3;
+          spawnSplash(lx + LETTER_SIZE / 2, ly + LETTER_SIZE / 2, getCategoryColor(sentenceCategory), 14, letterToMark.char);
 
-          return prev.map((l) =>
-            l.id === letter.id ? { ...l, caught: true, catchTime: now } : l
+          const newLetters = currentLetters.map((l) =>
+            l.id === letterToMark.id ? { ...l, caught: true, catchTime: now } : l
           );
-        });
+          lettersRef.current = newLetters;
+          setLetters(newLetters);
+        }
 
         // Update React state
         setNextCharIndex(newNextChar);
@@ -480,6 +491,7 @@ export function LetterRainGame() {
         // Scoring (using newCombo which is already computed from ref)
         const { mult } = getMultiplierFromStreak(newCombo);
         const points = Math.round(10 * mult);
+        scoreRef.current += points;
         setScore((s) => s + points);
         setCombo(newCombo);
         setBestCombo((bc) => Math.max(bc, newCombo));
@@ -514,14 +526,23 @@ export function LetterRainGame() {
           : !remaining.split("").some((c) => c !== " ");
         if (done) {
           sfxLevelUp();
-          setScore((s) => s + 50 * curLevel);
+          const lvlBonus = 50 * curLevel;
+          scoreRef.current += lvlBonus;
+          setScore((s) => s + lvlBonus);
           setTimeout(() => {
             const missesThisLevel = totalMissedRef.current - levelStartMissedRef.current;
             if (missesThisLevel === 0) {
+              scoreRef.current += 100;
               setScore((s) => s + 100);
               setPerfectLevels((p) => p + 1);
               setShowPerfectToast(true);
               setTimeout(() => setShowPerfectToast(false), 2000);
+            }
+            // Save high score on level complete too
+            if (!practiceModeRef.current && scoreRef.current > highScoreRef.current) {
+              setLocalHighScore("letterRain_highScore", scoreRef.current);
+              setHighScore(scoreRef.current);
+              highScoreRef.current = scoreRef.current;
             }
             setPhase("levelComplete");
           }, 300);
@@ -532,6 +553,7 @@ export function LetterRainGame() {
         comboRef.current = 0;
         sfxWrong();
         setCombo(0);
+        scoreRef.current = Math.max(0, scoreRef.current - 5);
         setScore((s) => Math.max(0, s - 5));
         setTotalMissed((m) => m + 1);
         setAdaptive(prev => adaptiveUpdate(prev, false, false));
@@ -545,6 +567,9 @@ export function LetterRainGame() {
   }, [phase, sentence, caseSensitive, includeSpaces, spawnSplash, sentenceCategory]);
 
   // ── Game loop ──
+  // Uses lettersRef as source of truth to avoid React 18 batching issues.
+  // All collision detection is computed synchronously from the ref before
+  // committing to React state.
   useEffect(() => {
     if (phase !== "playing") return;
 
@@ -552,65 +577,74 @@ export function LetterRainGame() {
       // Compute speed config each frame so adaptive multiplier is always current
       const rawConfig = getSpeedConfig(speed, level);
       const aMult = getAdaptiveSpeedMult(adaptiveLevelRef.current);
+      const practiceMult = practiceModeRef.current ? 0.5 : 1;
       const config = {
-        baseSpeed: rawConfig.baseSpeed * aMult,
-        spawnInterval: Math.max(150, rawConfig.spawnInterval / Math.max(0.5, aMult * 0.6)),
+        baseSpeed: rawConfig.baseSpeed * aMult * practiceMult,
+        spawnInterval: Math.max(150, (rawConfig.spawnInterval / Math.max(0.5, aMult * 0.6)) / practiceMult),
       };
       const dt = Math.min(time - lastTimeRef.current, 50);
       lastTimeRef.current = time;
+      const now = performance.now();
 
+      let updated = lettersRef.current;
+
+      // Spawn next letter
       spawnTimerRef.current += dt;
       if (spawnTimerRef.current >= config.spawnInterval) {
         spawnTimerRef.current = 0;
-        setLetters((prev) => {
-          const unspawned = prev.filter((l) => !l.spawned && !l.caught);
-          if (unspawned.length === 0) return prev;
+        const unspawned = updated.filter((l) => !l.spawned && !l.caught);
+        if (unspawned.length > 0) {
           const toSpawn = unspawned[0];
-          return prev.map((l) =>
+          updated = updated.map((l) =>
             l.id === toSpawn.id
               ? { ...l, spawned: true, speed: config.baseSpeed * (0.85 + Math.random() * 0.3), x: 40 + Math.random() * (GAME_WIDTH - 80) }
               : l
           );
-        });
+        }
       }
 
-      const now = performance.now();
-
+      // Move letters and detect ground collision (synchronous, no updater side-effects)
       let lostLife = false;
       let missX = 0;
 
-      setLetters((prev) => {
-        const updated = prev.map((l) => {
-          // Remove fully-animated caught letters
-          if (l.caught && l.catchTime > 0 && now - l.catchTime > CATCH_ANIM_MS) {
-            return l; // will be filtered below
-          }
-          if (!l.spawned || l.caught || l.missed) return l;
-          const newY = l.y + l.speed * dt * 0.06;
-          const newWobble = l.wobble + l.wobbleSpeed * dt;
-          if (newY >= GROUND_Y) { lostLife = true; missX = l.x + LETTER_SIZE / 2; return { ...l, y: GROUND_Y, missed: true }; }
-          return { ...l, y: newY, wobble: newWobble };
-        });
-        return updated;
+      updated = updated.map((l) => {
+        if (l.caught && l.catchTime > 0 && now - l.catchTime > CATCH_ANIM_MS) return l;
+        if (!l.spawned || l.caught || l.missed) return l;
+        const newY = l.y + l.speed * dt * 0.06;
+        const newWobble = l.wobble + l.wobbleSpeed * dt;
+        if (newY >= GROUND_Y) {
+          lostLife = true;
+          missX = l.x + LETTER_SIZE / 2;
+          return { ...l, y: GROUND_Y, missed: true };
+        }
+        return { ...l, y: newY, wobble: newWobble };
       });
 
+      // Commit updated letters to ref and state
+      lettersRef.current = updated;
+      setLetters(updated);
+
+      // Handle collision — lostLife is correctly set because we computed it synchronously
       if (lostLife) {
         if (comboRef.current > 0) sfxStreakLost();
         spawnRipple(missX);
         setTotalMissed((m) => m + 1);
         setAdaptive(prev => adaptiveUpdate(prev, false, false));
-        setLives((lv) => lv - 1);
-        const newLives = livesRef.current - 1;
-        livesRef.current = newLives;
-        if (newLives <= 0) {
-          setTimeout(() => {
-            setPhase("gameOver");
-            const currentScore = scoreRef.current;
-            if (currentScore > highScoreRef.current) {
-              setLocalHighScore("letterRain_highScore", currentScore);
-              setHighScore(currentScore);
-            }
-          }, 300);
+        if (!practiceModeRef.current) {
+          setLives((lv) => lv - 1);
+          const newLives = livesRef.current - 1;
+          livesRef.current = newLives;
+          if (newLives <= 0) {
+            setTimeout(() => {
+              setPhase("gameOver");
+              const currentScore = scoreRef.current;
+              if (currentScore > highScoreRef.current) {
+                setLocalHighScore("letterRain_highScore", currentScore);
+                setHighScore(currentScore);
+                highScoreRef.current = currentScore;
+              }
+            }, 300);
+          }
         }
         comboRef.current = 0;
         setCombo(0);
@@ -634,13 +668,16 @@ export function LetterRainGame() {
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [phase, level, speed, spawnRipple]);
 
-  const startGame = () => {
+  const startGame = (practice = false) => {
+    setPracticeMode(practice);
+    practiceModeRef.current = practice;
     setScore(0); setLives(INITIAL_LIVES); setLevel(1); setCombo(0); setBestCombo(0);
     setTotalCaught(0); setTotalMissed(0); setElapsedSecs(0); setPerfectLevels(0);
     setShowHeartRecovery(false); setShowPerfectToast(false); setAchievementQueue([]); setShowAchievementIndex(0);
     comboRef.current = 0; levelRef.current = 1;
     livesRef.current = INITIAL_LIVES; scoreRef.current = 0;
-    setAdaptive(createAdaptiveState(speed)); adaptiveLevelRef.current = speed;
+    const effectiveSpeed = practice ? Math.max(1, speed - 2) : speed;
+    setAdaptive(createAdaptiveState(effectiveSpeed)); adaptiveLevelRef.current = effectiveSpeed;
     usedSentences.clear();
     startLevel(1);
   };
@@ -692,6 +729,19 @@ export function LetterRainGame() {
               <span className="font-medium hidden sm:inline">{lps} lps</span>
               <span className="text-slate-500">Lv{level}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Practice mode banner + visible sentence */}
+      {practiceMode && phase === "playing" && (
+        <div className="w-full max-w-[850px] px-4 mb-1">
+          <div className="flex items-center justify-between bg-teal-500/10 border border-teal-400/20 rounded-lg px-3 py-1.5">
+            <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode</span>
+            <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+          </div>
+          <div className="mt-1 text-center text-sm font-medium" style={{ color: catColor }}>
+            &ldquo;{sentence}&rdquo;
           </div>
         </div>
       )}
@@ -862,9 +912,14 @@ export function LetterRainGame() {
                   ))}
                 </div>
 
-                <button onClick={startGame} className="px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
-                  Play
-                </button>
+                <div className="flex flex-col gap-2 w-full max-w-xs">
+                  <button onClick={() => startGame(false)} className="w-full px-10 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25">
+                    Play
+                  </button>
+                  <button onClick={() => startGame(true)} className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Practice
+                  </button>
+                </div>
                 {highScore > 0 && (
                   <div className="mt-2 flex items-center gap-1.5 text-yellow-400/70 text-xs">
                     <Trophy className="w-3 h-3" /> Best: {highScore.toLocaleString()}
@@ -1006,7 +1061,7 @@ export function LetterRainGame() {
                 )}
                 <div className="mb-2 w-full max-w-xs"><ScoreSubmit game="letter-rain" score={score} level={level} stats={{ accuracy: `${accuracy}%`, lpm, bestCombo, perfectLevels, finalDifficulty: adaptive.level.toFixed(1) }} /></div>
                 <div className="flex gap-3">
-                  <button onClick={startGame} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm">
+                  <button onClick={() => startGame(practiceMode)} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm">
                     <RotateCcw className="w-3.5 h-3.5" /> Again
                   </button>
                   <Link href="/games" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all text-sm">Back</Link>

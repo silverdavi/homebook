@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Timer, Star, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Timer, Star, ArrowRightLeft, BookOpen } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -211,9 +211,15 @@ export function UnitConverterGame() {
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
 
   // Settings
-  const [enabledCategories, setEnabledCategories] = useState<UnitCategory[]>(["length", "mass", "volume", "temperature", "time"]);
+  const [enabledCategories, setEnabledCategories] = useState<UnitCategory[]>(["length"]);
   const [secsPerQuestion, setSecsPerQuestion] = useState(10);
   const [totalRounds, setTotalRounds] = useState(15);
+
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceWaiting, setPracticeWaiting] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
 
   const toggleCategory = (cat: UnitCategory) => {
     setEnabledCategories((prev) => {
@@ -233,6 +239,12 @@ export function UnitConverterGame() {
   // ── Countdown ──
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      sfxCountdownGo();
+      setPhase("playing");
+      loadNextProblem();
+      return;
+    }
     const t = setTimeout(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -254,7 +266,7 @@ export function UnitConverterGame() {
   // ── Question timer ──
   const currentTimer = effectiveTimer();
   useEffect(() => {
-    if (phase !== "playing" || !problem) return;
+    if (phase !== "playing" || !problem || practiceMode) return;
     setQuestionTimeLeft(currentTimer);
     questionTimerRef.current = setInterval(() => {
       setQuestionTimeLeft((t) => {
@@ -289,6 +301,7 @@ export function UnitConverterGame() {
   useEffect(() => {
     if (phase !== "gameOver") return;
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    if (practiceMode) return;
     const acc = totalRounds > 0 ? solved / totalRounds : 0;
     if (acc >= 1.0) sfxPerfect();
     else sfxGameOver();
@@ -337,14 +350,41 @@ export function UnitConverterGame() {
     setTipIdx(Math.floor(Math.random() * UNIT_TIPS.length));
   }, [effectiveCategories]);
 
+  const practiceNext = useCallback(() => {
+    setPracticeWaiting(false);
+    setFlash(null);
+    if (round + 1 >= totalRounds) {
+      setPhase("gameOver");
+    } else {
+      setRound((r) => r + 1);
+      loadNextProblem();
+    }
+  }, [round, totalRounds, loadNextProblem]);
+
   const handleAnswer = useCallback(
     (choice: number) => {
-      if (phase !== "playing" || !problem) return;
+      if (phase !== "playing" || !problem || practiceWaiting) return;
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
       const elapsed = (Date.now() - problemStartRef.current) / 1000;
       const availableTime = currentTimer;
+      const isCorrect = Math.abs(choice - problem.answer) < 0.01;
 
-      if (Math.abs(choice - problem.answer) < 0.01) {
+      if (practiceMode) {
+        setPracticeTotal((t) => t + 1);
+        if (isCorrect) {
+          sfxCorrect();
+          setPracticeCorrect((c) => c + 1);
+          setFlash("correct");
+        } else {
+          sfxWrong();
+          setFlash("wrong");
+        }
+        setPracticeWaiting(true);
+        setAdaptive(prev => adaptiveUpdate(prev, isCorrect, false));
+        return;
+      }
+
+      if (isCorrect) {
         const newStreak = streak + 1;
         const { mult } = getMultiplierFromStreak(newStreak);
         const timeBonus = Math.max(0, Math.round((availableTime - elapsed) * 3));
@@ -376,7 +416,7 @@ export function UnitConverterGame() {
         }
       }, 600);
     },
-    [phase, problem, streak, round, totalRounds, currentTimer, loadNextProblem],
+    [phase, problem, streak, round, totalRounds, currentTimer, loadNextProblem, practiceMode, practiceWaiting],
   );
 
   const startGame = () => {
@@ -389,6 +429,9 @@ export function UnitConverterGame() {
     setCountdown(COUNTDOWN_SECS);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
+    setPracticeWaiting(false);
     setPhase("countdown");
   };
 
@@ -415,6 +458,26 @@ export function UnitConverterGame() {
             <p className="text-slate-400 mb-6 max-w-sm mx-auto">
               Race to convert between units! Length, mass, volume, temperature, and time.
             </p>
+
+            {/* What are Units? */}
+            <div className="max-w-xs mx-auto mb-5 bg-white/[0.04] border border-white/10 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-orange-400 mb-1">📐 What are Units?</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Units are ways we measure things — like inches and meters for length, or pounds and kilograms for weight. Sometimes you need to convert between them, like when a recipe uses cups but your measuring jug shows milliliters!
+              </p>
+              <p className="text-xs text-slate-500 mt-2 italic">
+                🏃 A 5K race is 5 kilometers = about 3.1 miles. • 🌡️ Water boils at 100°C, which is 212°F.
+              </p>
+            </div>
+
+            {/* Practice button */}
+            <div className="max-w-xs mx-auto mb-4">
+              <button onClick={() => { setPracticeMode(true); startGame(); }}
+                className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-teal-500/20 border border-teal-400/40 text-teal-400 hover:bg-teal-500/30 flex items-center justify-center gap-2">
+                <BookOpen className="w-4 h-4" /> Practice Mode
+                <span className="text-[10px] text-teal-500/80 font-normal">— No timer, learn at your pace</span>
+              </button>
+            </div>
 
             {/* Category toggles */}
             <div className="max-w-xs mx-auto mb-4 space-y-1.5">
@@ -457,7 +520,7 @@ export function UnitConverterGame() {
               </div>
             </div>
 
-            <button onClick={startGame}
+            <button onClick={() => { setPracticeMode(false); startGame(); }}
               className="px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/30">
               Start
             </button>
@@ -481,7 +544,30 @@ export function UnitConverterGame() {
         {/* ── PLAYING ── */}
         {phase === "playing" && problem && (
           <div className="w-full space-y-4">
-            {/* Question timer bar */}
+            {/* Practice Mode banner */}
+            {practiceMode && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-500/30 text-teal-400 text-xs font-bold">
+                    Practice Mode
+                  </span>
+                </div>
+                <div className="text-sm text-slate-400 tabular-nums">
+                  {practiceTotal > 0 ? (
+                    <>{practiceCorrect}/{practiceTotal} correct</>
+                  ) : (
+                    "Learn at your pace!"
+                  )}
+                </div>
+                <button onClick={() => setPhase("gameOver")}
+                  className="text-xs text-slate-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5">
+                  End
+                </button>
+              </div>
+            )}
+
+            {/* Question timer bar (not in practice mode) */}
+            {!practiceMode && (
             <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
               <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-linear"
                 style={{
@@ -489,13 +575,17 @@ export function UnitConverterGame() {
                   background: questionTimeLeft > currentTimer * 0.5 ? "#f97316" : questionTimeLeft > currentTimer * 0.25 ? "#f59e0b" : "#ef4444",
                 }} />
             </div>
+            )}
 
             {/* Tip */}
+            {!practiceWaiting && (
             <div className="text-center text-[11px] text-slate-500 italic px-4">
               💡 {UNIT_TIPS[tipIdx % UNIT_TIPS.length]}
             </div>
+            )}
 
-            {/* HUD */}
+            {/* HUD (non-practice) */}
+            {!practiceMode && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Timer className={`w-5 h-5 ${questionTimeLeft > currentTimer * 0.5 ? "text-orange-400" : questionTimeLeft > currentTimer * 0.25 ? "text-yellow-400" : "text-red-400"}`} />
@@ -525,6 +615,7 @@ export function UnitConverterGame() {
                 <div className="text-xs text-slate-400">{solved} correct</div>
               </div>
             </div>
+            )}
 
             {/* Flash */}
             {flash && (
@@ -551,6 +642,7 @@ export function UnitConverterGame() {
             </div>
 
             {/* Answer choices */}
+            {!practiceWaiting && (
             <div className="grid grid-cols-2 gap-3">
               {problem.choices.map((choice, i) => (
                 <button key={i} onClick={() => handleAnswer(choice)}
@@ -559,6 +651,27 @@ export function UnitConverterGame() {
                 </button>
               ))}
             </div>
+            )}
+
+            {/* Practice mode: feedback + explanation + Next */}
+            {practiceMode && practiceWaiting && (
+              <div className="space-y-3">
+                <div className={`rounded-xl border p-4 text-center ${flash === "correct" ? "border-green-400/30 bg-green-500/10" : "border-red-400/30 bg-red-500/10"}`}>
+                  <div className={`text-lg font-bold ${flash === "correct" ? "text-green-400" : "text-red-400"}`}>
+                    {flash === "correct" ? "✓ Correct!" : `✗ Wrong — answer: ${problem.answer} ${problem.toUnit}`}
+                  </div>
+                </div>
+                <div className="text-xs text-slate-400 text-left bg-white/5 rounded-lg px-4 py-3 border border-white/10 space-y-1">
+                  <div className="font-bold text-orange-400 mb-1">Explanation</div>
+                  <p>{problem.value} {problem.fromUnit} = {problem.answer} {problem.toUnit}</p>
+                  <p className="text-slate-500 italic">Remember: {UNIT_TIPS[tipIdx % UNIT_TIPS.length]}</p>
+                </div>
+                <button onClick={practiceNext}
+                  className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl text-base transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                  Next Question →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -566,8 +679,13 @@ export function UnitConverterGame() {
         {phase === "gameOver" && (
           <div className="text-center">
             <ArrowRightLeft className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-            <h3 className="text-3xl font-bold text-white mb-2">Race Complete!</h3>
-            <div className="text-5xl font-bold text-orange-400 mb-2">{score}</div>
+            <h3 className="text-3xl font-bold text-white mb-2">{practiceMode ? "Practice Complete!" : "Race Complete!"}</h3>
+            {!practiceMode && <div className="text-5xl font-bold text-orange-400 mb-2">{score}</div>}
+            {practiceMode && (
+              <div className="text-slate-400 space-y-1 mb-6">
+                <p>{practiceCorrect}/{practiceTotal} correct</p>
+              </div>
+            )}
             {/* Final adaptive level */}
             {(() => {
               const dl = getDifficultyLabel(adaptive.level);
@@ -584,15 +702,17 @@ export function UnitConverterGame() {
               <p>{solved}/{totalRounds} correct ({accuracy}%)</p>
               <p>Best streak: x{bestStreak}</p>
             </div>
-            {score >= highScore && score > 0 && (
+            {!practiceMode && score >= highScore && score > 0 && (
               <p className="text-yellow-400 text-sm font-medium mb-2 flex items-center justify-center gap-1">
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="unit-converter" score={score} level={Math.round(adaptive.level)}
-                stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="unit-converter" score={score} level={Math.round(adaptive.level)}
+                  stats={{ solved, totalRounds, accuracy: `${accuracy}%`, bestStreak, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -604,7 +724,7 @@ export function UnitConverterGame() {
               />
             )}
             <div className="flex gap-3 justify-center">
-              <button onClick={startGame}
+              <button onClick={() => { setPracticeMode(false); startGame(); }}
                 className="px-6 py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Play Again
               </button>

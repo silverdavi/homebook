@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Check, X } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Check, X, BookOpen } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -219,6 +219,7 @@ export function ScratchRevealGame() {
 
   // Adaptive difficulty
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [practiceMode, setPracticeMode] = useState(false);
 
   // ── Settings ──
   const [subject, setSubject] = useState<Subject>("math");
@@ -244,9 +245,9 @@ export function ScratchRevealGame() {
     return () => clearTimeout(t);
   }, [phase, countdown]);
 
-  // Timed mode
+  // Timed mode (disabled in practice)
   useEffect(() => {
-    if (phase !== "playing" || !timed) return;
+    if (phase !== "playing" || !timed || practiceMode) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
@@ -268,19 +269,21 @@ export function ScratchRevealGame() {
     const acc = cards.length > 0 ? correct / cards.length : 0;
     if (acc >= 1.0) sfxPerfect();
     else sfxGameOver();
-    if (score > highScore) {
-      setLocalHighScore("scratchReveal_highScore", score);
-      setHighScore(score);
+    if (!practiceMode) {
+      if (score > highScore) {
+        setLocalHighScore("scratchReveal_highScore", score);
+        setHighScore(score);
+      }
+      trackGamePlayed("scratch-reveal", score);
+      const profile = getProfile();
+      const accuracy = cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0;
+      const newOnes = checkAchievements(
+        { gameId: "scratch-reveal", score, bestStreak, accuracy, solved: correct },
+        profile.totalGamesPlayed,
+        profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
     }
-    trackGamePlayed("scratch-reveal", score);
-    const profile = getProfile();
-    const accuracy = cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0;
-    const newOnes = checkAchievements(
-      { gameId: "scratch-reveal", score, bestStreak, accuracy, solved: correct },
-      profile.totalGamesPlayed,
-      profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize scratch layer
@@ -465,7 +468,8 @@ export function ScratchRevealGame() {
     return () => window.removeEventListener("keydown", handler);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startGame = () => {
+  const startGame = (practice = false) => {
+    setPracticeMode(practice);
     const startingLevel = 1;
     setAdaptive(createAdaptiveState(startingLevel));
     const newCards = generateCards(subject, cardCount, startingLevel);
@@ -480,10 +484,14 @@ export function ScratchRevealGame() {
     setScratchPercent(0);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
-    setCountdown(COUNTDOWN_SECS);
-    if (timed) setTimeLeft(15);
+    if (timed && !practice) setTimeLeft(15);
     setTipIdx(Math.floor(Math.random() * TIPS[subject].length));
-    setPhase("countdown");
+    if (practice) {
+      setPhase("playing");
+    } else {
+      setCountdown(COUNTDOWN_SECS);
+      setPhase("countdown");
+    }
   };
 
   const subjectLabels: Record<Subject, string> = {
@@ -567,13 +575,32 @@ export function ScratchRevealGame() {
               </label>
             </div>
 
-            <button
-              onClick={startGame}
-              className="px-10 py-4 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-violet-500/30"
-            >
-              Start
-            </button>
-            {highScore > 0 && (
+            {/* Educational section */}
+            <div className="max-w-xs mx-auto mb-5 bg-violet-500/10 border border-violet-400/20 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-violet-300 mb-1.5">🎴 How to Play</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-2">
+                Read the question, think of your answer, then scratch the card to reveal the correct answer! Be honest — mark if you got it right or wrong.
+              </p>
+              <p className="text-[10px] text-slate-500 italic">
+                Tip: Try to answer in your head before scratching. This &quot;active recall&quot; technique helps your brain remember things better!
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 max-w-xs mx-auto w-full">
+              <button
+                onClick={() => startGame(false)}
+                className="px-10 py-4 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-violet-500/30"
+              >
+                Start
+              </button>
+              <button
+                onClick={() => startGame(true)}
+                className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
+            </div>
+            {highScore > 0 && !practiceMode && (
               <div className="mt-4 flex items-center justify-center gap-2 text-yellow-400 text-sm">
                 <Trophy className="w-4 h-4" /> Best: {highScore}
               </div>
@@ -593,6 +620,13 @@ export function ScratchRevealGame() {
         {/* PLAYING / SELF-CHECK */}
         {(phase === "playing" || phase === "selfCheck") && currentCard && (
           <div className="w-full space-y-4">
+            {/* Practice mode banner */}
+            {practiceMode && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+              </div>
+            )}
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -734,9 +768,11 @@ export function ScratchRevealGame() {
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="scratch-reveal" score={score} level={Math.round(adaptive.level)} stats={{ correct, wrong, bestStreak, accuracy: cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="scratch-reveal" score={score} level={Math.round(adaptive.level)} stats={{ correct, wrong, bestStreak, accuracy: cards.length > 0 ? Math.round((correct / cards.length) * 100) : 0, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -749,7 +785,7 @@ export function ScratchRevealGame() {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={startGame}
+                onClick={() => startGame(practiceMode)}
                 className="px-6 py-3 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" /> Play Again

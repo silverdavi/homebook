@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -236,17 +236,21 @@ export function BinaryBitsGame() {
 
   useGameMusic();
 
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [showLearn, setShowLearn] = useState(false);
+
   useEffect(() => {
     try { setHighScore(getLocalHighScore("binary-bits") ?? 0); } catch {}
   }, []);
 
   useEffect(() => {
+    if (practiceMode) return;
     if (phase === "playing" || phase === "feedback") {
       timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
       return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
     if (timerRef.current) clearInterval(timerRef.current);
-  }, [phase]);
+  }, [phase, practiceMode]);
 
   useEffect(() => {
     if (phase !== "countdown") return;
@@ -272,7 +276,8 @@ export function BinaryBitsGame() {
     return () => clearInterval(t);
   }, [phase]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     usedIndicesRef.current = new Set();
     const firstIdx = pickQuestion(1, usedIndicesRef.current);
     usedIndicesRef.current.add(firstIdx);
@@ -300,58 +305,66 @@ export function BinaryBitsGame() {
 
       setSelectedAnswer(answerIndex);
 
-      const newAdaptive = adaptiveUpdate(adaptive, isCorrect, isCorrect && wasFast);
-      setAdaptive(newAdaptive);
+      if (!practiceMode) {
+        const newAdaptive = adaptiveUpdate(adaptive, isCorrect, isCorrect && wasFast);
+        setAdaptive(newAdaptive);
 
-      if (isCorrect) {
-        const newStreak = streak + 1;
-        setStreak(newStreak);
-        setBestStreak((b) => Math.max(b, newStreak));
-        const { mult } = getMultiplierFromStreak(newStreak);
-        const base = 100 + (wasFast ? 50 : 0);
-        const pts = Math.round(base * mult);
-        setScore((s) => s + pts);
-        setCorrectCount((c) => c + 1);
-        sfxCorrect();
-        if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        if (isCorrect) {
+          const newStreak = streak + 1;
+          setStreak(newStreak);
+          setBestStreak((b) => Math.max(b, newStreak));
+          const { mult } = getMultiplierFromStreak(newStreak);
+          const base = 100 + (wasFast ? 50 : 0);
+          const pts = Math.round(base * mult);
+          setScore((s) => s + pts);
+          setCorrectCount((c) => c + 1);
+          sfxCorrect();
+          if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        } else {
+          if (streak > 0) sfxStreakLost();
+          setStreak(0);
+          sfxWrong();
+        }
+
+        if (newAdaptive.lastAdjust === "up") sfxLevelUp();
       } else {
-        setStreak(0);
-        sfxWrong();
+        if (isCorrect) setCorrectCount((c) => c + 1);
       }
-
-      if (newAdaptive.lastAdjust === "up") sfxLevelUp();
 
       setPhase("feedback");
     },
-    [phase, selectedAnswer, questionIndices, currentIdx, adaptive, streak, questionStartTime],
+    [phase, selectedAnswer, questionIndices, currentIdx, adaptive, streak, questionStartTime, practiceMode],
   );
 
   const nextQuestion = useCallback(() => {
     if (currentIdx + 1 >= QUESTIONS_PER_SESSION) {
       if (timerRef.current) clearInterval(timerRef.current);
-      const accuracy = QUESTIONS_PER_SESSION > 0 ? correctCount / QUESTIONS_PER_SESSION : 0;
-      if (accuracy >= 1.0) sfxPerfect();
-      else if (accuracy >= 0.8) sfxLevelUp();
-      else sfxGameOver();
 
-      try {
-        const prev = getLocalHighScore("binary-bits") ?? 0;
-        if (score > prev) { setLocalHighScore("binary-bits", score); setHighScore(score); }
-      } catch {}
+      if (!practiceMode) {
+        const accuracy = QUESTIONS_PER_SESSION > 0 ? correctCount / QUESTIONS_PER_SESSION : 0;
+        if (accuracy >= 1.0) sfxPerfect();
+        else if (accuracy >= 0.8) sfxLevelUp();
+        else sfxGameOver();
 
-      try {
-        trackGamePlayed("binary-bits", score, { bestStreak, adaptiveLevel: adaptive.level });
-        const profile = getProfile();
-        const medals = checkAchievements(
-          { gameId: "binary-bits", score, accuracy: Math.round(accuracy * 100), bestStreak, timeSeconds: elapsed },
-          profile.totalGamesPlayed,
-          profile.gamesPlayedByGameId,
-        );
-        if (medals.length > 0) {
-          sfxAchievement();
-          setAchievementQueue(medals.map((m) => ({ name: m.name, tier: m.tier })));
-        }
-      } catch {}
+        try {
+          const prev = getLocalHighScore("binary-bits") ?? 0;
+          if (score > prev) { setLocalHighScore("binary-bits", score); setHighScore(score); }
+        } catch {}
+
+        try {
+          trackGamePlayed("binary-bits", score, { bestStreak, adaptiveLevel: adaptive.level });
+          const profile = getProfile();
+          const medals = checkAchievements(
+            { gameId: "binary-bits", score, accuracy: Math.round(accuracy * 100), bestStreak, timeSeconds: elapsed },
+            profile.totalGamesPlayed,
+            profile.gamesPlayedByGameId,
+          );
+          if (medals.length > 0) {
+            sfxAchievement();
+            setAchievementQueue(medals.map((m) => ({ name: m.name, tier: m.tier })));
+          }
+        } catch {}
+      }
 
       setPhase("complete");
     } else {
@@ -363,7 +376,7 @@ export function BinaryBitsGame() {
       setQuestionStartTime(Date.now());
       setPhase("playing");
     }
-  }, [currentIdx, correctCount, score, bestStreak, adaptive, elapsed]);
+  }, [currentIdx, correctCount, score, bestStreak, adaptive, elapsed, practiceMode]);
 
   const currentQ = questionIndices.length > currentIdx ? QUESTIONS[questionIndices[currentIdx]] : null;
   const accuracy = QUESTIONS_PER_SESSION > 0 ? Math.round((correctCount / QUESTIONS_PER_SESSION) * 100) : 0;
@@ -414,16 +427,55 @@ export function BinaryBitsGame() {
             </div>
           </div>
 
+          {/* Learn First section */}
+          <div className="mb-6 max-w-md mx-auto">
+            <button
+              onClick={() => setShowLearn(!showLearn)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-colors text-sm font-semibold"
+            >
+              <span>🤔 What is Binary?</span>
+              {showLearn ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {showLearn && (
+              <div className="mt-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-left text-sm text-slate-300 space-y-2">
+                <p>
+                  Computers only understand two things: <strong className="text-cyan-300">ON and OFF</strong>, just like a light switch! We write ON as <strong className="text-cyan-300">1</strong> and OFF as <strong className="text-cyan-300">0</strong>.
+                </p>
+                <p>
+                  With just 1s and 0s, we can count just like with regular numbers. It&apos;s like counting with only two fingers!
+                </p>
+                <div className="bg-cyan-500/10 rounded-lg px-3 py-2 text-xs">
+                  <p className="font-semibold text-cyan-300 mb-1">See how it works:</p>
+                  <div className="font-mono grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    <span>1 = <strong>1</strong></span>
+                    <span>10 = <strong>2</strong></span>
+                    <span>11 = <strong>3</strong></span>
+                    <span>100 = <strong>4</strong></span>
+                  </div>
+                  <p className="mt-1 text-slate-400">Each spot is worth double the one before it!</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <p className="text-xs text-slate-500 mb-6">
             {QUESTIONS_PER_SESSION} questions per session &middot; Difficulty adapts to you
           </p>
 
-          <button
-            onClick={startGame}
-            className="px-10 py-3 rounded-lg font-bold text-lg bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
-          >
-            Start Game
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => startGame(false)}
+              className="px-10 py-3 rounded-lg font-bold text-lg bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
+            >
+              Start Game
+            </button>
+            <button
+              onClick={() => startGame(true)}
+              className="px-8 py-3 rounded-lg font-bold text-lg bg-teal-600 hover:bg-teal-500 text-white transition-colors flex items-center gap-2"
+            >
+              <BookOpen size={20} /> Practice
+            </button>
+          </div>
         </div>
       )}
 
@@ -439,30 +491,41 @@ export function BinaryBitsGame() {
       {/* Playing / Feedback */}
       {(phase === "playing" || phase === "feedback") && currentQ && (
         <div>
+          {/* Practice Mode Banner */}
+          {practiceMode && (
+            <div className="bg-teal-600/20 border border-teal-500/30 rounded-lg px-3 py-1.5 text-center text-sm font-semibold text-teal-400 mb-2">
+              📖 Practice Mode — No timer, no scoring. Learn at your own pace!
+            </div>
+          )}
+
           {/* HUD */}
           <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-1">
             <span>Q{currentIdx + 1}/{QUESTIONS_PER_SESSION}</span>
-            <span className="flex items-center gap-2">
-              Score: {score}
-              <StreakBadge streak={streak} />
-            </span>
-            <span>{formatTime(elapsed)}</span>
+            {!practiceMode && (
+              <span className="flex items-center gap-2">
+                Score: {score}
+                <StreakBadge streak={streak} />
+              </span>
+            )}
+            {!practiceMode && <span>{formatTime(elapsed)}</span>}
           </div>
 
           {/* Adaptive difficulty badge */}
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="text-xs font-bold" style={{ color: dl.color }}>
-              {dl.emoji} {dl.label}
-            </span>
-            <span className="text-xs text-white/60">
-              Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}
-            </span>
-            {showDiffChange && (
-              <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
-                {adaptive.lastAdjust === "up" ? "\u2191 Harder!" : "\u2193 Easier"}
+          {!practiceMode && (
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xs font-bold" style={{ color: dl.color }}>
+                {dl.emoji} {dl.label}
               </span>
-            )}
-          </div>
+              <span className="text-xs text-white/60">
+                Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}
+              </span>
+              {showDiffChange && (
+                <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                  {adaptive.lastAdjust === "up" ? "\u2191 Harder!" : "\u2193 Easier"}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="w-full h-1.5 bg-white/10 rounded-full mb-4">
@@ -553,41 +616,66 @@ export function BinaryBitsGame() {
       {/* Complete */}
       {phase === "complete" && (
         <div className="text-center py-8">
-          <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "💻" : "💪"}</div>
-          <h2 className="text-3xl font-bold mb-2 text-cyan-400">Session Complete!</h2>
+          {practiceMode ? (
+            <>
+              <div className="text-5xl mb-4">📖</div>
+              <h2 className="text-3xl font-bold mb-2 text-teal-400">Practice Complete!</h2>
+              <p className="text-slate-400 mb-4">Great job practicing! You got {correctCount} out of {QUESTIONS_PER_SESSION} right.</p>
+              <p className="text-sm text-slate-500 mb-6">Keep practicing to build your confidence, or try the real game when you&apos;re ready!</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => startGame(true)}
+                  className="px-8 py-3 rounded-lg font-bold bg-teal-600 hover:bg-teal-500 text-white transition-colors flex items-center gap-2"
+                >
+                  <BookOpen size={16} /> Practice Again
+                </button>
+                <button
+                  onClick={() => setPhase("menu")}
+                  className="px-8 py-3 rounded-lg font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
+                >
+                  Back to Menu
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "💻" : "💪"}</div>
+              <h2 className="text-3xl font-bold mb-2 text-cyan-400">Session Complete!</h2>
 
-          <div className="text-slate-300 space-y-1 mb-4">
-            <p>Accuracy: <span className="font-semibold">{correctCount}/{QUESTIONS_PER_SESSION}</span> ({accuracy}%)</p>
-            <p>Best Streak: <span className="font-semibold">{bestStreak}</span></p>
-            <p>Time: <span className="font-semibold">{formatTime(elapsed)}</span></p>
-          </div>
+              <div className="text-slate-300 space-y-1 mb-4">
+                <p>Accuracy: <span className="font-semibold">{correctCount}/{QUESTIONS_PER_SESSION}</span> ({accuracy}%)</p>
+                <p>Best Streak: <span className="font-semibold">{bestStreak}</span></p>
+                <p>Time: <span className="font-semibold">{formatTime(elapsed)}</span></p>
+              </div>
 
-          <div className="text-4xl font-bold text-yellow-400 mb-2">{score} pts</div>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">{score} pts</div>
 
-          <div className="mb-6">
-            <div className="text-sm text-slate-400 mb-1">Final Difficulty Level</div>
-            <div className="text-lg font-bold" style={{ color: dl.color }}>
-              {dl.emoji} {dl.label}
-            </div>
-            <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}</div>
-          </div>
+              <div className="mb-6">
+                <div className="text-sm text-slate-400 mb-1">Final Difficulty Level</div>
+                <div className="text-lg font-bold" style={{ color: dl.color }}>
+                  {dl.emoji} {dl.label}
+                </div>
+                <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}</div>
+              </div>
 
-          <div className="max-w-xs mx-auto mb-6">
-            <ScoreSubmit
-              game="binary-bits"
-              score={score}
-              level={Math.round(adaptive.level)}
-              stats={{ accuracy, bestStreak, timeSeconds: elapsed }}
-            />
-          </div>
+              <div className="max-w-xs mx-auto mb-6">
+                <ScoreSubmit
+                  game="binary-bits"
+                  score={score}
+                  level={Math.round(adaptive.level)}
+                  stats={{ accuracy, bestStreak, timeSeconds: elapsed }}
+                />
+              </div>
 
-          <button
-            onClick={() => setPhase("menu")}
-            className="px-8 py-3 rounded-lg font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
-          >
-            <RotateCcw size={16} className="inline mr-2" />
-            Play Again
-          </button>
+              <button
+                onClick={() => setPhase("menu")}
+                className="px-8 py-3 rounded-lg font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
+              >
+                <RotateCcw size={16} className="inline mr-2" />
+                Play Again
+              </button>
+            </>
+          )}
         </div>
       )}
 

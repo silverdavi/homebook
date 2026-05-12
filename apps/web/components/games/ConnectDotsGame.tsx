@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, Star, Timer } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, Star, Timer, BookOpen } from "lucide-react";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
 import { ScoreSubmit } from "@/components/games/ScoreSubmit";
@@ -367,6 +367,7 @@ export function ConnectDotsGame() {
 
   // Adaptive difficulty
   const [adaptive, setAdaptive] = useState<AdaptiveState>(() => createAdaptiveState(1));
+  const [practiceMode, setPracticeMode] = useState(false);
 
   // ── Settings ──
   const [category, setCategory] = useState<Category>("counting");
@@ -407,18 +408,20 @@ export function ConnectDotsGame() {
     if (phase !== "complete") return;
     if (mistakes === 0) sfxPerfect();
     else sfxGameOver();
-    if (score > highScore) {
-      setLocalHighScore("connectDots_highScore", score);
-      setHighScore(score);
+    if (!practiceMode) {
+      if (score > highScore) {
+        setLocalHighScore("connectDots_highScore", score);
+        setHighScore(score);
+      }
+      trackGamePlayed("connect-dots", score);
+      const profile = getProfile();
+      const newOnes = checkAchievements(
+        { gameId: "connect-dots", score, bestStreak, solved: roundIndex },
+        profile.totalGamesPlayed,
+        profile.gamesPlayedByGameId
+      );
+      if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
     }
-    trackGamePlayed("connect-dots", score);
-    const profile = getProfile();
-    const newOnes = checkAchievements(
-      { gameId: "connect-dots", score, bestStreak, solved: roundIndex },
-      profile.totalGamesPlayed,
-      profile.gamesPlayedByGameId
-    );
-    if (newOnes.length > 0) { sfxAchievement(); setAchievementQueue(newOnes); }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Canvas rendering
@@ -618,7 +621,8 @@ export function ConnectDotsGame() {
     [phase, currentSet, connectedCount, streak, shapeRevealed, timeElapsed, roundIndex, totalRounds, loadNextSet]
   );
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     setAdaptive(createAdaptiveState(1));
     const sets = getSetsForCategory(category);
     // Shuffle and pick roundCount sets — mix in adaptive-generated sets for counting
@@ -642,9 +646,14 @@ export function ConnectDotsGame() {
     setTimeElapsed(0);
     setAchievementQueue([]);
     setShowAchievementIndex(0);
-    setCountdown(COUNTDOWN_SECS);
     loadNextSet();
-    setPhase("countdown");
+    if (practice) {
+      setPhase("playing");
+      roundStartRef.current = Date.now();
+    } else {
+      setCountdown(COUNTDOWN_SECS);
+      setPhase("countdown");
+    }
   }, [category, roundCount, loadNextSet]);
 
   // Keyboard shortcuts (must be after startGame definition)
@@ -733,12 +742,31 @@ export function ConnectDotsGame() {
               </label>
             </div>
 
-            <button
-              onClick={startGame}
-              className="px-10 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
-            >
-              Start
-            </button>
+            {/* Educational section */}
+            <div className="max-w-sm mx-auto mb-5 bg-indigo-500/10 border border-indigo-400/20 rounded-xl p-4 text-left">
+              <h3 className="text-sm font-bold text-indigo-300 mb-1.5">🔗 How to Play</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-2">
+                Connect the numbered dots in order to reveal a hidden picture! Tap each dot from the smallest number to the largest.
+              </p>
+              <p className="text-[10px] text-slate-500 italic">
+                Tip: Skip counting (2, 4, 6...) helps you find patterns in math. Constellations are star patterns ancient people named!
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 max-w-xs mx-auto w-full">
+              <button
+                onClick={() => startGame(false)}
+                className="px-10 py-4 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl text-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
+              >
+                Start
+              </button>
+              <button
+                onClick={() => startGame(true)}
+                className="w-full py-3 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-400/30 hover:border-teal-400/50 text-teal-400 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" /> Practice Mode
+              </button>
+            </div>
             {highScore > 0 && (
               <div className="mt-4 flex items-center justify-center gap-2 text-yellow-400 text-sm">
                 <Trophy className="w-4 h-4" /> Best: {highScore}
@@ -759,11 +787,19 @@ export function ConnectDotsGame() {
         {/* PLAYING */}
         {phase === "playing" && currentSet && (
           <div className="w-full space-y-4">
+            {/* Practice mode banner */}
+            {practiceMode && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-teal-400 font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Practice Mode — no scores saved</span>
+                <button onClick={() => setPhase("menu")} className="text-xs text-slate-500 hover:text-white transition-colors underline">End Practice</button>
+              </div>
+            )}
             {/* HUD */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Timer className="w-4 h-4 text-slate-400" />
-                <span className="text-lg font-bold tabular-nums text-slate-300">{timeElapsed}s</span>
+                {!practiceMode && <Timer className="w-4 h-4 text-slate-400" />}
+                {!practiceMode && <span className="text-lg font-bold tabular-nums text-slate-300">{timeElapsed}s</span>}
+                {practiceMode && <span className="text-sm text-slate-400">Card {roundIndex + 1}/{totalRounds}</span>}
               </div>
               <div className="flex items-center gap-2">
                 <StreakBadge streak={streak} />
@@ -860,9 +896,11 @@ export function ConnectDotsGame() {
                 <Trophy className="w-4 h-4" /> New High Score!
               </p>
             )}
-            <div className="mb-3">
-              <ScoreSubmit game="connect-dots" score={score} level={Math.round(adaptive.level)} stats={{ solved: totalRounds, bestStreak, mistakes, finalLevel: adaptive.level.toFixed(1) }} />
-            </div>
+            {!practiceMode && (
+              <div className="mb-3">
+                <ScoreSubmit game="connect-dots" score={score} level={Math.round(adaptive.level)} stats={{ solved: totalRounds, bestStreak, mistakes, finalLevel: adaptive.level.toFixed(1) }} />
+              </div>
+            )}
             {achievementQueue.length > 0 && showAchievementIndex < achievementQueue.length && (
               <AchievementToast
                 name={achievementQueue[showAchievementIndex].name}
@@ -875,7 +913,7 @@ export function ConnectDotsGame() {
             )}
             <div className="flex gap-3 justify-center">
               <button
-                onClick={startGame}
+                onClick={() => startGame(practiceMode)}
                 className="px-6 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" /> Play Again

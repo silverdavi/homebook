@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, BookOpen, Zap, RotateCcw, ChevronRight, CheckCircle2, XCircle, Lightbulb, Trophy, Star } from "lucide-react";
 import { createAdaptiveState, adaptiveUpdate, getDifficultyLabel, type AdaptiveState } from "@/lib/games/adaptive-difficulty";
 import { getGradeForLevel } from "@/lib/games/learning-guide";
-import { trackGamePlayed, setLocalHighScore, getLocalHighScore, getSavedName } from "@/lib/games/use-scores";
+import { trackGamePlayed, setLocalHighScore, getLocalHighScore, getSavedName, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements, type GameStats } from "@/lib/games/achievements";
 import { sfxCorrect, sfxWrong, sfxCombo, sfxLevelUp, sfxStreakLost, sfxPerfect, sfxTick } from "@/lib/games/audio";
 
@@ -399,7 +399,8 @@ export function ScienceStudyGame() {
       solved: correct,
       timeSeconds: elapsed,
     };
-    checkAchievements(stats, 0, {});
+    const profile = getProfile();
+    checkAchievements(stats, profile.totalGamesPlayed, profile.gamesPlayedByGameId);
     setPhase("result");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [score, correct, wrong, bestStreak]);

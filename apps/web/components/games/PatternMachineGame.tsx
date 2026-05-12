@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -76,7 +76,7 @@ const QUESTIONS: Question[] = [
   { display: "1, 2, 3, 4, 1, 2, 3, 4, ...", prompt: "What is the 30th number?", options: ["1", "2", "3", "4"], correct: 1, explanation: "Loop length 4. 30 mod 4 = 2, so the 30th is 2.", minLevel: 15, maxLevel: 18 },
   { display: "red, green, blue, red, green, blue, ...", prompt: "What is the 100th color?", options: ["red", "green", "blue", "yellow"], correct: 0, explanation: "Loop length 3. 100 mod 3 = 1, position 1 = red.", minLevel: 15, maxLevel: 18 },
   { display: "5, 10, 15, 5, 10, 15, ...", prompt: "What is the loop length?", options: ["2", "3", "4", "5"], correct: 1, explanation: "The sequence {5, 10, 15} repeats, loop length = 3.", minLevel: 15, maxLevel: 18 },
-  { display: "A, A, B, A, A, B, A, A, B, ...", prompt: "What is the 17th item?", options: ["A", "B", "C", "D"], correct: 1, explanation: "Loop {A, A, B} length 3. 17 mod 3 = 2, so B.", minLevel: 15, maxLevel: 18 },
+  { display: "A, A, B, A, A, B, A, A, B, ...", prompt: "What is the 17th item?", options: ["A", "B", "C", "D"], correct: 0, explanation: "Loop {A, A, B} length 3. 17th item (1-based): (17-1) mod 3 = 1, so A.", minLevel: 15, maxLevel: 18 },
   { display: "1, 0, 1, 0, 1, 0, ...", prompt: "What is the 99th number?", options: ["0", "1", "2", "99"], correct: 1, explanation: "Loop length 2. 99 mod 2 = 1, position 1 = 1.", minLevel: 15, maxLevel: 18 },
   { display: "2, 4, 6, 8, 2, 4, 6, 8, ...", prompt: "Sum of one full loop?", options: ["10", "16", "20", "24"], correct: 2, explanation: "One loop is {2, 4, 6, 8}. Sum = 2+4+6+8 = 20.", minLevel: 15, maxLevel: 18 },
 
@@ -112,7 +112,7 @@ const QUESTIONS: Question[] = [
   { display: "Bacteria triples hourly.\nStart: 5", prompt: "After 4 hours?", options: ["60", "120", "405", "20"], correct: 2, explanation: "5 x 3\u2074 = 5 x 81 = 405.", minLevel: 33, maxLevel: 40 },
   { display: "1, 2, 4, 7, 11, 16, ...", prompt: "Next term?", options: ["22", "20", "24", "21"], correct: 0, explanation: "Differences: +1,+2,+3,+4,+5,+6. Next: 16+6=22.", minLevel: 33, maxLevel: 40 },
   { display: "Halving: 1000, 500, 250, ...", prompt: "Steps to go below 1?", options: ["8", "10", "12", "7"], correct: 1, explanation: "1000/2\u00b9\u2070 \u2248 0.977 < 1. Takes 10 steps.", minLevel: 33, maxLevel: 40 },
-  { display: "2\u207f vs n\u00b2", prompt: "At what n does 2\u207f always beat n\u00b2?", options: ["3", "5", "10", "100"], correct: 2, explanation: "2\u207f > n\u00b2 permanently for all n \u2265 10.", minLevel: 33, maxLevel: 40 },
+  { display: "2\u207f vs n\u00b2", prompt: "At what n does 2\u207f always beat n\u00b2?", options: ["3", "5", "10", "100"], correct: 1, explanation: "2\u207f > n\u00b2 permanently for all n \u2265 5. (2\u2075=32 > 5\u00b2=25.)", minLevel: 33, maxLevel: 40 },
 
   // Level 41-50: Complex recurrences (10)
   { display: "Sum of previous 3:\n1, 1, 1, 3, 5, 9, ?", prompt: "What comes next?", options: ["15", "17", "14", "18"], correct: 1, explanation: "3 + 5 + 9 = 17 (Tribonacci).", minLevel: 41, maxLevel: 50 },
@@ -202,17 +202,21 @@ export function PatternMachineGame() {
 
   useGameMusic();
 
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [showLearn, setShowLearn] = useState(false);
+
   useEffect(() => {
     try { setHighScore(getLocalHighScore("pattern-machine") ?? 0); } catch {}
   }, []);
 
   useEffect(() => {
+    if (practiceMode) return;
     if (phase === "playing" || phase === "feedback") {
       timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
       return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
     if (timerRef.current) clearInterval(timerRef.current);
-  }, [phase]);
+  }, [phase, practiceMode]);
 
   useEffect(() => {
     if (phase !== "countdown") return;
@@ -238,7 +242,8 @@ export function PatternMachineGame() {
     return () => clearInterval(t);
   }, [phase]);
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((practice = false) => {
+    setPracticeMode(practice);
     usedIndicesRef.current = new Set();
     const firstIdx = pickQuestion(1, usedIndicesRef.current);
     usedIndicesRef.current.add(firstIdx);
@@ -266,59 +271,66 @@ export function PatternMachineGame() {
 
       setSelectedAnswer(answerIndex);
 
-      const newAdaptive = adaptiveUpdate(adaptive, isCorrect, isCorrect && wasFast);
-      setAdaptive(newAdaptive);
+      if (!practiceMode) {
+        const newAdaptive = adaptiveUpdate(adaptive, isCorrect, isCorrect && wasFast);
+        setAdaptive(newAdaptive);
 
-      if (isCorrect) {
-        const newStreak = streak + 1;
-        setStreak(newStreak);
-        setBestStreak((b) => Math.max(b, newStreak));
-        const { mult } = getMultiplierFromStreak(newStreak);
-        const base = 100 + (wasFast ? 50 : 0);
-        const pts = Math.round(base * mult);
-        setScore((s) => s + pts);
-        setCorrectCount((c) => c + 1);
-        sfxCorrect();
-        if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        if (isCorrect) {
+          const newStreak = streak + 1;
+          setStreak(newStreak);
+          setBestStreak((b) => Math.max(b, newStreak));
+          const { mult } = getMultiplierFromStreak(newStreak);
+          const base = 100 + (wasFast ? 50 : 0);
+          const pts = Math.round(base * mult);
+          setScore((s) => s + pts);
+          setCorrectCount((c) => c + 1);
+          sfxCorrect();
+          if (newStreak > 1 && newStreak % 5 === 0) sfxCombo(newStreak);
+        } else {
+          if (streak > 0) sfxStreakLost();
+          setStreak(0);
+          sfxWrong();
+        }
+
+        if (newAdaptive.lastAdjust === "up") sfxLevelUp();
       } else {
-        if (streak > 0) sfxStreakLost();
-        setStreak(0);
-        sfxWrong();
+        if (isCorrect) setCorrectCount((c) => c + 1);
       }
-
-      if (newAdaptive.lastAdjust === "up") sfxLevelUp();
 
       setPhase("feedback");
     },
-    [phase, selectedAnswer, questionIndices, currentIdx, adaptive, streak, questionStartTime],
+    [phase, selectedAnswer, questionIndices, currentIdx, adaptive, streak, questionStartTime, practiceMode],
   );
 
   const nextQuestion = useCallback(() => {
     if (currentIdx + 1 >= QUESTIONS_PER_SESSION) {
       if (timerRef.current) clearInterval(timerRef.current);
-      const accuracy = QUESTIONS_PER_SESSION > 0 ? correctCount / QUESTIONS_PER_SESSION : 0;
-      if (accuracy >= 1.0) sfxPerfect();
-      else if (accuracy >= 0.8) sfxLevelUp();
-      else sfxGameOver();
 
-      try {
-        const prev = getLocalHighScore("pattern-machine") ?? 0;
-        if (score > prev) { setLocalHighScore("pattern-machine", score); setHighScore(score); }
-      } catch {}
+      if (!practiceMode) {
+        const accuracy = QUESTIONS_PER_SESSION > 0 ? correctCount / QUESTIONS_PER_SESSION : 0;
+        if (accuracy >= 1.0) sfxPerfect();
+        else if (accuracy >= 0.8) sfxLevelUp();
+        else sfxGameOver();
 
-      try {
-        trackGamePlayed("pattern-machine", score, { bestStreak, adaptiveLevel: adaptive.level });
-        const profile = getProfile();
-        const medals = checkAchievements(
-          { gameId: "pattern-machine", score, accuracy: Math.round(accuracy * 100), bestStreak, timeSeconds: elapsed },
-          profile.totalGamesPlayed,
-          profile.gamesPlayedByGameId,
-        );
-        if (medals.length > 0) {
-          sfxAchievement();
-          setAchievementQueue(medals.map((m) => ({ name: m.name, tier: m.tier })));
-        }
-      } catch {}
+        try {
+          const prev = getLocalHighScore("pattern-machine") ?? 0;
+          if (score > prev) { setLocalHighScore("pattern-machine", score); setHighScore(score); }
+        } catch {}
+
+        try {
+          trackGamePlayed("pattern-machine", score, { bestStreak, adaptiveLevel: adaptive.level });
+          const profile = getProfile();
+          const medals = checkAchievements(
+            { gameId: "pattern-machine", score, accuracy: Math.round(accuracy * 100), bestStreak, timeSeconds: elapsed },
+            profile.totalGamesPlayed,
+            profile.gamesPlayedByGameId,
+          );
+          if (medals.length > 0) {
+            sfxAchievement();
+            setAchievementQueue(medals.map((m) => ({ name: m.name, tier: m.tier })));
+          }
+        } catch {}
+      }
 
       setPhase("complete");
     } else {
@@ -330,7 +342,7 @@ export function PatternMachineGame() {
       setQuestionStartTime(Date.now());
       setPhase("playing");
     }
-  }, [currentIdx, correctCount, score, bestStreak, adaptive, elapsed]);
+  }, [currentIdx, correctCount, score, bestStreak, adaptive, elapsed, practiceMode]);
 
   const currentQ = questionIndices.length > currentIdx ? QUESTIONS[questionIndices[currentIdx]] : null;
   const accuracy = QUESTIONS_PER_SESSION > 0 ? Math.round((correctCount / QUESTIONS_PER_SESSION) * 100) : 0;
@@ -381,16 +393,51 @@ export function PatternMachineGame() {
             </div>
           </div>
 
+          {/* Learn First section */}
+          <div className="mb-6 max-w-md mx-auto">
+            <button
+              onClick={() => setShowLearn(!showLearn)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 transition-colors text-sm font-semibold"
+            >
+              <span>🤔 What are Patterns?</span>
+              {showLearn ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {showLearn && (
+              <div className="mt-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-left text-sm text-slate-300 space-y-2">
+                <p>
+                  <strong className="text-violet-300">Patterns</strong> are things that repeat in a predictable way — like how day always follows night, or how the seasons go spring, summer, fall, winter and then start over!
+                </p>
+                <p>
+                  Computers use patterns to predict what comes next. If you see numbers go 2, 4, 6, 8… you can probably guess the next one is 10!
+                </p>
+                <div className="bg-violet-500/10 rounded-lg px-3 py-2 text-xs">
+                  <p className="font-semibold text-violet-300 mb-1">Real-world examples:</p>
+                  <p>🦓 Zebra stripes repeat: black-white-black-white</p>
+                  <p>🎵 Songs have a chorus that repeats over and over</p>
+                  <p>📅 Days of the week repeat every 7 days</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <p className="text-xs text-slate-500 mb-6">
             {QUESTIONS_PER_SESSION} questions per session &middot; Difficulty adapts to you
           </p>
 
-          <button
-            onClick={startGame}
-            className="px-10 py-3 rounded-lg font-bold text-lg bg-violet-600 hover:bg-violet-500 text-white transition-colors"
-          >
-            Start Game
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => startGame(false)}
+              className="px-10 py-3 rounded-lg font-bold text-lg bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+            >
+              Start Game
+            </button>
+            <button
+              onClick={() => startGame(true)}
+              className="px-8 py-3 rounded-lg font-bold text-lg bg-teal-600 hover:bg-teal-500 text-white transition-colors flex items-center gap-2"
+            >
+              <BookOpen size={20} /> Practice
+            </button>
+          </div>
         </div>
       )}
 
@@ -406,30 +453,41 @@ export function PatternMachineGame() {
       {/* Playing / Feedback */}
       {(phase === "playing" || phase === "feedback") && currentQ && (
         <div>
+          {/* Practice Mode Banner */}
+          {practiceMode && (
+            <div className="bg-teal-600/20 border border-teal-500/30 rounded-lg px-3 py-1.5 text-center text-sm font-semibold text-teal-400 mb-2">
+              📖 Practice Mode — No timer, no scoring. Learn at your own pace!
+            </div>
+          )}
+
           {/* HUD */}
           <div className="flex items-center justify-between text-sm text-slate-300 py-2 mb-1">
             <span>Q{currentIdx + 1}/{QUESTIONS_PER_SESSION}</span>
-            <span className="flex items-center gap-2">
-              Score: {score}
-              <StreakBadge streak={streak} />
-            </span>
-            <span>{formatTime(elapsed)}</span>
+            {!practiceMode && (
+              <span className="flex items-center gap-2">
+                Score: {score}
+                <StreakBadge streak={streak} />
+              </span>
+            )}
+            {!practiceMode && <span>{formatTime(elapsed)}</span>}
           </div>
 
           {/* Adaptive difficulty badge */}
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="text-xs font-bold" style={{ color: dl.color }}>
-              {dl.emoji} {dl.label}
-            </span>
-            <span className="text-xs text-white/60">
-              Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}
-            </span>
-            {showDiffChange && (
-              <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
-                {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+          {!practiceMode && (
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xs font-bold" style={{ color: dl.color }}>
+                {dl.emoji} {dl.label}
               </span>
-            )}
-          </div>
+              <span className="text-xs text-white/60">
+                Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}
+              </span>
+              {showDiffChange && (
+                <span className={`text-[10px] font-bold animate-bounce ${adaptive.lastAdjust === "up" ? "text-red-400" : "text-green-400"}`}>
+                  {adaptive.lastAdjust === "up" ? "↑ Harder!" : "↓ Easier"}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="w-full h-1.5 bg-white/10 rounded-full mb-4">
@@ -518,41 +576,66 @@ export function PatternMachineGame() {
       {/* Complete */}
       {phase === "complete" && (
         <div className="text-center py-8">
-          <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "⚙️" : "💪"}</div>
-          <h2 className="text-3xl font-bold mb-2 text-violet-400">Session Complete!</h2>
+          {practiceMode ? (
+            <>
+              <div className="text-5xl mb-4">📖</div>
+              <h2 className="text-3xl font-bold mb-2 text-teal-400">Practice Complete!</h2>
+              <p className="text-slate-400 mb-4">Great job practicing! You got {correctCount} out of {QUESTIONS_PER_SESSION} right.</p>
+              <p className="text-sm text-slate-500 mb-6">Keep practicing to build your confidence, or try the real game when you&apos;re ready!</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => startGame(true)}
+                  className="px-8 py-3 rounded-lg font-bold bg-teal-600 hover:bg-teal-500 text-white transition-colors flex items-center gap-2"
+                >
+                  <BookOpen size={16} /> Practice Again
+                </button>
+                <button
+                  onClick={() => setPhase("menu")}
+                  className="px-8 py-3 rounded-lg font-bold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+                >
+                  Back to Menu
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-5xl mb-4">{accuracy >= 80 ? "🏆" : accuracy >= 50 ? "⚙️" : "💪"}</div>
+              <h2 className="text-3xl font-bold mb-2 text-violet-400">Session Complete!</h2>
 
-          <div className="text-slate-300 space-y-1 mb-4">
-            <p>Accuracy: <span className="font-semibold">{correctCount}/{QUESTIONS_PER_SESSION}</span> ({accuracy}%)</p>
-            <p>Best Streak: <span className="font-semibold">{bestStreak}</span></p>
-            <p>Time: <span className="font-semibold">{formatTime(elapsed)}</span></p>
-          </div>
+              <div className="text-slate-300 space-y-1 mb-4">
+                <p>Accuracy: <span className="font-semibold">{correctCount}/{QUESTIONS_PER_SESSION}</span> ({accuracy}%)</p>
+                <p>Best Streak: <span className="font-semibold">{bestStreak}</span></p>
+                <p>Time: <span className="font-semibold">{formatTime(elapsed)}</span></p>
+              </div>
 
-          <div className="text-4xl font-bold text-yellow-400 mb-2">{score} pts</div>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">{score} pts</div>
 
-          <div className="mb-6">
-            <div className="text-sm text-slate-400 mb-1">Final Difficulty Level</div>
-            <div className="text-lg font-bold" style={{ color: dl.color }}>
-              {dl.emoji} {dl.label}
-            </div>
-            <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}</div>
-          </div>
+              <div className="mb-6">
+                <div className="text-sm text-slate-400 mb-1">Final Difficulty Level</div>
+                <div className="text-lg font-bold" style={{ color: dl.color }}>
+                  {dl.emoji} {dl.label}
+                </div>
+                <div className="text-xs text-slate-500">Lvl {Math.round(adaptive.level)} &middot; {gradeInfo.label}</div>
+              </div>
 
-          <div className="max-w-xs mx-auto mb-6">
-            <ScoreSubmit
-              game="pattern-machine"
-              score={score}
-              level={Math.round(adaptive.level)}
-              stats={{ accuracy, bestStreak, timeSeconds: elapsed }}
-            />
-          </div>
+              <div className="max-w-xs mx-auto mb-6">
+                <ScoreSubmit
+                  game="pattern-machine"
+                  score={score}
+                  level={Math.round(adaptive.level)}
+                  stats={{ accuracy, bestStreak, timeSeconds: elapsed }}
+                />
+              </div>
 
-          <button
-            onClick={() => setPhase("menu")}
-            className="px-8 py-3 rounded-lg font-bold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
-          >
-            <RotateCcw size={16} className="inline mr-2" />
-            Play Again
-          </button>
+              <button
+                onClick={() => setPhase("menu")}
+                className="px-8 py-3 rounded-lg font-bold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+              >
+                <RotateCcw size={16} className="inline mr-2" />
+                Play Again
+              </button>
+            </>
+          )}
         </div>
       )}
 

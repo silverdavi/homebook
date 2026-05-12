@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, RotateCcw, BarChart3 } from "lucide-react";
+import { ArrowLeft, Trophy, RotateCcw, BarChart3, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { getLocalHighScore, setLocalHighScore, trackGamePlayed, getProfile } from "@/lib/games/use-scores";
 import { checkAchievements } from "@/lib/games/achievements";
@@ -503,6 +503,11 @@ export function GraphReadingGame() {
   const [skillsTotal, setSkillsTotal] = useState<Record<string, number>>({});
   const roundStart = useRef(Date.now());
 
+  // Practice mode
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceCorrect, setPracticeCorrect] = useState(0);
+  const [practiceTotal, setPracticeTotal] = useState(0);
+
   useGameMusic();
 
   useEffect(() => { setHighScoreState(getLocalHighScore(GAME_ID)); }, []);
@@ -510,6 +515,14 @@ export function GraphReadingGame() {
   // Countdown
   useEffect(() => {
     if (phase !== "countdown") return;
+    if (practiceMode) {
+      sfxCountdownGo();
+      setQuestions(pickQuestions(adaptive.level, 12));
+      setCurrentIdx(0);
+      roundStart.current = Date.now();
+      setPhase("playing");
+      return;
+    }
     if (countdown <= 0) {
       sfxCountdownGo();
       setQuestions(pickQuestions(adaptive.level, 12));
@@ -521,7 +534,7 @@ export function GraphReadingGame() {
     sfxCountdown();
     const t = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [phase, countdown, adaptive.level]);
+  }, [phase, countdown, adaptive.level, practiceMode]);
 
   const startGame = useCallback((startLevel: number) => {
     setAdaptive(createAdaptiveState(startLevel));
@@ -533,6 +546,8 @@ export function GraphReadingGame() {
     setSelected(null);
     setSkillsCorrect({});
     setSkillsTotal({});
+    setPracticeCorrect(0);
+    setPracticeTotal(0);
     setCountdown(COUNTDOWN_SECS);
     setPhase("countdown");
   }, []);
@@ -546,9 +561,22 @@ export function GraphReadingGame() {
     const elapsed = Date.now() - roundStart.current;
     const fast = elapsed < 8000;
 
-    const { mult } = getMultiplierFromStreak(streak);
-    const pts = correct ? Math.round((fast ? 120 : 80) * mult) : 0;
-    setScore(s => s + pts);
+    if (practiceMode) {
+      setPracticeTotal(t => t + 1);
+      if (correct) {
+        sfxCorrect();
+        setPracticeCorrect(c => c + 1);
+      } else {
+        sfxWrong();
+      }
+      // Track skill
+      const skill = current.question.skill;
+      setSkillsTotal(prev => ({ ...prev, [skill]: (prev[skill] || 0) + 1 }));
+      if (correct) setSkillsCorrect(prev => ({ ...prev, [skill]: (prev[skill] || 0) + 1 }));
+      setAdaptive(prev => adaptiveUpdate(prev, correct, false));
+      setPhase("feedback");
+      return;
+    }
 
     if (correct) {
       sfxCorrect();
@@ -557,6 +585,9 @@ export function GraphReadingGame() {
       setStreak(ns);
       if (ns > maxStreak) setMaxStreak(ns);
       if (ns > 0 && ns % 5 === 0) sfxCombo(ns);
+      const { mult } = getMultiplierFromStreak(ns);
+      const pts = Math.round((fast ? 120 : 80) * mult);
+      setScore(s => s + pts);
     } else {
       if (streak > 0) sfxStreakLost();
       sfxWrong();
@@ -579,10 +610,15 @@ export function GraphReadingGame() {
     }
 
     setPhase("feedback");
-  }, [current, selected, streak, maxStreak, adaptive]);
+  }, [current, selected, streak, maxStreak, adaptive, practiceMode]);
 
   const nextQuestion = useCallback(() => {
     if (currentIdx + 1 >= questions.length) {
+      if (practiceMode) {
+        // No tracking in practice mode
+        setPhase("complete");
+        return;
+      }
       // Game over
       const finalScore = score;
       if (finalScore > highScore) {
@@ -613,7 +649,7 @@ export function GraphReadingGame() {
       roundStart.current = Date.now();
       setPhase("playing");
     }
-  }, [currentIdx, questions.length, score, highScore, maxStreak, totalCorrect, totalWrong, adaptive]);
+  }, [currentIdx, questions.length, score, highScore, maxStreak, totalCorrect, totalWrong, adaptive, practiceMode]);
 
   const dl = getDifficultyLabel(adaptive.level);
   const gradeInfo = getGradeForLevel(adaptive.level);
@@ -636,6 +672,24 @@ export function GraphReadingGame() {
             <p className="text-white/50 text-sm">From reading axes to identifying mathematical functions — master graph comprehension!</p>
           </div>
 
+          {/* What is Graph Reading? */}
+          <div className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-4 text-left">
+            <h3 className="text-sm font-bold text-indigo-400 mb-1">📊 What is Graph Reading?</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Reading a graph means understanding what a picture of numbers is telling you. Graphs turn boring data into visual stories — like reading a weather chart to know if it&apos;ll rain, or checking a growth chart at the doctor to see how tall you&apos;re getting!
+            </p>
+            <p className="text-xs text-slate-500 mt-2 italic">
+              🌧️ Weather forecasts use graphs to show temperature over time. • 📈 Your report card could be graphed to show how your grades changed each semester.
+            </p>
+          </div>
+
+          {/* Practice button */}
+          <button onClick={() => { setPracticeMode(true); startGame(1); }}
+            className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-teal-500/20 border border-teal-400/40 text-teal-400 hover:bg-teal-500/30 flex items-center justify-center gap-2">
+            <BookOpen className="w-4 h-4" /> Practice Mode
+            <span className="text-[10px] text-teal-500/80 font-normal">— No timer, learn at your pace</span>
+          </button>
+
           <div className="w-full bg-white/5 rounded-xl p-4 border border-white/10">
             <h3 className="text-sm font-bold text-indigo-400 mb-2">Skills You&apos;ll Build</h3>
             <div className="grid grid-cols-2 gap-1.5 text-xs text-white/70">
@@ -656,7 +710,7 @@ export function GraphReadingGame() {
               { label: "Grade 6-8", desc: "Correlation, statistics, multi-data", level: 19, color: "#ef4444" },
               { label: "Grade 9+", desc: "Function shapes, advanced interpretation", level: 33, color: "#a855f7" },
             ].map(opt => (
-              <button key={opt.level} onClick={() => startGame(opt.level)}
+              <button key={opt.level} onClick={() => { setPracticeMode(false); startGame(opt.level); }}
                 className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-between hover:scale-[1.02] transition-transform"
                 style={{ backgroundColor: opt.color + "22", border: `1px solid ${opt.color}44` }}>
                 <span>{opt.label}</span>
@@ -683,7 +737,26 @@ export function GraphReadingGame() {
   }
 
   /* ── HUD ── */
-  const HUD = (
+  const HUD = practiceMode ? (
+    <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
+      <div className="flex items-center gap-2">
+        <Link href="/games" className="text-white/40 hover:text-white"><ArrowLeft size={18} /></Link>
+        <span className="px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-500/30 text-teal-400 text-xs font-bold">
+          Practice Mode
+        </span>
+      </div>
+      <div className="text-sm text-white/50 tabular-nums">
+        {practiceTotal > 0 ? `${practiceCorrect}/${practiceTotal} correct` : "Learn at your pace!"}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="text-xs text-white/40">{currentIdx + 1}/{questions.length}</div>
+        <button onClick={() => setPhase("complete")}
+          className="text-xs text-white/40 hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
+          End
+        </button>
+      </div>
+    </div>
+  ) : (
     <div className="p-3 flex items-center justify-between bg-black/30 text-sm">
       <div className="flex items-center gap-2">
         <Link href="/games" className="text-white/40 hover:text-white"><ArrowLeft size={18} /></Link>
@@ -768,16 +841,26 @@ export function GraphReadingGame() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col">
         <div className="p-4 flex items-center gap-3">
           <Link href="/games" className="text-white/60 hover:text-white"><ArrowLeft size={24} /></Link>
-          <h1 className="text-xl font-bold">Analysis Complete</h1>
+          <h1 className="text-xl font-bold">{practiceMode ? "Practice Complete" : "Analysis Complete"}</h1>
         </div>
         <div className="flex-1 flex flex-col items-center p-4 max-w-lg mx-auto gap-4">
           <div className="text-center">
             <Trophy size={48} className="text-amber-400 mx-auto mb-2" />
-            <div className="text-4xl font-black">{score.toLocaleString()}</div>
-            <p className="text-white/40 text-sm">Graph Reading Score</p>
-            {score > 0 && score >= highScore && <p className="text-amber-400 text-xs font-bold mt-1">New Personal Best!</p>}
+            {practiceMode ? (
+              <>
+                <div className="text-4xl font-black">{practiceCorrect}/{practiceTotal}</div>
+                <p className="text-white/40 text-sm">Practice Questions Correct</p>
+              </>
+            ) : (
+              <>
+                <div className="text-4xl font-black">{score.toLocaleString()}</div>
+                <p className="text-white/40 text-sm">Graph Reading Score</p>
+                {score > 0 && score >= highScore && <p className="text-amber-400 text-xs font-bold mt-1">New Personal Best!</p>}
+              </>
+            )}
           </div>
 
+          {!practiceMode && (
           <div className="w-full grid grid-cols-3 gap-3">
             <div className="bg-white/5 rounded-xl p-3 text-center">
               <div className="text-2xl font-bold">{totalCorrect}/{total}</div>
@@ -792,6 +875,7 @@ export function GraphReadingGame() {
               <p className="text-xs text-white/40">Best Streak</p>
             </div>
           </div>
+          )}
 
           <div className="w-full bg-white/5 rounded-xl p-3">
             <div className="flex justify-between text-xs mb-1">
@@ -822,15 +906,17 @@ export function GraphReadingGame() {
             </div>
           )}
 
-          <ScoreSubmit game={GAME_ID} score={score} level={Math.round(adaptive.level)}
-            stats={{ streak: maxStreak, accuracy: accPct, graphs: total }} />
+          {!practiceMode && (
+            <ScoreSubmit game={GAME_ID} score={score} level={Math.round(adaptive.level)}
+              stats={{ streak: maxStreak, accuracy: accPct, graphs: total }} />
+          )}
 
           {medals.length > 0 && (
             <AchievementToast name={medals[0].name} tier={medals[0].tier} onDismiss={() => setMedals([])} />
           )}
 
           <div className="flex gap-3 w-full">
-            <button onClick={() => startGame(adaptive.level)}
+            <button onClick={() => { setPracticeMode(false); startGame(adaptive.level); }}
               className="flex-1 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-500 transition flex items-center justify-center gap-2">
               <RotateCcw size={16} /> Play Again
             </button>
