@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useProfile } from "@/lib/games/profile-context";
 import type { ExamResult, GradedAnswer, Question } from "@/lib/daily/types";
 import { PromptForQuestion } from "./PromptForQuestion";
@@ -11,6 +12,11 @@ interface Props {
   date: string;
   /** Questions for both versions of this date, keyed by id, used to render prompts. */
   questionsById: Record<string, Question>;
+}
+
+interface BothResults {
+  a: ExamResult | null;
+  b: ExamResult | null;
 }
 
 function fmtDuration(sec: number): string {
@@ -23,28 +29,37 @@ function fmtDuration(sec: number): string {
 
 export function ResultsView({ date, questionsById }: Props) {
   const { profile, isLoggedIn, isLoading } = useProfile();
-  const [result, setResult] = useState<ExamResult | null>(null);
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("version");
+  const initialVersion: "a" | "b" | null =
+    requested === "a" || requested === "b" ? requested : null;
+
+  const [both, setBoth] = useState<BothResults>({ a: null, b: null });
   const [error, setError] = useState<string | null>(null);
   const [fetchDone, setFetchDone] = useState(false);
+  const [activeVersion, setActiveVersion] = useState<"a" | "b" | null>(
+    initialVersion,
+  );
 
   useEffect(() => {
     if (!isLoggedIn || !profile) return;
     let cancelled = false;
-    fetch(`/daily/api/exam?profileId=${profile.id}&date=${date}`)
+    fetch(`/daily/api/exam?profileId=${profile.id}&date=${date}&all=1`)
       .then(async (r) => {
         if (!r.ok) {
-          if (r.status === 404) {
-            if (!cancelled) setError("No submission found for this date yet.");
-          } else {
-            if (!cancelled) setError("Could not load results.");
-          }
+          if (!cancelled) setError("Could not load results.");
           return null;
         }
         return r.json();
       })
       .then((data) => {
         if (cancelled || !data) return;
-        setResult(data as ExamResult);
+        const a = (data as Record<string, unknown>).a as ExamResult | null;
+        const b = (data as Record<string, unknown>).b as ExamResult | null;
+        setBoth({ a: a ?? null, b: b ?? null });
+        if (!a && !b) {
+          setError("No submission found for this date yet.");
+        }
       })
       .catch(() => {
         if (!cancelled) setError("Network error loading results.");
@@ -56,6 +71,18 @@ export function ResultsView({ date, questionsById }: Props) {
       cancelled = true;
     };
   }, [profile, isLoggedIn, date]);
+
+  // Decide which version to render: requested → that one (if it exists),
+  // else whichever is present, preferring the more recent submission.
+  const result: ExamResult | null = (() => {
+    if (activeVersion === "a" && both.a) return both.a;
+    if (activeVersion === "b" && both.b) return both.b;
+    if (both.a && both.b) {
+      return both.a.submittedAt >= both.b.submittedAt ? both.a : both.b;
+    }
+    return both.a ?? both.b;
+  })();
+  const bothPresent = both.a !== null && both.b !== null;
 
   // Show a loading state while the profile is hydrating, or while a
   // logged-in user's GET request is still in flight.
@@ -95,6 +122,9 @@ export function ResultsView({ date, questionsById }: Props) {
 
   const pct = result.total > 0 ? Math.round((result.score / result.total) * 100) : 0;
 
+  const otherVersion: "a" | "b" = result.version === "a" ? "b" : "a";
+  const otherDone = otherVersion === "a" ? both.a !== null : both.b !== null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -109,6 +139,47 @@ export function ResultsView({ date, questionsById }: Props) {
           Submitted {new Date(result.submittedAt + "Z").toLocaleString()}
         </div>
       </div>
+
+      {bothPresent && (
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-paper">
+          {(["a", "b"] as const).map((v) => {
+            const isActive = result.version === v;
+            return (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setActiveVersion(v)}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                  isActive
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Version {v.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!otherDone && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-indigo-900 flex items-center justify-between gap-3">
+          <p className="text-sm">
+            You can also try{" "}
+            <span className="font-semibold uppercase">
+              version {otherVersion}
+            </span>{" "}
+            today. Optional — your parents will get a second summary if you
+            do.
+          </p>
+          <Link
+            href={`/daily/${date}/exam/${otherVersion}`}
+            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-paper hover:bg-indigo-500 active:scale-[0.98] transition-all flex-shrink-0"
+          >
+            Take version {otherVersion.toUpperCase()} →
+          </Link>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-paper">
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-4">

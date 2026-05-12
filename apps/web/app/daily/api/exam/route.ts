@@ -9,9 +9,11 @@ import type {
 } from "@/lib/daily/types";
 import {
   getDailyExam,
+  getDailyExamsByDate,
   saveDailyExam,
   getProfileById,
   type Profile,
+  type DailyExamRow,
 } from "@/lib/db";
 import { sendDailySummary } from "@/lib/daily/summary";
 
@@ -109,8 +111,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Single-attempt rule.
-  const existing = getDailyExam(profileId, date);
+  // Single-attempt rule, per version. Adam can take A *and* B in the same
+  // day, but each version may be submitted only once.
+  const existing = getDailyExam(profileId, date, version);
   if (existing) {
     return NextResponse.json(
       {
@@ -153,8 +156,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (!inserted) {
-    // Race: another request slipped in. Surface as 409.
-    const row = getDailyExam(profileId, date);
+    // Race: another request slipped in for this same version. Surface as 409.
+    const row = getDailyExam(profileId, date, version);
     return NextResponse.json(
       {
         error: "already submitted",
@@ -200,28 +203,9 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(result);
 }
 
-/**
- * GET /daily/api/exam?profileId=...&date=YYYY-MM-DD
- *
- * Returns the prior submission for that profile/date, or 404. Used by the
- * results page (and a future parent-review surface).
- */
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const profileId = searchParams.get("profileId");
-  const date = searchParams.get("date");
-  if (!profileId || !date) {
-    return NextResponse.json(
-      { error: "profileId and date are required" },
-      { status: 400 },
-    );
-  }
-  const row = getDailyExam(profileId, date);
-  if (!row) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
-  }
+function rowToResult(row: DailyExamRow): ExamResult {
   const blob = parseAnswersBlob(row.answersJson);
-  const result: ExamResult = {
+  return {
     date: row.date,
     version: row.version,
     submittedAt: row.submittedAt,
@@ -231,5 +215,53 @@ export async function GET(request: NextRequest) {
     durationSec: blob.durationSec,
     answers: blob.graded,
   };
-  return NextResponse.json(result);
+}
+
+/**
+ * GET /daily/api/exam?profileId=...&date=YYYY-MM-DD[&version=a|b][&all=1]
+ *
+ * Three modes:
+ *   - all=1                  → { a: ExamResult|null, b: ExamResult|null }
+ *   - version=a or version=b → ExamResult for that exact submission, or 404
+ *   - (neither)              → most recent submission (any version), or 404
+ *
+ * Used by ExamStartButtons (all=1), ResultsView (version=a|b), and any
+ * future parent-review surface.
+ */
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const profileId = searchParams.get("profileId");
+  const date = searchParams.get("date");
+  const version = searchParams.get("version");
+  const all = searchParams.get("all");
+  if (!profileId || !date) {
+    return NextResponse.json(
+      { error: "profileId and date are required" },
+      { status: 400 },
+    );
+  }
+  if (version && version !== "a" && version !== "b") {
+    return NextResponse.json(
+      { error: "version must be 'a' or 'b'" },
+      { status: 400 },
+    );
+  }
+
+  if (all === "1") {
+    const both = getDailyExamsByDate(profileId, date);
+    return NextResponse.json({
+      a: both.a ? rowToResult(both.a) : null,
+      b: both.b ? rowToResult(both.b) : null,
+    });
+  }
+
+  const row = getDailyExam(
+    profileId,
+    date,
+    (version as "a" | "b" | null) ?? undefined,
+  );
+  if (!row) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  return NextResponse.json(rowToResult(row));
 }

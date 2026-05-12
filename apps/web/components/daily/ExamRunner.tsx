@@ -153,7 +153,7 @@ export function ExamRunner({ date, version, questions }: Props) {
       } catch {
         // ignore
       }
-      router.push(`/daily/${date}/results`);
+      router.push(`/daily/${date}/results?version=${version}`);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -238,7 +238,10 @@ export function ExamRunner({ date, version, questions }: Props) {
                 {conflict.score} / {conflict.total}
               </span>
               .{" "}
-              <Link href={`/daily/${date}/results`} className="underline">
+              <Link
+                href={`/daily/${date}/results?version=${version}`}
+                className="underline"
+              >
                 See your results
               </Link>
               .

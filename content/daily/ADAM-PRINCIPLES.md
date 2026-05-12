@@ -39,9 +39,12 @@ Every morning you'll open `teacher.ninja/daily/<today's date>` and find:
 Then you decide — *you*, not us — how to prepare.
 
 When you're ready, you take the exam. You pick **Version A or Version B**.
-You take **one**. You can't redo it.
+Each version is single-attempt — once you submit one, you cannot retake
+*that same version*. After you finish one, you can choose to take the
+other version too on the same day if you want; it's optional and not
+required.
 
-That's the whole trial. Four days, four exams, total ownership.
+That's the whole trial. Four days, your exams, total ownership.
 
 ---
 

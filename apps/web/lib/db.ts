@@ -138,11 +138,69 @@ export function getDb(): Database.Database {
       score INTEGER NOT NULL,
       total INTEGER NOT NULL,
       answers_json TEXT NOT NULL,
-      UNIQUE(profile_id, date)
+      UNIQUE(profile_id, date, version)
     );
   `);
 
+  migrateDailyExamsUnique(_db);
+
   return _db;
+}
+
+/**
+ * One-shot migration: relax the daily_exams unique constraint from
+ * (profile_id, date) to (profile_id, date, version) so the kid can
+ * take both A and B in the same day. Safe to run on every startup —
+ * detects the old shape via PRAGMA index_info and is a no-op otherwise.
+ */
+function migrateDailyExamsUnique(db: Database.Database): void {
+  const indices = db
+    .prepare(`PRAGMA index_list(daily_exams)`)
+    .all() as Array<{ name: string; unique: 0 | 1 }>;
+
+  let hasOldUnique = false;
+  for (const idx of indices) {
+    if (!idx.unique) continue;
+    const cols = db
+      .prepare(`PRAGMA index_info(${idx.name})`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols
+      .map((c) => c.name)
+      .sort()
+      .join(",");
+    if (colNames === "date,profile_id") {
+      hasOldUnique = true;
+      break;
+    }
+  }
+  if (!hasOldUnique) return;
+
+  // Recreate the table with the relaxed unique constraint, preserving
+  // every existing row.
+  db.exec(`
+    BEGIN;
+    ALTER TABLE daily_exams RENAME TO daily_exams_old;
+    CREATE TABLE daily_exams (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile_id TEXT NOT NULL REFERENCES profiles(id),
+      date TEXT NOT NULL,
+      version TEXT NOT NULL CHECK(version IN ('a','b')),
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      score INTEGER NOT NULL,
+      total INTEGER NOT NULL,
+      answers_json TEXT NOT NULL,
+      UNIQUE(profile_id, date, version)
+    );
+    INSERT INTO daily_exams
+      (id, profile_id, date, version, submitted_at, score, total, answers_json)
+      SELECT id, profile_id, date, version, submitted_at, score, total, answers_json
+      FROM daily_exams_old;
+    DROP TABLE daily_exams_old;
+    COMMIT;
+  `);
+  console.log(
+    "[daily] migrated daily_exams: UNIQUE(profile_id,date) -> UNIQUE(profile_id,date,version)",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -444,21 +502,10 @@ export function saveDailyExam(args: {
     if (e.code === "SQLITE_CONSTRAINT_UNIQUE") return null;
     throw err;
   }
-  return getDailyExam(args.profileId, args.date);
+  return getDailyExam(args.profileId, args.date, args.version);
 }
 
-export function getDailyExam(
-  profileId: string,
-  date: string,
-): DailyExamRow | null {
-  const db = getDb();
-  const row = db
-    .prepare(
-      `SELECT profile_id, date, version, submitted_at, score, total, answers_json
-       FROM daily_exams WHERE profile_id = ? AND date = ?`
-    )
-    .get(profileId, date) as Record<string, unknown> | undefined;
-  if (!row) return null;
+function dailyExamFromRow(row: Record<string, unknown>): DailyExamRow {
   return {
     profileId: row.profile_id as string,
     date: row.date as string,
@@ -470,24 +517,60 @@ export function getDailyExam(
   };
 }
 
+/**
+ * Look up a single submission. If `version` is provided, returns that
+ * specific (profile, date, version) row or null. If omitted, returns the
+ * latest submission for that (profile, date) by submitted_at, or null.
+ */
+export function getDailyExam(
+  profileId: string,
+  date: string,
+  version?: "a" | "b",
+): DailyExamRow | null {
+  const db = getDb();
+  const row = version
+    ? (db
+        .prepare(
+          `SELECT profile_id, date, version, submitted_at, score, total, answers_json
+           FROM daily_exams
+           WHERE profile_id = ? AND date = ? AND version = ?`,
+        )
+        .get(profileId, date, version) as Record<string, unknown> | undefined)
+    : (db
+        .prepare(
+          `SELECT profile_id, date, version, submitted_at, score, total, answers_json
+           FROM daily_exams
+           WHERE profile_id = ? AND date = ?
+           ORDER BY submitted_at DESC LIMIT 1`,
+        )
+        .get(profileId, date) as Record<string, unknown> | undefined);
+  if (!row) return null;
+  return dailyExamFromRow(row);
+}
+
+/** Both A and B submissions for a given date (each may be null). */
+export function getDailyExamsByDate(
+  profileId: string,
+  date: string,
+): { a: DailyExamRow | null; b: DailyExamRow | null } {
+  return {
+    a: getDailyExam(profileId, date, "a"),
+    b: getDailyExam(profileId, date, "b"),
+  };
+}
+
 /** All exam rows for a profile, ordered by date ascending. */
 export function listDailyExams(profileId: string): DailyExamRow[] {
   const db = getDb();
   const rows = db
     .prepare(
       `SELECT profile_id, date, version, submitted_at, score, total, answers_json
-       FROM daily_exams WHERE profile_id = ? ORDER BY date ASC`
+       FROM daily_exams
+       WHERE profile_id = ?
+       ORDER BY date ASC, version ASC`,
     )
     .all(profileId) as Array<Record<string, unknown>>;
-  return rows.map((row) => ({
-    profileId: row.profile_id as string,
-    date: row.date as string,
-    version: row.version as "a" | "b",
-    submittedAt: row.submitted_at as string,
-    score: row.score as number,
-    total: row.total as number,
-    answersJson: row.answers_json as string,
-  }));
+  return rows.map(dailyExamFromRow);
 }
 
 export function syncFromLocalStorage(profileId: string, data: SyncData): void {

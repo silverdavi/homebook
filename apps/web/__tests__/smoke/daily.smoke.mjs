@@ -88,6 +88,27 @@ async function waitForServer(maxMs = 30_000) {
 
 // Day 1 Version A: known correct answers (from the question banks).
 // We deliberately answer 12 right and 6 wrong so we can assert score=12.
+const VERSION_B_ANSWERS = [
+  { questionId: "b-gcf-1", correct: 8,  give: 8  }, // right
+  { questionId: "b-gcf-2", correct: 5,  give: 5  }, // right
+  { questionId: "b-gcf-3", correct: 1,  give: 1  }, // right (coprime)
+  { questionId: "b-gcf-4", correct: 15, give: 15 }, // right
+  { questionId: "b-gcf-5", correct: 3,  give: 3  }, // right
+  { questionId: "b-gcf-6", correct: 9,  give: 9  }, // right
+  { questionId: "b-gcf-7", correct: 8,  give: 4  }, // wrong
+  { questionId: "b-gcf-8", correct: 7,  give: 7  }, // right
+  { questionId: "b-pt-1",  correct: 2,  give: 2  }, // right (He electrons)
+  { questionId: "b-pt-2",  correct: 1,  give: 1  }, // right (H electrons)
+  { questionId: "b-pt-3",  correct: 1,  give: 1  }, // right (H protons)
+  { questionId: "b-pt-4",  correct: 2,  give: 2  }, // right (He neutrons)
+  { questionId: "b-war-1", correct: 1812, give: 1812 }, // right
+  { questionId: "b-war-2", correct: 1861, give: 1900 }, // wrong
+  { questionId: "b-war-3", correct: 1775, give: 1775 }, // right
+  { questionId: "b-evo-1", correct: 4540, give: 4540 }, // right
+  { questionId: "b-evo-2", correct: 3700, give: 3700 }, // right
+  { questionId: "b-evo-3", correct: 13800, give: 99999 }, // wrong
+];
+
 const VERSION_A_ANSWERS = [
   { questionId: "a-gcf-1", correct: 6,  give: 6  }, // right
   { questionId: "a-gcf-2", correct: 4,  give: 4  }, // right
@@ -109,16 +130,18 @@ const VERSION_A_ANSWERS = [
   { questionId: "a-evo-3", correct: 3700,  give: 9999  }, // wrong
 ];
 
-function buildAnswers(startedAt) {
+function buildAnswers(startedAt, rows = VERSION_A_ANSWERS, opts = {}) {
   // Spread the timestamps over realistic intervals so secondsSpent is non-zero.
-  return VERSION_A_ANSWERS.map((row, i) => {
+  return rows.map((row, i) => {
     const first = startedAt + (i + 1) * 30_000;
     const last  = startedAt + (i + 1) * 30_000 + 12_000 + i * 500;
+    let note = "";
+    if (opts.notesByIndex && opts.notesByIndex[i]) note = opts.notesByIndex[i];
     return {
       questionId: row.questionId,
       raw: { kind: "integer", value: row.give },
-      note: i === 2 ? "I'm not sure here — coprime?" : (i === 11 ? "Helium has 2 neutrons but I keep getting it wrong" : ""),
-      usedHelp: i === 11, // opened a lesson on the He-neutrons question
+      note,
+      usedHelp: opts.helpIndex === i,
       firstInputAt: first,
       lastInputAt: last,
     };
@@ -193,7 +216,13 @@ async function main() {
   // ── exam submission ───────────────────────────────────────────────────
   await section("Exam submit (Day 1 Version A)", async () => {
     const startedAt = Date.now() - 30 * 60 * 1000; // 30 min ago
-    const answers = buildAnswers(startedAt);
+    const answers = buildAnswers(startedAt, VERSION_A_ANSWERS, {
+      notesByIndex: {
+        2: "I'm not sure here — coprime?",
+        11: "Helium has 2 neutrons but I keep getting it wrong",
+      },
+      helpIndex: 11,
+    });
 
     const r = await postJson(
       "/daily/api/exam",
@@ -254,6 +283,75 @@ async function main() {
       `got ${json.startedAt}`);
     check("durationSec persisted", typeof json.durationSec === "number",
       `got ${json.durationSec}`);
+  });
+
+  // ── version B can also be taken on the same day ───────────────────────
+  await section("Exam submit (Day 1 Version B) after A is done", async () => {
+    const startedAt = Date.now() - 10 * 60 * 1000;
+    const answers = buildAnswers(startedAt, VERSION_B_ANSWERS, {
+      notesByIndex: { 13: "Civil War — confused with WWI dates" },
+    });
+    const r = await postJson(
+      "/daily/api/exam",
+      {
+        profileId,
+        date: "2026-05-12",
+        version: "b",
+        startedAt,
+        answers,
+      },
+      { "x-skip-summary-email": "1" },
+    );
+    check(`POST /daily/api/exam (B) → ${r.status}`, r.status === 200,
+      `body: ${r.text.slice(0, 300)}`);
+    check("B score is 15", r.json?.score === 15, `got ${r.json?.score}`);
+    check("B total is 18", r.json?.total === 18, `got ${r.json?.total}`);
+    check("B version is 'b'", r.json?.version === "b", `got ${r.json?.version}`);
+
+    // Re-submitting B is blocked.
+    const r2 = await postJson(
+      "/daily/api/exam",
+      {
+        profileId,
+        date: "2026-05-12",
+        version: "b",
+        startedAt,
+        answers,
+      },
+      { "x-skip-summary-email": "1" },
+    );
+    check("re-submit B blocked with 409", r2.status === 409,
+      `got ${r2.status}: ${r2.text.slice(0, 200)}`);
+  });
+
+  // ── all=1 returns both submissions ────────────────────────────────────
+  await section("GET both versions", async () => {
+    const r = await fetch(
+      `${BASE}/daily/api/exam?profileId=${encodeURIComponent(profileId)}&date=2026-05-12&all=1`,
+    );
+    const json = await r.json();
+    check("GET ?all=1 → 200", r.status === 200, `status ${r.status}`);
+    check("a present with score 12", json?.a?.score === 12,
+      `a: ${JSON.stringify(json?.a)?.slice(0, 200)}`);
+    check("b present with score 15", json?.b?.score === 15,
+      `b: ${JSON.stringify(json?.b)?.slice(0, 200)}`);
+    check("a.version='a'", json?.a?.version === "a", `got ${json?.a?.version}`);
+    check("b.version='b'", json?.b?.version === "b", `got ${json?.b?.version}`);
+
+    // Version-scoped fetch.
+    const ra = await fetch(
+      `${BASE}/daily/api/exam?profileId=${encodeURIComponent(profileId)}&date=2026-05-12&version=a`,
+    );
+    const ja = await ra.json();
+    check("GET ?version=a → score 12", ra.status === 200 && ja.score === 12,
+      `status ${ra.status} score ${ja?.score}`);
+
+    const rb = await fetch(
+      `${BASE}/daily/api/exam?profileId=${encodeURIComponent(profileId)}&date=2026-05-12&version=b`,
+    );
+    const jb = await rb.json();
+    check("GET ?version=b → score 15", rb.status === 200 && jb.score === 15,
+      `status ${rb.status} score ${jb?.score}`);
   });
 
   // ── summary preview ──────────────────────────────────────────────────

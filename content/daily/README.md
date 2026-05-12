@@ -93,13 +93,16 @@ repo.
 
 ## If Adam needs to redo a day
 
-Each day is **single attempt** by design (UNIQUE constraint on
-`profile_id, date` in `daily_exams`). If a parent decides a redo is
-warranted, run:
+Each day is **single attempt per version** by design (UNIQUE constraint
+on `profile_id, date, version` in `daily_exams`). Adam can take both A
+and B in the same day, but cannot retake the same version once
+submitted. If a parent decides a full-day redo is warranted, run:
 
 ```sql
 DELETE FROM daily_exams WHERE profile_id = '<adam-id>' AND date = '2026-05-12';
 ```
+
+(or scope it with `AND version = 'a'` to only clear one version)
 
 against `apps/web/.data/profiles.db`. That clears the row and the day is
 fresh again.
