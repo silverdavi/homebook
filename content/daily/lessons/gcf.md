@@ -22,11 +22,24 @@ steps. GCF makes it one step.
 
 ---
 
-## How to find a GCF (the slow, sure way)
+## Two methods — pick the one that doesn't break for you
+
+### The listing method (slow, but visual)
 
 1. List **all factors** of the first number.
 2. List **all factors** of the second number.
 3. The **biggest number that appears in both lists** is the GCF.
+
+> **The trap:** every number you write on a "factors of N" list must
+> divide N exactly — *test it*. The most common mistake is mixing
+> *factors* (numbers that divide into N) with *multiples* (numbers
+> that N divides into). For example, the factors of 35 are
+> **1, 5, 7, 35** — only those four. `10, 15, 20, 25, 30` are
+> multiples of 5, not factors of 35. If you list those by mistake,
+> you'll miss 7 and conclude the wrong answer.
+>
+> If you're not sure, use Euclid's algorithm below — it doesn't care
+> about lists.
 
 ### Example 1: GCF(12, 18)
 
