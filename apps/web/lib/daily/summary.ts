@@ -16,6 +16,35 @@ import type { Day, ExamResult, Question } from "./types";
 import type { Profile } from "@/lib/db";
 import { chatComplete } from "./openai";
 import { sendEmail, type SendEmailResult } from "./email";
+import {
+  gcd,
+  fracAdd,
+  fracSub,
+  fracMul,
+  fracDiv,
+  fmtFrac,
+  type Frac,
+} from "./math";
+
+// All times in this email are reported in the kid's local timezone (New
+// York). The data is stored UTC; we just format for display.
+const TZ = "America/New_York";
+
+function fmtNyDateTime(input: Date | string | number | null | undefined): string {
+  if (input === null || input === undefined || input === "") return "";
+  const d = input instanceof Date ? input : new Date(input);
+  if (isNaN(d.valueOf())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(d);
+}
 
 // Recipients are hard-coded — this is a single-family deployment for now.
 export const PARENT_EMAILS = [
@@ -62,6 +91,168 @@ function fmt(f: [number, number]): string {
   return `${f[0]}/${f[1]}`;
 }
 
+// ── Per-question explanation: walk a parent (or the kid, post-hoc)
+//    through *why* the correct answer is what it is. Pure functions
+//    of the question — same string regardless of what the user typed.
+//    Multi-line; rendered as <pre> in the email.
+
+function explainGcf(a: number, b: number): string {
+  const factors = (n: number) => {
+    const out: number[] = [];
+    for (let i = 1; i <= n; i += 1) if (n % i === 0) out.push(i);
+    return out;
+  };
+  const fa = factors(a);
+  const fb = factors(b);
+  const common = fa.filter((x) => fb.includes(x));
+  const ans = gcd(a, b);
+  return [
+    `Factors of ${a}: ${fa.join(", ")}`,
+    `Factors of ${b}: ${fb.join(", ")}`,
+    `In both lists: ${common.join(", ")}`,
+    `Largest one — that's the GCF: ${ans}.`,
+  ].join("\n");
+}
+
+function explainLcm(a: number, b: number): string {
+  const ans = (a * b) / gcd(a, b);
+  // Show first few multiples of each, up to and including the LCM.
+  const mulList = (n: number, stopAt: number): number[] => {
+    const out: number[] = [];
+    let k = n;
+    while (k <= stopAt && out.length < 12) {
+      out.push(k);
+      k += n;
+    }
+    return out;
+  };
+  const ma = mulList(a, ans);
+  const mb = mulList(b, ans);
+  return [
+    `Multiples of ${a}: ${ma.join(", ")}…`,
+    `Multiples of ${b}: ${mb.join(", ")}…`,
+    `First number in BOTH lists — that's the LCM: ${ans}.`,
+    `(Or via formula: GCF(${a}, ${b}) = ${gcd(a, b)}; LCM = ${a}×${b} / ${gcd(a, b)} = ${ans}.)`,
+  ].join("\n");
+}
+
+function explainFracAdd(x: Frac, y: Frac): string {
+  const lcmDen = (x[1] * y[1]) / gcd(x[1], y[1]);
+  const xMul = lcmDen / x[1];
+  const yMul = lcmDen / y[1];
+  const xConv: Frac = [x[0] * xMul, lcmDen];
+  const yConv: Frac = [y[0] * yMul, lcmDen];
+  const sumTop = xConv[0] + yConv[0];
+  const ans = fracAdd(x, y);
+  const lines: string[] = [];
+  if (x[1] === y[1]) {
+    lines.push(`Same denominator — just add the tops.`);
+    lines.push(`(${x[0]} + ${y[0]}) / ${x[1]} = ${sumTop}/${x[1]} = ${fmtFrac(ans)}.`);
+  } else {
+    lines.push(`Step 1: LCM(${x[1]}, ${y[1]}) = ${lcmDen}. That's the common denominator.`);
+    lines.push(`Step 2: rewrite each fraction with denominator ${lcmDen}.`);
+    lines.push(`  ${fmt(x)} → multiplier is ${lcmDen}/${x[1]} = ${xMul} → top×${xMul} = ${xConv[0]}, bottom×${xMul} = ${lcmDen} → ${fmt(xConv)}.`);
+    lines.push(`  ${fmt(y)} → multiplier is ${lcmDen}/${y[1]} = ${yMul} → top×${yMul} = ${yConv[0]}, bottom×${yMul} = ${lcmDen} → ${fmt(yConv)}.`);
+    lines.push(`Step 3: add the tops. ${xConv[0]}/${lcmDen} + ${yConv[0]}/${lcmDen} = ${sumTop}/${lcmDen}.`);
+    if (fmt([sumTop, lcmDen]) !== fmtFrac(ans)) {
+      lines.push(`Reduce: ${sumTop}/${lcmDen} = ${fmtFrac(ans)} (divided top and bottom by ${gcd(Math.abs(sumTop), lcmDen)}).`);
+    } else {
+      lines.push(`Already in lowest terms: ${fmtFrac(ans)}.`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function explainFracSub(x: Frac, y: Frac): string {
+  const lcmDen = (x[1] * y[1]) / gcd(x[1], y[1]);
+  const xMul = lcmDen / x[1];
+  const yMul = lcmDen / y[1];
+  const xConv: Frac = [x[0] * xMul, lcmDen];
+  const yConv: Frac = [y[0] * yMul, lcmDen];
+  const ans = fracSub(x, y);
+  const lines: string[] = [];
+  if (x[1] === y[1]) {
+    lines.push(`Same denominator — subtract the tops.`);
+    lines.push(`(${x[0]} − ${y[0]}) / ${x[1]} = ${x[0] - y[0]}/${x[1]} = ${fmtFrac(ans)}.`);
+  } else {
+    lines.push(`Step 1: LCM(${x[1]}, ${y[1]}) = ${lcmDen}.`);
+    lines.push(`Step 2: rewrite. ${fmt(x)} = ${fmt(xConv)}; ${fmt(y)} = ${fmt(yConv)}.`);
+    lines.push(`Step 3: ${xConv[0]}/${lcmDen} − ${yConv[0]}/${lcmDen} = ${xConv[0] - yConv[0]}/${lcmDen} = ${fmtFrac(ans)}.`);
+  }
+  return lines.join("\n");
+}
+
+function explainFracMul(x: Frac, y: Frac): string {
+  const ans = fracMul(x, y);
+  return [
+    `Multiply tops, multiply bottoms.`,
+    `(${x[0]} × ${y[0]}) / (${x[1]} × ${y[1]}) = ${x[0] * y[0]}/${x[1] * y[1]} = ${fmtFrac(ans)}.`,
+  ].join("\n");
+}
+
+function explainFracDiv(x: Frac, y: Frac): string {
+  const ans = fracDiv(x, y);
+  return [
+    `Divide by a fraction = multiply by its inverse.`,
+    `${fmt(x)} ÷ ${fmt(y)} = ${fmt(x)} × ${fmt([y[1], y[0]])} = ${fmtFrac(ans)}.`,
+  ].join("\n");
+}
+
+function explainPeriodic(q: {
+  symbol: string;
+  elementName: string;
+  ask: "P" | "N" | "e";
+  answer: number;
+}): string {
+  const what =
+    q.ask === "P"
+      ? "protons (its atomic number)"
+      : q.ask === "N"
+        ? "neutrons (most common isotope)"
+        : "electrons (neutral atom — same as protons)";
+  return `${q.elementName} (${q.symbol}) has ${q.answer} ${what}.`;
+}
+
+function explainWar(q: { name: string; answer: number }): string {
+  return `The ${q.name} started in ${q.answer}.`;
+}
+
+function explainEvolution(q: {
+  event: string;
+  answerMya: number;
+  tolerance: number;
+}): string {
+  return `${q.event} happened approximately ${q.answerMya} million years ago (±${q.tolerance} accepted).`;
+}
+
+export function renderExplanation(q: Question): string {
+  switch (q.kind) {
+    case "gcf":
+      return explainGcf(q.a, q.b);
+    case "lcm":
+      return explainLcm(q.a, q.b);
+    case "fracAdd":
+      return explainFracAdd(q.x, q.y);
+    case "fracSub":
+      return explainFracSub(q.x, q.y);
+    case "fracMul":
+      return explainFracMul(q.x, q.y);
+    case "fracDiv":
+      return explainFracDiv(q.x, q.y);
+    case "fracInverse": {
+      const v =
+        typeof q.value === "number" ? `${q.value}` : fmt(q.value);
+      return `Inverse of ${v} = ${fmtFrac(q.answer)} (swap top and bottom).`;
+    }
+    case "periodic":
+      return explainPeriodic(q);
+    case "war":
+      return explainWar(q);
+    case "evolution":
+      return explainEvolution(q);
+  }
+}
+
 const KIND_LABEL: Record<Question["kind"], string> = {
   gcf: "GCF",
   lcm: "LCM",
@@ -88,6 +279,8 @@ export interface AnswerLine {
   note: string;
   usedHelp: boolean;
   secondsSpent: number;
+  /** Step-by-step derivation of the correct answer, multi-line plain text. */
+  explanation: string;
 }
 
 export interface SubjectAgg {
@@ -142,6 +335,7 @@ export function buildDigest({
       note: a.note ?? "",
       usedHelp: a.usedHelp,
       secondsSpent: a.secondsSpent,
+      explanation: q ? renderExplanation(q) : "",
     };
   });
 
@@ -325,6 +519,18 @@ export function renderEmailHtml(d: Digest, narrative: string): string {
       const noteBlock = l.note.trim()
         ? `<div style="margin-top:6px;padding:8px 10px;background:#f9fafb;border-left:3px solid #6366f1;color:#374151;font-size:13px;white-space:pre-wrap;">${escape(l.note.trim())}</div>`
         : "";
+      // The explanation is shown for every question, but framed
+      // differently when the kid got it wrong (prominent yellow box) vs.
+      // right (subtle gray, collapsed visually).
+      const explainStyle = l.correct
+        ? "margin-top:6px;padding:6px 10px;background:#f9fafb;border-left:3px solid #d1d5db;color:#6b7280;font-size:12px;white-space:pre-wrap;font-family:'SF Mono',Menlo,Consolas,monospace;"
+        : "margin-top:6px;padding:8px 10px;background:#fefce8;border-left:3px solid #eab308;color:#713f12;font-size:13px;white-space:pre-wrap;font-family:'SF Mono',Menlo,Consolas,monospace;line-height:1.5;";
+      const explainLabel = l.correct
+        ? `<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9ca3af;font-weight:600;margin-bottom:2px;">How it works</div>`
+        : `<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#a16207;font-weight:700;margin-bottom:2px;">Here's the correct path</div>`;
+      const explainBlock = l.explanation
+        ? `<div style="${explainStyle}">${explainLabel}${escape(l.explanation)}</div>`
+        : "";
       return `
         <tr>
           <td style="padding:10px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top;font-variant-numeric:tabular-nums;color:#6b7280;width:32px;">${l.index + 1}</td>
@@ -332,6 +538,7 @@ export function renderEmailHtml(d: Digest, narrative: string): string {
             <div style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9ca3af;font-weight:600;">${escape(l.kindLabel)}</div>
             <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:14px;color:#111827;margin-top:2px;">${escape(l.prompt)}${helpBadge}</div>
             ${noteBlock}
+            ${explainBlock}
           </td>
           <td style="padding:10px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;${tone}border-radius:4px;">${escape(l.userDisplay)}</td>
           <td style="padding:10px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;color:#111827;">${escape(l.expected)}</td>
@@ -370,7 +577,7 @@ export function renderEmailHtml(d: Digest, narrative: string): string {
         <div>
           <div style="font-size:11px;text-transform:uppercase;color:#9ca3af;font-weight:600;letter-spacing:.04em;">Time</div>
           <div style="font-size:28px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;">${fmtSec(d.durationSec)}</div>
-          <div style="font-size:13px;color:#6b7280;">${d.startedAtIso ? `started ${escape(new Date(d.startedAtIso).toLocaleString())}` : ""}</div>
+          <div style="font-size:13px;color:#6b7280;">${d.startedAtIso ? `started ${escape(fmtNyDateTime(d.startedAtIso))}` : ""}</div>
         </div>
         <div>
           <div style="font-size:11px;text-transform:uppercase;color:#9ca3af;font-weight:600;letter-spacing:.04em;">Notes</div>

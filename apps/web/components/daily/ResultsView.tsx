@@ -136,7 +136,15 @@ export function ResultsView({ date, questionsById }: Props) {
           Back to today&apos;s brief
         </Link>
         <div className="text-xs text-slate-500">
-          Submitted {new Date(result.submittedAt + "Z").toLocaleString()}
+          Submitted{" "}
+          {new Date(result.submittedAt + "Z").toLocaleString("en-US", {
+            timeZone: "America/New_York",
+            month: "short",
+            day: "2-digit",
+            hour: "numeric",
+            minute: "2-digit",
+            timeZoneName: "short",
+          })}
         </div>
       </div>
 

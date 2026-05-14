@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildDigest,
   renderEmailHtml,
+  renderExplanation,
   type Digest,
 } from "@/lib/daily/summary";
 import type { Day, ExamResult } from "@/lib/daily/types";
@@ -181,6 +182,58 @@ describe("summary html", () => {
     expect(renderEmailHtml(midD, "narr")).toContain("#d97706");
     const highD: Digest = { ...d, score: 5, pct: 100 };
     expect(renderEmailHtml(highD, "narr")).toContain("#059669");
+  });
+});
+
+describe("explanations", () => {
+  it("walks through GCF as factor lists with the largest common", () => {
+    const q = gcfQ("e-1", 12, 18);
+    const text = renderExplanation(q);
+    expect(text).toContain("Factors of 12: 1, 2, 3, 4, 6, 12");
+    expect(text).toContain("Factors of 18: 1, 2, 3, 6, 9, 18");
+    expect(text).toMatch(/GCF: 6/);
+  });
+
+  it("walks through fraction add as LCM + rewrite + sum", () => {
+    const q = fracAddQ("e-2", [1, 3], [1, 4]);
+    const text = renderExplanation(q);
+    expect(text).toContain("LCM(3, 4) = 12");
+    expect(text).toContain("4/12");
+    expect(text).toContain("3/12");
+    expect(text).toContain("7/12");
+  });
+
+  it("calls out same-denominator fraction add explicitly", () => {
+    const q = fracAddQ("e-3", [3, 7], [2, 7]);
+    const text = renderExplanation(q);
+    expect(text.toLowerCase()).toContain("same denominator");
+    expect(text).toContain("5/7");
+  });
+
+  it("explains periodic table answers in plain English", () => {
+    const q = periodicQ("e-4", "C", "P");
+    const text = renderExplanation(q);
+    expect(text).toContain("Carbon");
+    expect(text).toContain("6 protons");
+  });
+
+  it("attaches an explanation to every line in the digest", () => {
+    const day = makeDay();
+    const result = makeResult(day);
+    const d = buildDigest({ profile: makeProfile(), day, result });
+    for (const l of d.lines) {
+      expect(typeof l.explanation).toBe("string");
+      expect(l.explanation.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("renders the explanation block in the email html", () => {
+    const day = makeDay();
+    const result = makeResult(day);
+    const d = buildDigest({ profile: makeProfile(), day, result });
+    const html = renderEmailHtml(d, "narr");
+    expect(html.toLowerCase()).toContain("here's the correct path");
+    expect(html.toLowerCase()).toContain("how it works");
   });
 });
 
