@@ -543,11 +543,16 @@ export function FractionsLab({
   const [correctFlash, setCorrectFlash] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [counts, setCounts] = useState({ correct: 0, wrong: 0 });
-  const [hintText, setHintText] = useState<string | null>(null);
+  // Per-field wrong-attempt counter and an explicit unlock map for the
+  // step-by-step coach. The coach is opt-in: students are nudged to try
+  // a few times before peeking at the worked solution.
+  const [attempts, setAttempts] = useState<Record<string, number>>({});
+  const [coachUnlocked, setCoachUnlocked] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const wrongTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const expected = useMemo(
     () => Object.fromEntries(problem.fields.map((f) => [f.id, f.expected])),
@@ -565,9 +570,10 @@ export function FractionsLab({
       setActiveFieldId(next.fields[0]?.id ?? null);
       setCompleted(false);
       setCounts({ correct: 0, wrong: 0 });
-      setHintText(null);
       setWrongFlash(null);
       setCorrectFlash(null);
+      setAttempts({});
+      setCoachUnlocked({});
     },
     [operation, level],
   );
@@ -641,14 +647,16 @@ export function FractionsLab({
 
   /* ─── Fill / clear / reveal ───────────────────────────────────── */
 
-  const showContextualHint = useCallback(
-    (fieldId: string) => {
-      const step = problem.steps.find((s) => s.fieldId === fieldId);
-      setHintText(step?.hint ?? null);
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-      hintTimerRef.current = setTimeout(() => setHintText(null), 6000);
+  // Single user action that exposes the worked solution: unlocks the
+  // coach panel for the currently active field. Mapped to the Hint
+  // button and the H keyboard shortcut so there is exactly one path
+  // to the answer's narration.
+  const unlockCoach = useCallback(
+    (fieldId: string | null = activeFieldId) => {
+      if (!fieldId) return;
+      setCoachUnlocked((prev) => ({ ...prev, [fieldId]: true }));
     },
-    [problem],
+    [activeFieldId],
   );
 
   const checkCompletion = useCallback(
@@ -692,15 +700,19 @@ export function FractionsLab({
         setValues((prev) => ({ ...prev, [activeFieldId]: candidate }));
       } else {
         setCounts((c) => ({ ...c, wrong: c.wrong + 1 }));
+        setAttempts((prev) => ({
+          ...prev,
+          [activeFieldId]: (prev[activeFieldId] ?? 0) + 1,
+        }));
         setWrongFlash(activeFieldId);
         if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
         wrongTimerRef.current = setTimeout(() => setWrongFlash(null), 500);
-        showContextualHint(activeFieldId);
-        // Reset the partial value so the student can try again cleanly.
+        // No auto-hint: the coach is opt-in, the student chooses when to
+        // peek at a walkthrough. Just reset the partial value.
         setValues((prev) => ({ ...prev, [activeFieldId]: null }));
       }
     },
-    [activeFieldId, problem.fields, values, advance, checkCompletion, showContextualHint],
+    [activeFieldId, problem.fields, values, advance, checkCompletion],
   );
 
   const clearActive = useCallback(() => {
@@ -756,7 +768,7 @@ export function FractionsLab({
         return;
       }
       if (k === "h" || k === "H") {
-        if (activeFieldId) showContextualHint(activeFieldId);
+        if (activeFieldId) unlockCoach(activeFieldId);
         e.preventDefault();
         return;
       }
@@ -779,7 +791,7 @@ export function FractionsLab({
     clearActive,
     advance,
     moveActive,
-    showContextualHint,
+    unlockCoach,
     revealActive,
     newProblem,
   ]);
@@ -955,9 +967,9 @@ export function FractionsLab({
           {/* Controls */}
           <div className="flex flex-wrap gap-2 justify-center mt-5">
             <ControlButton
-              onClick={() => activeFieldId && showContextualHint(activeFieldId)}
+              onClick={() => unlockCoach()}
               icon={<Lightbulb className="w-4 h-4" />}
-              label="Hint"
+              label="Show steps"
               kbd="H"
             />
             <ControlButton
@@ -1014,46 +1026,18 @@ export function FractionsLab({
           </Panel>
 
           <Panel title="Coach">
-            {coach ? (
-              <>
-                <div
-                  className="text-xs font-semibold uppercase tracking-[0.08em] mb-2 text-violet-700"
-                >
-                  {coach.title}
-                </div>
-                <div className="text-sm leading-relaxed text-stone-700 space-y-1.5">
-                  {coach.lines.map((line, i) => (
-                    <p key={i} dangerouslySetInnerHTML={{ __html: renderInline(line) }} />
-                  ))}
-                </div>
-              </>
-            ) : completed ? (
-              <div className="text-sm text-stone-700 space-y-2">
-                <div className="text-lg font-semibold text-stone-900 flex items-center gap-2">
-                  <Check className="w-5 h-5 text-emerald-600" /> Solved!
-                </div>
-                <p className="text-stone-500">
-                  Press <Kbd>N</Kbd> for another problem, or try a harder level.
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-stone-500">
-                Click a cell to start filling in the answer.
-              </p>
-            )}
-
-            {hintText && (
-              <div
-                className="mt-3 px-3 py-2.5 rounded-xl text-[12.5px] leading-relaxed"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #fffbeb, #fef3c7 60%, #fde68a)",
-                  border: "1px solid #fcd34d",
-                  color: "#92400e",
-                }}
-                dangerouslySetInnerHTML={{ __html: renderInline(hintText) }}
-              />
-            )}
+            <CoachPanelBody
+              completed={completed}
+              activeFieldId={activeFieldId}
+              coach={coach}
+              unlocked={
+                activeFieldId ? !!coachUnlocked[activeFieldId] : false
+              }
+              attempts={
+                activeFieldId ? attempts[activeFieldId] ?? 0 : 0
+              }
+              onUnlock={() => unlockCoach()}
+            />
           </Panel>
 
           <Panel title="Progress">
@@ -1069,7 +1053,7 @@ export function FractionsLab({
               <KeyHint keys="0–9" action="fill" />
               <KeyHint keys="⌫" action="clear" />
               <KeyHint keys="Enter" action="next" />
-              <KeyHint keys="H" action="hint" />
+              <KeyHint keys="H" action="show steps" />
               <KeyHint keys="R" action="reveal" />
               <KeyHint keys="N" action="new" />
             </div>
@@ -1078,6 +1062,104 @@ export function FractionsLab({
       </main>
 
       <canvas id="frac-confetti" className="fixed inset-0 pointer-events-none z-40" />
+    </div>
+  );
+}
+
+/* ─── Coach panel body ───────────────────────────────────────────── */
+
+interface CoachPanelBodyProps {
+  completed: boolean;
+  activeFieldId: string | null;
+  coach: { title: string; lines: string[]; hint: string } | null;
+  unlocked: boolean;
+  attempts: number;
+  onUnlock: () => void;
+}
+
+function CoachPanelBody({
+  completed,
+  activeFieldId,
+  coach,
+  unlocked,
+  attempts,
+  onUnlock,
+}: CoachPanelBodyProps) {
+  if (completed) {
+    return (
+      <div className="text-sm text-stone-700 space-y-2">
+        <div className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+          <Check className="w-5 h-5 text-emerald-600" /> Solved!
+        </div>
+        <p className="text-stone-500">
+          Press <Kbd>N</Kbd> for another problem, or try a harder level.
+        </p>
+      </div>
+    );
+  }
+
+  if (!activeFieldId) {
+    return (
+      <p className="text-sm text-stone-500">
+        Click a cell to start filling in the answer.
+      </p>
+    );
+  }
+
+  if (unlocked && coach) {
+    return (
+      <>
+        <div className="text-xs font-semibold uppercase tracking-[0.08em] mb-2 text-violet-700">
+          {coach.title}
+        </div>
+        <div className="text-sm leading-relaxed text-stone-700 space-y-1.5">
+          {coach.lines.map((line, i) => (
+            <p
+              key={i}
+              dangerouslySetInnerHTML={{ __html: renderInline(line) }}
+            />
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  // Locked: encourage independent attempts before peeking at the worked
+  // solution. Messaging softens with each wrong attempt.
+  const headline =
+    attempts === 0
+      ? "Try it yourself first."
+      : attempts === 1
+        ? "Give it another go."
+        : "Want a walkthrough?";
+  const sub =
+    attempts === 0
+      ? "When you're stuck, tap to see the steps."
+      : attempts === 1
+        ? "One try in. Tap below if you'd like to see how it's done."
+        : `${attempts} tries so far. No shame in peeking — that's how you learn.`;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-sm font-semibold text-stone-900">{headline}</div>
+        <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{sub}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onUnlock}
+        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border"
+        style={{
+          fontFamily: "var(--font-outfit), system-ui, sans-serif",
+          background: attempts >= 2 ? "#fffbeb" : "#fafaf7",
+          borderColor: attempts >= 2 ? "#fcd34d" : "#e7e5e4",
+          color: attempts >= 2 ? "#92400e" : "#57534e",
+        }}
+      >
+        <Lightbulb className="w-4 h-4" />
+        <span>Show step-by-step</span>
+        <Kbd>H</Kbd>
+      </button>
     </div>
   );
 }

@@ -278,9 +278,13 @@ export function CarryLab({
   const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
   const [completed, setCompleted] = useState(false);
   const [counts, setCounts] = useState({ correct: 0, wrong: 0 });
-  const [hintText, setHintText] = useState<string | null>(null);
+  // Per-cell wrong-attempt counter and explicit unlock map for the
+  // step-by-step coach. Coach is opt-in so the student must try first.
+  const [attempts, setAttempts] = useState<Record<string, number>>({});
+  const [coachUnlocked, setCoachUnlocked] = useState<Record<string, boolean>>(
+    {},
+  );
 
-  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrongTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const correctTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -295,9 +299,10 @@ export function CarryLab({
       setActiveId(mod.firstEditableId(next));
       setCompleted(false);
       setCounts({ correct: 0, wrong: 0 });
-      setHintText(null);
       setWrongFlashId(null);
       setCorrectFlashId(null);
+      setAttempts({});
+      setCoachUnlocked({});
     },
     [operation, level],
   );
@@ -399,14 +404,15 @@ export function CarryLab({
 
   /* ─── Fill / clear / reveal ──────────────────────────────── */
 
-  const showContextualHint = useCallback(
-    (cell: Cell) => {
-      const txt = opMod.hintFor(state, cell);
-      setHintText(txt || null);
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-      hintTimerRef.current = setTimeout(() => setHintText(null), 6000);
+  // Single user action that exposes the worked solution: unlocks the
+  // coach panel for the currently active cell. Mapped to the Hint button
+  // and the H keyboard shortcut.
+  const unlockCoach = useCallback(
+    (cellId: string | null = activeId) => {
+      if (!cellId) return;
+      setCoachUnlocked((prev) => ({ ...prev, [cellId]: true }));
     },
-    [state, opMod],
+    [activeId],
   );
 
   const checkCompletion = useCallback((nextState: TableauState) => {
@@ -437,13 +443,17 @@ export function CarryLab({
         setTimeout(() => advanceNatural(cell.id), 0);
       } else {
         setCounts((c) => ({ ...c, wrong: c.wrong + 1 }));
+        setAttempts((prev) => ({
+          ...prev,
+          [cell.id]: (prev[cell.id] ?? 0) + 1,
+        }));
         setWrongFlashId(cell.id);
         if (wrongTimerRef.current) clearTimeout(wrongTimerRef.current);
         wrongTimerRef.current = setTimeout(() => setWrongFlashId(null), 500);
-        showContextualHint(cell);
+        // No auto-hint — coach is opt-in.
       }
     },
-    [activeId, state, advanceNatural, checkCompletion, showContextualHint],
+    [activeId, state, advanceNatural, checkCompletion],
   );
 
   const clearActive = useCallback(() => {
@@ -490,7 +500,7 @@ export function CarryLab({
       if (k === "ArrowUp")    { moveActive(-1, 0); e.preventDefault(); return; }
       if (k === "ArrowDown")  { moveActive(+1, 0); e.preventDefault(); return; }
       if (k === "h" || k === "H") {
-        if (activeId) showContextualHint(state.cells[activeId]);
+        if (activeId) unlockCoach(activeId);
         e.preventDefault();
         return;
       }
@@ -501,7 +511,7 @@ export function CarryLab({
     return () => window.removeEventListener("keydown", handler);
   }, [
     activeId, state, fillActive, clearActive, advanceNatural,
-    moveActive, showContextualHint, revealActive, newProblem,
+    moveActive, unlockCoach, revealActive, newProblem,
   ]);
 
   /* ─── Column hover tooltip ───────────────────────────────── */
@@ -964,9 +974,9 @@ export function CarryLab({
           {/* Controls */}
           <div className="flex flex-wrap gap-2 justify-center mt-5">
             <ControlButton
-              onClick={() => activeId && showContextualHint(state.cells[activeId])}
+              onClick={() => unlockCoach()}
               icon={<Lightbulb className="w-4 h-4" />}
-              label="Hint"
+              label="Show steps"
               kbd="H"
             />
             <ControlButton
@@ -1019,50 +1029,16 @@ export function CarryLab({
         {/* ── Side panel ── */}
         <aside className="flex flex-col gap-4">
           <Panel title="Coach">
-            {coach ? (
-              <>
-                <div
-                  className="text-xs font-semibold uppercase tracking-[0.08em] mb-2"
-                  style={{ color: pvColor(state.cells[activeId!]?.col ?? 0) }}
-                >
-                  {coach.title}
-                </div>
-                <div className="text-sm leading-relaxed text-stone-700 space-y-1.5">
-                  {coach.lines.map((line, i) => (
-                    <p key={i} dangerouslySetInnerHTML={{ __html: renderInline(line) }} />
-                  ))}
-                </div>
-              </>
-            ) : completed ? (
-              <div className="text-sm text-stone-700 space-y-2">
-                <div className="text-lg font-semibold text-stone-900 flex items-center gap-2">
-                  <Check className="w-5 h-5 text-emerald-600" /> Solved!
-                </div>
-                <div className="inline-block px-3 py-1.5 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-mono tabular-nums text-sm">
-                  {completionEquation}
-                </div>
-                <p className="text-stone-500">
-                  Press <Kbd>N</Kbd> for another problem, or try a harder level.
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-stone-500">
-                Click a cell, or hover a column to see its place value.
-              </p>
-            )}
-
-            {hintText && (
-              <div
-                className="mt-3 px-3 py-2.5 rounded-xl text-[12.5px] leading-relaxed"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #fffbeb, #fef3c7 60%, #fde68a)",
-                  border: "1px solid #fcd34d",
-                  color: "#92400e",
-                }}
-                dangerouslySetInnerHTML={{ __html: renderInline(hintText) }}
-              />
-            )}
+            <CarryCoachBody
+              completed={completed}
+              activeId={activeId}
+              coach={coach}
+              titleColor={pvColor(state.cells[activeId!]?.col ?? 0)}
+              completionEquation={completionEquation}
+              unlocked={activeId ? !!coachUnlocked[activeId] : false}
+              attempts={activeId ? attempts[activeId] ?? 0 : 0}
+              onUnlock={() => unlockCoach()}
+            />
           </Panel>
 
           <Panel title="Progress">
@@ -1078,7 +1054,7 @@ export function CarryLab({
               <KeyHint keys="0–9" action="fill" />
               <KeyHint keys="⌫" action="clear" />
               <KeyHint keys="Enter" action="next" />
-              <KeyHint keys="H" action="hint" />
+              <KeyHint keys="H" action="show steps" />
               <KeyHint keys="R" action="reveal" />
               <KeyHint keys="N" action="new" />
             </div>
@@ -1120,6 +1096,112 @@ export function CarryLab({
 /* ─────────────────────────────────────────────────────────────
  * Sub-components
  * ───────────────────────────────────────────────────────────── */
+
+/* ─── Coach panel body ───────────────────────────────────────────── */
+
+interface CarryCoachBodyProps {
+  completed: boolean;
+  activeId: string | null;
+  coach: { title: string; lines: string[] } | null;
+  titleColor: string;
+  completionEquation: string;
+  unlocked: boolean;
+  attempts: number;
+  onUnlock: () => void;
+}
+
+function CarryCoachBody({
+  completed,
+  activeId,
+  coach,
+  titleColor,
+  completionEquation,
+  unlocked,
+  attempts,
+  onUnlock,
+}: CarryCoachBodyProps) {
+  if (completed) {
+    return (
+      <div className="text-sm text-stone-700 space-y-2">
+        <div className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+          <Check className="w-5 h-5 text-emerald-600" /> Solved!
+        </div>
+        <div className="inline-block px-3 py-1.5 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-mono tabular-nums text-sm">
+          {completionEquation}
+        </div>
+        <p className="text-stone-500">
+          Press <Kbd>N</Kbd> for another problem, or try a harder level.
+        </p>
+      </div>
+    );
+  }
+
+  if (!activeId) {
+    return (
+      <p className="text-sm text-stone-500">
+        Click a cell, or hover a column to see its place value.
+      </p>
+    );
+  }
+
+  if (unlocked && coach) {
+    return (
+      <>
+        <div
+          className="text-xs font-semibold uppercase tracking-[0.08em] mb-2"
+          style={{ color: titleColor }}
+        >
+          {coach.title}
+        </div>
+        <div className="text-sm leading-relaxed text-stone-700 space-y-1.5">
+          {coach.lines.map((line, i) => (
+            <p
+              key={i}
+              dangerouslySetInnerHTML={{ __html: renderInline(line) }}
+            />
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  const headline =
+    attempts === 0
+      ? "Try it yourself first."
+      : attempts === 1
+        ? "Give it another go."
+        : "Want a walkthrough?";
+  const sub =
+    attempts === 0
+      ? "When you're stuck, tap to see the steps."
+      : attempts === 1
+        ? "One try in. Tap below if you'd like to see how it's done."
+        : `${attempts} tries so far. No shame in peeking — that's how you learn.`;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-sm font-semibold text-stone-900">{headline}</div>
+        <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{sub}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onUnlock}
+        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border"
+        style={{
+          fontFamily: "var(--font-outfit), system-ui, sans-serif",
+          background: attempts >= 2 ? "#fffbeb" : "#fafaf7",
+          borderColor: attempts >= 2 ? "#fcd34d" : "#e7e5e4",
+          color: attempts >= 2 ? "#92400e" : "#57534e",
+        }}
+      >
+        <Lightbulb className="w-4 h-4" />
+        <span>Show step-by-step</span>
+        <Kbd>H</Kbd>
+      </button>
+    </div>
+  );
+}
 
 function Panel({
   title,
