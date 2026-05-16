@@ -4,8 +4,42 @@ import { day20260512 } from "./content/day-2026-05-12";
 import { day20260513 } from "./content/day-2026-05-13";
 import { day20260514 } from "./content/day-2026-05-14";
 import { day20260515 } from "./content/day-2026-05-15";
+import { day20260518 } from "./content/day-2026-05-18";
+import { day20260519 } from "./content/day-2026-05-19";
+import { day20260520 } from "./content/day-2026-05-20";
+import { day20260521 } from "./content/day-2026-05-21";
 
-export const WEEK: Day[] = [day20260512, day20260513, day20260514, day20260515];
+export const WEEK1: Day[] = [day20260512, day20260513, day20260514, day20260515];
+export const WEEK2: Day[] = [day20260518, day20260519, day20260520, day20260521];
+
+export interface WeekSpec {
+  id: number;
+  label: string;
+  introFile: string;
+  days: Day[];
+  /** First day-of-trial number for this week (1-indexed). */
+  startDayNumber: number;
+}
+
+export const WEEKS: WeekSpec[] = [
+  {
+    id: 1,
+    label: "Week 1 — May 12-15",
+    introFile: "WEEK-2026-05-12.md",
+    days: WEEK1,
+    startDayNumber: 1,
+  },
+  {
+    id: 2,
+    label: "Week 2 — May 18-21",
+    introFile: "WEEK-2026-05-18.md",
+    days: WEEK2,
+    startDayNumber: WEEK1.length + 1,
+  },
+];
+
+/** Backward-compat: the full flat list of days across all weeks. */
+export const WEEK: Day[] = [...WEEK1, ...WEEK2];
 
 export const WEEK_RANGE = {
   start: WEEK[0].date,

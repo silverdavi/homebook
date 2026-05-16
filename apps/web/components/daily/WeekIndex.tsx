@@ -17,9 +17,11 @@ function formatDate(iso: string): string {
 interface Props {
   week: Day[];
   todayIso: string;
+  /** Day-of-trial number for the first entry in `week` (1-indexed). Defaults to 1. */
+  startDayNumber?: number;
 }
 
-export function WeekIndex({ week, todayIso }: Props) {
+export function WeekIndex({ week, todayIso, startDayNumber = 1 }: Props) {
   return (
     <div className="space-y-3">
       {week.map((day, i) => {
@@ -41,7 +43,7 @@ export function WeekIndex({ week, todayIso }: Props) {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-slate-400" />
                 <span className="font-semibold text-slate-800">
-                  Day {i + 1} — {formatDate(day.date)}
+                  Day {startDayNumber + i} — {formatDate(day.date)}
                 </span>
                 {isToday && (
                   <span className="text-[10px] uppercase tracking-wide font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
