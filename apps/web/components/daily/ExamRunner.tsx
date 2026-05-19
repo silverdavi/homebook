@@ -97,9 +97,22 @@ export function ExamRunner({ date, version, questions }: Props) {
     }
   }, [date, version, answers]);
 
-  const updateAt = (i: number, next: ClientAnswer) => {
+  /**
+   * Merge a *partial* answer patch into the latest committed state.
+   *
+   * Why a patch and not a full ClientAnswer: the QuestionCard renders
+   * three independent inputs (answer field, note field, help link).
+   * Each one used to compute its update against the `state` prop at
+   * the previous render — which is stale if a sibling input fired in
+   * the same tick. That race let a note keystroke overwrite the
+   * just-typed numeric answer with `null`. By passing patches and
+   * merging inside this functional setter, every change always lands
+   * on top of the latest committed answer for that question.
+   */
+  const updateAt = (i: number, patch: Partial<ClientAnswer>) => {
     setAnswers((prev) => {
       const out = [...prev];
+      const next: ClientAnswer = { ...prev[i], ...patch };
       out[i] = stampTime(prev[i], next);
       return out;
     });
@@ -223,7 +236,7 @@ export function ExamRunner({ date, version, questions }: Props) {
             total={questions.length}
             question={q}
             state={answers[i]}
-            onChange={(next) => updateAt(i, next)}
+            onChange={(patch) => updateAt(i, patch)}
           />
         ))}
       </div>

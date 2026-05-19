@@ -11,13 +11,23 @@ interface Props {
   total: number;
   question: Question;
   state: ClientAnswer;
-  onChange: (next: ClientAnswer) => void;
+  /**
+   * Apply a partial update to this question's answer.
+   *
+   * IMPORTANT: this is a *patch*, not a replacement. Each setter (raw,
+   * note, usedHelp) sends only its field, and the parent merges it
+   * into the latest committed state inside a functional setState. This
+   * is what fixes the bug where typing in the Note field after typing
+   * an answer would stomp the answer with stale `state` (because both
+   * callbacks closed over the same render's `state` prop).
+   */
+  onChange: (patch: Partial<ClientAnswer>) => void;
 }
 
 export function QuestionCard({ index, total, question, state, onChange }: Props) {
-  const setRaw = (raw: RawAnswer) => onChange({ ...state, raw });
-  const setNote = (note: string) => onChange({ ...state, note });
-  const markUsedHelp = () => onChange({ ...state, usedHelp: true });
+  const setRaw = (raw: RawAnswer) => onChange({ raw });
+  const setNote = (note: string) => onChange({ note });
+  const markUsedHelp = () => onChange({ usedHelp: true });
 
   return (
     <div className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 shadow-paper">
