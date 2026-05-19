@@ -6,6 +6,7 @@ import add from "./operations/add";
 import subtract from "./operations/subtract";
 import multiply from "./operations/multiply";
 import divide from "./operations/divide";
+import mixed from "./operations/mixed";
 
 export const FRACTION_OPS: Record<FractionOp, FractionOpModule> = {
   gcf,
@@ -15,12 +16,14 @@ export const FRACTION_OPS: Record<FractionOp, FractionOpModule> = {
   subtract,
   multiply,
   divide,
+  mixed,
 };
 
 export const FRACTION_OP_ORDER: FractionOp[] = [
   "gcf",
   "lcm",
   "simplify",
+  "mixed",
   "add",
   "subtract",
   "multiply",

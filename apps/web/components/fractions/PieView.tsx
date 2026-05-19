@@ -25,6 +25,71 @@ interface Props {
   faded?: boolean;
 }
 
+/**
+ * Render an improper fraction as a row of pies: one full pie per whole,
+ * plus a partial pie for the remainder. For proper fractions (n < d)
+ * this falls back to a single `PieView`. Pies share the same tone and
+ * sit under one shared label.
+ */
+export function PieRow({
+  fraction,
+  size = 96,
+  tone = "violet",
+  label,
+  faded = false,
+}: Props) {
+  const { n, d } = fraction;
+  if (n < d || d <= 0) {
+    return (
+      <PieView
+        fraction={fraction}
+        size={size}
+        tone={tone}
+        label={label}
+        faded={faded}
+      />
+    );
+  }
+  const wholes = Math.floor(n / d);
+  const remainder = n - wholes * d;
+  const items: Fraction[] = [];
+  for (let i = 0; i < wholes; i++) items.push({ n: d, d });
+  if (remainder > 0) items.push({ n: remainder, d });
+
+  const T = TONES[tone];
+  const opacity = faded ? 0.25 : 1;
+
+  return (
+    <div
+      className="flex flex-col items-center"
+      style={{ opacity, transition: "opacity 220ms ease" }}
+    >
+      <div className="flex items-center gap-1.5">
+        {items.map((f, i) => (
+          <PieView
+            key={i}
+            fraction={f}
+            size={size}
+            tone={tone}
+            // Inner labels suppressed; we draw a single label below.
+          />
+        ))}
+      </div>
+      {label && (
+        <div
+          className="text-sm font-semibold tabular-nums mt-1.5"
+          style={{
+            color: T.text,
+            fontFamily: "var(--font-outfit), system-ui, sans-serif",
+          }}
+        >
+          {label}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PieView({
   fraction,
   size = 110,

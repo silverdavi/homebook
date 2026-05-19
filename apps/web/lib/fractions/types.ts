@@ -13,7 +13,8 @@ export type FractionOp =
   | "add"
   | "subtract"
   | "multiply"
-  | "divide";
+  | "divide"
+  | "mixed";
 
 export interface Fraction {
   n: number;
@@ -63,7 +64,25 @@ export interface OperatorPart {
   text: string;
 }
 
-export type EquationPart = FractionPart | IntegerPart | OperatorPart;
+/** A mixed number — a whole part next to a fraction (e.g. "2 1/3"). */
+export interface MixedPart {
+  kind: "mixed";
+  id: string;
+  whole?: number;
+  /** If present, the whole-number cell is editable. */
+  wholeField?: string;
+  n?: number;
+  d?: number;
+  nField?: string;
+  dField?: string;
+  tone?: "violet" | "amber" | "emerald" | "stone";
+}
+
+export type EquationPart =
+  | FractionPart
+  | IntegerPart
+  | OperatorPart
+  | MixedPart;
 
 export interface Step {
   /** Field this step explains. */
@@ -84,6 +103,10 @@ export interface PieVisual {
     tone?: "violet" | "amber" | "emerald" | "stone";
     /** When true, the pie reveals only after the student finishes. */
     revealAfterField?: string;
+    /** When true and n >= d, render multiple pies (one full pie per whole,
+     * plus a partial pie for the remainder). Used for improper fractions
+     * and mixed numbers so 7/3 visually reads as 2 full pies + 1/3. */
+    expand?: boolean;
   }[];
 }
 

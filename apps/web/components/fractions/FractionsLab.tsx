@@ -30,6 +30,7 @@ import {
   Layers,
   Hash,
   ArrowDown,
+  ArrowLeftRight,
 } from "lucide-react";
 import {
   FRACTION_OPS,
@@ -43,11 +44,12 @@ import type {
   FractionProblem,
   IntegerPart,
   FractionPart,
+  MixedPart,
   FactorVisual,
   MultiplesVisual,
   PieVisual,
 } from "@/lib/fractions/types";
-import { PieView } from "./PieView";
+import { PieView, PieRow } from "./PieView";
 
 const TONE_COLORS = {
   violet: { ink: "#5b21b6", soft: "#ede9fe", border: "#a78bfa" },
@@ -60,6 +62,7 @@ const OP_ICONS: Record<FractionOp, React.ComponentType<{ className?: string }>> 
   gcf: Hash,
   lcm: Layers,
   simplify: ArrowDown,
+  mixed: ArrowLeftRight,
   add: Plus,
   subtract: Minus,
   multiply: XIcon,
@@ -227,6 +230,24 @@ function Equation({
             />
           );
         }
+        if (part.kind === "mixed") {
+          return (
+            <MixedView
+              key={part.id}
+              part={part}
+              wholeField={part.wholeField ? fieldById[part.wholeField] : undefined}
+              nField={part.nField ? fieldById[part.nField] : undefined}
+              dField={part.dField ? fieldById[part.dField] : undefined}
+              wholeValue={part.wholeField ? values[part.wholeField] ?? null : null}
+              nValue={part.nField ? values[part.nField] ?? null : null}
+              dValue={part.dField ? values[part.dField] ?? null : null}
+              activeFieldId={activeFieldId}
+              wrongFlash={wrongFlash}
+              correctFlash={correctFlash}
+              setActive={setActive}
+            />
+          );
+        }
         return (
           <FractionView
             key={part.id}
@@ -370,6 +391,83 @@ function FractionView({
   );
 }
 
+interface MixedViewProps {
+  part: MixedPart;
+  wholeField?: Field;
+  nField?: Field;
+  dField?: Field;
+  wholeValue: number | null;
+  nValue: number | null;
+  dValue: number | null;
+  activeFieldId: string | null;
+  wrongFlash: string | null;
+  correctFlash: string | null;
+  setActive: (id: string) => void;
+}
+
+function MixedView({
+  part,
+  wholeField,
+  nField,
+  dField,
+  wholeValue,
+  nValue,
+  dValue,
+  activeFieldId,
+  wrongFlash,
+  correctFlash,
+  setActive,
+}: MixedViewProps) {
+  const tone = part.tone ?? "stone";
+  const T = TONE_COLORS[tone];
+  const wholeStyle: React.CSSProperties = {
+    color: T.ink,
+    fontSize: 48,
+    fontWeight: 800,
+    lineHeight: 1,
+    fontVariantNumeric: "tabular-nums",
+  };
+  return (
+    <div className="flex items-center gap-2">
+      {wholeField ? (
+        <AnswerCell
+          field={wholeField}
+          value={wholeValue}
+          isFocused={activeFieldId === wholeField.id}
+          wrongFlash={wrongFlash === wholeField.id}
+          correctFlash={correctFlash === wholeField.id}
+          onActivate={() => setActive(wholeField.id)}
+          size={72}
+          tone={tone}
+        />
+      ) : (
+        <span style={wholeStyle} className="select-none tabular-nums">
+          {part.whole}
+        </span>
+      )}
+      <FractionView
+        part={{
+          kind: "fraction",
+          id: `${part.id}-frac`,
+          n: part.n,
+          d: part.d,
+          nField: part.nField,
+          dField: part.dField,
+          tone,
+        }}
+        nField={nField}
+        dField={dField}
+        nValue={nValue}
+        dValue={dValue}
+        activeFieldId={activeFieldId}
+        wrongFlash={wrongFlash}
+        correctFlash={correctFlash}
+        setActive={setActive}
+      />
+    </div>
+  );
+}
+
 /* ─── Visualisations ─────────────────────────────────────────────── */
 
 function PiesVisual({
@@ -387,14 +485,15 @@ function PiesVisual({
     <div className="flex items-center justify-center gap-6 flex-wrap">
       {visual.items.map((item, i) => {
         const revealed = fieldDone(item.revealAfterField);
+        const Pie = item.expand ? PieRow : PieView;
         return (
-          <PieView
+          <Pie
             key={i}
             fraction={item.fraction}
             label={revealed ? item.label : "?"}
             tone={item.tone}
             faded={!revealed}
-            size={108}
+            size={item.expand ? 84 : 108}
           />
         );
       })}
@@ -887,7 +986,7 @@ export function FractionsLab({
 
       {/* Operation tabs */}
       <div
-        className="w-full max-w-5xl mb-5 grid grid-cols-3 sm:grid-cols-7 gap-1.5 p-1.5 rounded-2xl border border-stone-200 bg-white"
+        className="w-full max-w-5xl mb-5 grid grid-cols-4 sm:grid-cols-8 gap-1.5 p-1.5 rounded-2xl border border-stone-200 bg-white"
         style={{ boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}
       >
         {FRACTION_OP_ORDER.map((opId) => {
