@@ -1,68 +1,17 @@
 ---
-description: Style rules for emails sent from this project (kickoff, summary, bug-fix, etc.)
+description: Style rules for project emails (kickoff, summary, bug-fix)
 globs: apps/web/__tests__/smoke/send-*.mjs, apps/web/lib/daily/summary.ts, apps/web/lib/daily/bug-report.ts
 alwaysApply: false
 ---
 
-# Email style — keep it short, keep it human
+# Email style — short, human
 
-These rules apply to any email this project sends to Yerachmiel,
-Mom, or Enny — kickoffs, post-exam summaries, bug-fix notes, etc.
+- **Open with the substance.** No "thank you for…", "just wanted to…", "I hope this finds you well".
+- **Body length:** acknowledgement / bug-fix < 200 words. Kickoff 4–8 short paragraphs.
+- **One card.** No stacked gradient + callouts + sectioned headings in the same email.
+- **One quote, one link, one ask.** Don't restate.
+- **No hedging** ("we think", "hopefully"), no emoji, no flourish dashes.
+- **Numbers stay numbers** (score, count, time). Don't paraphrase them.
+- **The plain-text version is the canary.** If it sounds bloated in text, the HTML is bloated.
 
-## What to cut
-
-- **No throat-clearing.** Don't open with "I hope this finds you
-  well", "Just wanted to let you know", "Quick update", or similar.
-  Open with the substance.
-- **No filler bullets.** If a list has fewer than three real items,
-  use a sentence instead.
-- **No restating the obvious.** If a section is one sentence, don't
-  give it an UPPERCASE HEADING or a colored callout.
-- **No hedging.** "We think" / "we believe" / "hopefully" — drop
-  them unless the uncertainty is the point.
-- **No emoji, no "—" before punchlines, no "✨"-style flourishes.**
-- **No three-adjective stacks** ("clear, specific, and detailed").
-  Pick one.
-- **No paragraphs that exist only to tee up the next paragraph.**
-
-## What to keep
-
-- The exact thing the recipient needs to know, said once.
-- The one link or one action they have to take.
-- A specific quote or number when it's the proof of the point.
-
-## Length targets
-
-- **Kickoff email**: 4–8 short paragraphs, single column. Not
-  multiple sectioned cards with headings.
-- **Bug-fix / acknowledgement email**: under 200 words of body text.
-  One quote. One link. Done.
-- **Summary email** (auto-generated post-exam): the per-question
-  table is the email; the surrounding prose should be 2–3
-  sentences max.
-
-## HTML
-
-- One container card. No nested gradient banners + colored
-  callouts + sectioned headings + footer notes all in the same
-  email.
-- Plain `<p>` paragraphs are fine. Headings only when the email
-  genuinely has more than one section the reader will skim.
-- The plain-text version should read identically — if it sounds
-  bloated in plain text, the HTML is bloated too.
-
-## Tone
-
-- Direct, warm, factual. "You were right." > "Thank you so much
-  for catching this important issue."
-- The recipient is a 13-year-old or his parent. Talk to them, not
-  at them.
-- If there's a number (score, count, time), put the number in.
-  Don't paraphrase it.
-
-## Self-check before --send
-
-Read the draft out loud. Cross out any sentence that doesn't
-either (a) tell them something they don't know, or (b) point them
-at something they need to do. If a paragraph survives both
-strikes and still feels like AI slop, rewrite it as one sentence.
+Recipient is a 13-year-old or his parent. Talk to them, not at them.
