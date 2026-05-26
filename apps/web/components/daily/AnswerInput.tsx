@@ -14,12 +14,14 @@ function IntegerInput({
 }) {
   return (
     <input
-      type="number"
+      type="text"
       inputMode="numeric"
+      pattern="-?[0-9]*"
+      autoComplete="off"
       value={value === null ? "" : `${value}`}
       placeholder={placeholder}
       onChange={(e) => {
-        const raw = e.target.value;
+        const raw = e.target.value.replace(/[^0-9-]/g, "");
         if (raw === "" || raw === "-") {
           onChange(null);
           return;
@@ -43,15 +45,18 @@ function FractionInput({
   onChange: (next: { num: number | null; den: number | null }) => void;
 }) {
   const parse = (s: string): number | null => {
-    if (s === "" || s === "-") return null;
-    const n = Number(s);
+    const cleaned = s.replace(/[^0-9-]/g, "");
+    if (cleaned === "" || cleaned === "-") return null;
+    const n = Number(cleaned);
     return Number.isFinite(n) ? n : null;
   };
   return (
     <div className="inline-flex flex-col items-center">
       <input
-        type="number"
+        type="text"
         inputMode="numeric"
+        pattern="-?[0-9]*"
+        autoComplete="off"
         value={num === null ? "" : `${num}`}
         placeholder="num"
         aria-label="Numerator"
@@ -60,8 +65,10 @@ function FractionInput({
       />
       <div className="my-1 h-[2px] w-20 bg-slate-400" />
       <input
-        type="number"
+        type="text"
         inputMode="numeric"
+        pattern="-?[0-9]*"
+        autoComplete="off"
         value={den === null ? "" : `${den}`}
         placeholder="den"
         aria-label="Denominator"
