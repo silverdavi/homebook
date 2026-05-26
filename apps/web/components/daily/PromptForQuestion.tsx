@@ -45,13 +45,22 @@ export function PromptForQuestion({ question }: { question: Question }) {
         </span>
       );
     }
+    case "mult":
+      return (
+        <span className="font-mono">
+          {question.a} × {question.b} ={" "}
+          <span className="text-slate-400">?</span>
+        </span>
+      );
     case "periodic": {
       const askLabel =
         question.ask === "P"
           ? "protons"
           : question.ask === "N"
             ? "neutrons"
-            : "electrons";
+            : question.ask === "e"
+              ? "electrons"
+              : "valence electrons";
       return (
         <span>
           How many <span className="font-semibold">{askLabel}</span> in{" "}
@@ -65,6 +74,13 @@ export function PromptForQuestion({ question }: { question: Question }) {
         <span>
           What year did the{" "}
           <span className="font-semibold">{question.name}</span> start?
+        </span>
+      );
+    case "peace":
+      return (
+        <span>
+          What year was the{" "}
+          <span className="font-semibold">{question.name}</span> signed?
         </span>
       );
     case "evolution":

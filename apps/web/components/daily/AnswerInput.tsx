@@ -82,12 +82,14 @@ export function AnswerInput({ question, answer, onChange }: Props) {
   switch (question.kind) {
     case "gcf":
     case "lcm":
+    case "mult":
     case "periodic":
     case "war":
+    case "peace":
     case "evolution": {
       const v = answer.kind === "integer" ? answer.value : null;
       const placeholder =
-        question.kind === "war"
+        question.kind === "war" || question.kind === "peace"
           ? "year"
           : question.kind === "evolution"
             ? "mya"

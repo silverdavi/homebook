@@ -60,6 +60,8 @@ function renderPrompt(q: Question): string {
       return `GCF(${q.a}, ${q.b})`;
     case "lcm":
       return `LCM(${q.a}, ${q.b})`;
+    case "mult":
+      return `${q.a} × ${q.b}`;
     case "fracAdd":
       return `${fmt(q.x)} + ${fmt(q.y)}`;
     case "fracSub":
@@ -75,11 +77,19 @@ function renderPrompt(q: Question): string {
     }
     case "periodic": {
       const ask =
-        q.ask === "P" ? "protons" : q.ask === "N" ? "neutrons" : "electrons";
+        q.ask === "P"
+          ? "protons"
+          : q.ask === "N"
+            ? "neutrons"
+            : q.ask === "e"
+              ? "electrons"
+              : "valence electrons";
       return `${ask} in ${q.symbol} (${q.elementName})`;
     }
     case "war":
       return `start year of ${q.name}`;
+    case "peace":
+      return `signing year of ${q.name}`;
     case "evolution":
       return `${q.event} (mya)`;
   }
@@ -201,7 +211,7 @@ function explainFracDiv(x: Frac, y: Frac): string {
 function explainPeriodic(q: {
   symbol: string;
   elementName: string;
-  ask: "P" | "N" | "e";
+  ask: "P" | "N" | "e" | "v";
   answer: number;
 }): string {
   const what =
@@ -209,12 +219,41 @@ function explainPeriodic(q: {
       ? "protons (its atomic number)"
       : q.ask === "N"
         ? "neutrons (most common isotope)"
-        : "electrons (neutral atom — same as protons)";
+        : q.ask === "e"
+          ? "electrons (neutral atom — same as protons)"
+          : "valence electrons (outermost shell — drives bonding)";
   return `${q.elementName} (${q.symbol}) has ${q.answer} ${what}.`;
+}
+
+function explainMult(a: number, b: number): string {
+  // For 2-digit problems, show the (a+b)(c+d) breakdown.
+  if (a >= 11 && b >= 11) {
+    const [a1, a2] = splitNear10(a);
+    const [b1, b2] = splitNear10(b);
+    const p1 = a1 * b1, p2 = a1 * b2, p3 = a2 * b1, p4 = a2 * b2;
+    return [
+      `${a} × ${b} = (${a1} + ${a2}) × (${b1} + ${b2})`,
+      `       = ${a1}×${b1} + ${a1}×${b2} + ${a2}×${b1} + ${a2}×${b2}`,
+      `       = ${p1} + ${p2} + ${p3} + ${p4}`,
+      `       = ${a * b}.`,
+    ].join("\n");
+  }
+  return `${a} × ${b} = ${a * b}.`;
+}
+
+function splitNear10(n: number): [number, number] {
+  // Split a 2-digit number into (round-down-to-10, remainder).
+  // 17 → (10, 7); 25 → (20, 5); 13 → (10, 3); 11 → (10, 1).
+  const tens = Math.floor(n / 10) * 10;
+  return [tens, n - tens];
 }
 
 function explainWar(q: { name: string; answer: number }): string {
   return `The ${q.name} started in ${q.answer}.`;
+}
+
+function explainPeace(q: { name: string; answer: number }): string {
+  return `The ${q.name} was signed in ${q.answer}.`;
 }
 
 function explainEvolution(q: {
@@ -231,6 +270,8 @@ export function renderExplanation(q: Question): string {
       return explainGcf(q.a, q.b);
     case "lcm":
       return explainLcm(q.a, q.b);
+    case "mult":
+      return explainMult(q.a, q.b);
     case "fracAdd":
       return explainFracAdd(q.x, q.y);
     case "fracSub":
@@ -248,6 +289,8 @@ export function renderExplanation(q: Question): string {
       return explainPeriodic(q);
     case "war":
       return explainWar(q);
+    case "peace":
+      return explainPeace(q);
     case "evolution":
       return explainEvolution(q);
   }
@@ -256,13 +299,15 @@ export function renderExplanation(q: Question): string {
 const KIND_LABEL: Record<Question["kind"], string> = {
   gcf: "GCF",
   lcm: "LCM",
+  mult: "Multiplication",
   fracAdd: "Fraction add",
   fracSub: "Fraction subtract",
   fracMul: "Fraction multiply",
   fracDiv: "Fraction divide",
   fracInverse: "Inverse",
   periodic: "Periodic table",
-  war: "History",
+  war: "History — war",
+  peace: "History — peace",
   evolution: "Evolution",
 };
 

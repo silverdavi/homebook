@@ -25,7 +25,8 @@ function gradeOne(question: Question, raw: RawAnswer): {
 } {
   switch (question.kind) {
     case "gcf":
-    case "lcm": {
+    case "lcm":
+    case "mult": {
       const expected = `${question.answer}`;
       if (raw.kind !== "integer" || raw.value === null) {
         return { correct: false, expected, userDisplay: "(blank)" };
@@ -74,7 +75,8 @@ function gradeOne(question: Question, raw: RawAnswer): {
       };
     }
 
-    case "war": {
+    case "war":
+    case "peace": {
       const expected = `${question.answer}`;
       if (raw.kind !== "integer" || raw.value === null) {
         return { correct: false, expected, userDisplay: "(blank)" };
@@ -158,6 +160,7 @@ export function formatExpected(question: Question): string {
   switch (question.kind) {
     case "gcf":
     case "lcm":
+    case "mult":
     case "periodic":
       return `${question.answer}`;
     case "fracAdd":
@@ -167,6 +170,7 @@ export function formatExpected(question: Question): string {
     case "fracInverse":
       return fmtFrac(question.answer);
     case "war":
+    case "peace":
       return `${question.answer}`;
     case "evolution":
       return `${question.answerMya}`;

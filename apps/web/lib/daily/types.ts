@@ -8,6 +8,7 @@
 export type QuestionKind =
   | "gcf"
   | "lcm"
+  | "mult"
   | "fracAdd"
   | "fracSub"
   | "fracMul"
@@ -15,6 +16,7 @@ export type QuestionKind =
   | "fracInverse"
   | "periodic"
   | "war"
+  | "peace"
   | "evolution";
 
 export type FracKind = "fracAdd" | "fracSub" | "fracMul" | "fracDiv";
@@ -54,18 +56,45 @@ export interface InverseQuestion extends BaseQuestion {
   answer: [number, number];
 }
 
-/** Periodic table: ask P, N, or e for a given element symbol. */
+/**
+ * Multiplication: a * b. Used both for memorized times-table facts
+ * (k×k ≤ 15×15) and for "break-it-down" two-digit problems
+ * (17 × 25, 23 × 14, …). The grading is identical either way.
+ */
+export interface MultQuestion extends BaseQuestion {
+  kind: "mult";
+  a: number;
+  b: number;
+  answer: number;
+}
+
+/**
+ * Periodic table: ask P, N, e, or v (valence electrons) for a given
+ * element symbol.
+ */
 export interface PeriodicQuestion extends BaseQuestion {
   kind: "periodic";
   symbol: string;
   elementName: string;
-  ask: "P" | "N" | "e";
+  ask: "P" | "N" | "e" | "v";
   answer: number;
 }
 
 /** History: year a war started. Tolerance is ±tolerance years. */
 export interface WarQuestion extends BaseQuestion {
   kind: "war";
+  name: string;
+  answer: number;
+  tolerance: number;
+}
+
+/**
+ * History: year a peace accord / treaty was signed. Tolerance is
+ * ±tolerance years (default 2; treaties span negotiations so we are
+ * a little more forgiving than wars).
+ */
+export interface PeaceQuestion extends BaseQuestion {
+  kind: "peace";
   name: string;
   answer: number;
   tolerance: number;
@@ -84,10 +113,12 @@ export interface EvolutionQuestion extends BaseQuestion {
 
 export type Question =
   | IntegerOpQuestion
+  | MultQuestion
   | FractionOpQuestion
   | InverseQuestion
   | PeriodicQuestion
   | WarQuestion
+  | PeaceQuestion
   | EvolutionQuestion;
 
 /** A single day's worth of content. */
