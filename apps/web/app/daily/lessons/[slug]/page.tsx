@@ -12,8 +12,11 @@ const SLUGS = [
   "fraction-mul",
   "fraction-div",
   "fraction-inverse",
+  "multiplication-table",
   "periodic-table-rows-1-3",
+  "valence",
   "history-wars",
+  "peace-accords",
   "evolution-timeline",
 ] as const;
 
@@ -27,8 +30,11 @@ const TITLES: Record<Slug, string> = {
   "fraction-mul": "Multiplying Fractions",
   "fraction-div": "Dividing Fractions",
   "fraction-inverse": "Inverses",
+  "multiplication-table": "Multiplication Table & Breakdown",
   "periodic-table-rows-1-3": "Periodic Table — Rows 1-3",
+  valence: "Valence Electrons",
   "history-wars": "15 Wars",
+  "peace-accords": "Peace Accords",
   "evolution-timeline": "Evolution Timeline",
 };
 
