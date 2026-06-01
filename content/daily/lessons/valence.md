@@ -60,8 +60,31 @@ The number of bonds an atom usually makes:
 Rule of thumb: groups 1-4, make as many bonds as your valence;
 groups 5-7, make `8 − valence` bonds.
 
-## Practice
+## The one trick that fixes most mistakes
 
-Pick any pair of elements from rows 1-3. Count their valences. Ask
-yourself: do they want to give, take, or share? That tells you the
-bond type and the formula.
+On the exam you keep landing **one or two off**. That's because you're
+counting the *position* wrong, not the rule. Do this every time:
+
+1. Find the element in the table above.
+2. Read the **Group** number on its row.
+3. Groups 1-2 → valence = group (1 or 2). Groups 13-18 → valence =
+   **last digit** (13→3, 14→4, 15→5, 16→6, 17→7, 18→8).
+
+So Oxygen is group 16 → valence **6**. Nitrogen is group 15 → **5**.
+Don't count chairs across the row in your head — read the group.
+
+## Practice (cover the answers, then check)
+
+1. Valence of **Carbon (C)**? → **4** (group 14). Forms 4 bonds.
+2. Valence of **Sodium (Na)**? → **1** (group 1). Gives 1 away.
+3. Valence of **Oxygen (O)**? → **6** (group 16). Wants 2 more.
+4. Valence of **Neon (Ne)**? → **8** (group 18). Noble gas, 0 bonds.
+5. Valence of **Aluminum (Al)**? → **3** (group 13). Gives 3 away.
+6. Valence of **Sulfur (S)**? → **6** (group 16). Wants 2 more.
+7. Valence of **Fluorine (F)**? → **7** (group 17). Wants 1 more.
+8. Valence of **Magnesium (Mg)**? → **2** (group 2). Gives 2 away.
+
+Then the bonding question: for each, does it **give, take, or share**?
+Groups 1-3 give; groups 5-7 take or share; group 4 shares; group 18
+does nothing. If you can answer all eight in under a minute, valence is
+solved.

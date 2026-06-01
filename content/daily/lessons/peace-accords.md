@@ -101,3 +101,35 @@ Three patterns repeat across centuries:
    process can run for decades and produce no peace at all.
 
 That's the lesson. Names and dates are just the way to hang it.
+
+## Locking in the dates you keep missing
+
+You've lost points on the same two. Fix them now:
+
+- **Westphalia = 16-FOUR-8.** Not 1638. Say it out loud: "sixteen
+  forty-eight." Thirty Years' War ended in '48.
+- **Versailles = 1919.** WWI ended in 1918; the treaty was signed the
+  next year, 1919.
+- The three "1990s" deals run in order: **Oslo 1993 → Dayton 1995 →
+  Good Friday 1998.**
+
+## Practice (cover the right side, then check)
+
+Say the year AND one sentence on what it did.
+
+1. Peace of Westphalia → **1648.** Ended the Thirty Years' War; invented
+   the sovereign state.
+2. Congress of Vienna → **1815.** Reset Europe after Napoleon.
+3. Treaty of Versailles → **1919.** Punished Germany; set up WWII.
+4. UN Charter → **1945.** Founded the UN after WWII.
+5. Camp David Accords → **1978.** Framework for Egypt-Israel peace.
+6. **Oslo I → 1993.** Israel and the PLO recognized each other; it was
+   meant to lead to a Palestinian state, and it didn't.
+7. Good Friday Agreement → **1998.** Ended most of the violence in
+   Northern Ireland — the deal both sides *voted* for.
+8. Abraham Accords → **2020.** Israel–UAE/Bahrain normalization that
+   stepped around the Palestinians.
+
+If you can give the year *and* the one-line story for all eight, you're
+done. Knowing "Oslo is Israel–PLO" is half the answer — the other half
+is *what it tried to do and why it failed.*

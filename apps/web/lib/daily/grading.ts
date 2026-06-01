@@ -56,10 +56,16 @@ function gradeOne(question: Question, raw: RawAnswer): {
       }
       const userReduced = reduce(raw.num, raw.den);
       const [en, ed] = question.answer;
+      // Show what the student actually typed. If we accepted a non-reduced
+      // equivalent (e.g. they wrote 4/6 for an answer of 2/3), append the
+      // reduced form so the results page doesn't look like it silently
+      // changed their answer.
+      const typed = `${raw.num}/${raw.den}`;
+      const reducedStr = fmtFrac(userReduced);
       return {
         correct: userReduced[0] === en && userReduced[1] === ed,
         expected,
-        userDisplay: fmtFrac(userReduced),
+        userDisplay: typed === reducedStr ? reducedStr : `${typed} (= ${reducedStr})`,
       };
     }
 

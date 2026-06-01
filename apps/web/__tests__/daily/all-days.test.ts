@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WEEK, WEEK1, WEEK2, WEEK3 } from "@/lib/daily/week";
+import { WEEK, WEEK1, WEEK2, WEEK3, WEEK4 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
 
@@ -24,11 +24,12 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 12 days total across three weeks", () => {
+  it("has 16 days total across four weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
-    expect(WEEK).toHaveLength(12);
+    expect(WEEK4).toHaveLength(4);
+    expect(WEEK).toHaveLength(16);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -53,6 +54,15 @@ describe("WEEK structure", () => {
       "2026-05-27",
       "2026-05-28",
       "2026-05-29",
+    ]);
+  });
+
+  it("week 4 covers Jun 1-5 review (Mon, Wed, Thu, Fri — no Tuesday)", () => {
+    expect(WEEK4.map((d) => d.date)).toEqual([
+      "2026-06-01",
+      "2026-06-03",
+      "2026-06-04",
+      "2026-06-05",
     ]);
   });
 });

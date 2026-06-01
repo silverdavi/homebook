@@ -25,6 +25,7 @@ import {
   fmtFrac,
   type Frac,
 } from "./math";
+import { PEACE } from "./content/banks/peace";
 
 // All times in this email are reported in the kid's local timezone (New
 // York). The data is stored UTC; we just format for display.
@@ -214,14 +215,35 @@ function explainPeriodic(q: {
   ask: "P" | "N" | "e" | "v";
   answer: number;
 }): string {
+  if (q.ask === "v") {
+    const n = q.answer;
+    let bonding: string;
+    if (q.symbol === "He") {
+      bonding =
+        "Helium's outer shell is full at 2, so it's a noble gas — it basically never bonds.";
+    } else if (n >= 8) {
+      bonding =
+        "A full outer shell of 8 means it's a noble gas — it's stable and basically never bonds.";
+    } else if (q.symbol === "H") {
+      bonding =
+        "Hydrogen has 1 electron and room for 2, so it shares to fill its shell — that's why H₂ and water (H₂O) exist.";
+    } else if (n <= 3) {
+      bonding = `With only ${n} electron${n === 1 ? "" : "s"} in the outer shell, it tends to GIVE them away when it bonds (it becomes a positive ion — this is metal behavior).`;
+    } else {
+      bonding = `It needs ${8 - n} more to reach a full shell of 8, so it tends to GAIN or SHARE ${8 - n} electron${8 - n === 1 ? "" : "s"} (the octet rule — this is non-metal behavior).`;
+    }
+    return [
+      `Valence electrons = the electrons in the outermost shell. They are the only ones an atom uses to bond, so valence is what decides an element's chemistry.`,
+      `Read across a row and valence climbs 1→8. Row 2: Li 1, Be 2, B 3, C 4, N 5, O 6, F 7, Ne 8. Row 3 repeats it: Na 1, Mg 2, Al 3, Si 4, P 5, S 6, Cl 7, Ar 8.`,
+      `${q.elementName} (${q.symbol}) has ${n} valence electron${n === 1 ? "" : "s"}. ${bonding}`,
+    ].join("\n");
+  }
   const what =
     q.ask === "P"
       ? "protons (its atomic number)"
       : q.ask === "N"
         ? "neutrons (most common isotope)"
-        : q.ask === "e"
-          ? "electrons (neutral atom — same as protons)"
-          : "valence electrons (outermost shell — drives bonding)";
+        : "electrons (neutral atom — same as protons)";
   return `${q.elementName} (${q.symbol}) has ${q.answer} ${what}.`;
 }
 
@@ -252,16 +274,43 @@ function explainWar(q: { name: string; answer: number }): string {
   return `The ${q.name} started in ${q.answer}.`;
 }
 
+// What each accord actually DID — so the year sticks to a story, not a
+// floating number. Keyed by the display name used in the question.
+const PEACE_BLURB = new Map<string, string>(
+  PEACE.map((p) => [p.name, p.blurb ?? ""]),
+);
+
 function explainPeace(q: { name: string; answer: number }): string {
-  return `The ${q.name} was signed in ${q.answer}.`;
+  const blurb = PEACE_BLURB.get(q.name);
+  const line = `The ${q.name} was signed in ${q.answer}.`;
+  return blurb ? `${line}\n${blurb}` : line;
 }
+
+// One-line "what happened" for each milestone, so a date has a picture
+// attached to it. Keyed by the event name used in the question.
+const EVO_BLURB: Record<string, string> = {
+  "Big Bang": "The universe begins — space, time, and the first matter.",
+  "Earth forms": "Our planet pulls together from dust circling the young Sun.",
+  "First life (single cells)": "The earliest single-celled life appears in the oceans.",
+  "Cambrian explosion": "Complex animals suddenly appear in huge variety.",
+  "First fish": "The first true fish — the earliest vertebrates — swim the seas.",
+  "First land plants": "Plants move out of the water and colonize land.",
+  "First dinosaurs": "Dinosaurs appear and begin their long reign.",
+  "First mammals": "The first small mammals appear, alongside the dinosaurs.",
+  "KT extinction (asteroid)":
+    "An asteroid wipes out the non-bird dinosaurs, clearing the way for mammals.",
+  "First hominids": "The first human-like apes appear in Africa.",
+  "Homo sapiens": "Modern humans — us — appear (about 300,000 years = 0.3 mya).",
+};
 
 function explainEvolution(q: {
   event: string;
   answerMya: number;
   tolerance: number;
 }): string {
-  return `${q.event} happened approximately ${q.answerMya} million years ago (±${q.tolerance} accepted).`;
+  const line = `${q.event}: about ${q.answerMya} million years ago (±${q.tolerance} accepted).`;
+  const blurb = EVO_BLURB[q.event];
+  return blurb ? `${line}\n${blurb}` : line;
 }
 
 export function renderExplanation(q: Question): string {

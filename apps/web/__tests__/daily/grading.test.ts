@@ -65,6 +65,20 @@ describe("grading", () => {
     expect(gradeOne(q, { kind: "fraction", num: 1, den: 2 }).correct).toBe(false);
   });
 
+  it("shows the student's actual entry, not just the reduced form", () => {
+    // Yerachmiel's report: typed 4/6 for an answer of 2/3, results page
+    // showed "2/3" and he thought it changed his answer. It didn't — 4/6
+    // reduces to 2/3 — but the display should make that obvious.
+    const q = fracSubQ("t1", [5, 6], [1, 6]); // 4/6 = 2/3
+    const r = gradeOne(q, { kind: "fraction", num: 4, den: 6 });
+    expect(r.correct).toBe(true);
+    expect(r.userDisplay).toBe("4/6 (= 2/3)");
+
+    // When the entry is already in lowest terms, show it plainly.
+    const r2 = gradeOne(q, { kind: "fraction", num: 2, den: 3 });
+    expect(r2.userDisplay).toBe("2/3");
+  });
+
   it("grades fraction subtract with negative result", () => {
     const q = fracSubQ("t1", [1, 4], [1, 2]);
     expect(gradeOne(q, { kind: "fraction", num: -1, den: 4 }).correct).toBe(true);
