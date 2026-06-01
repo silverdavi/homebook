@@ -26,12 +26,13 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DAILY_ADMIN_TOKEN: ${{ secrets.DAILY_ADMIN_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 5m
-          envs: OPENAI_API_KEY,RESEND_API_KEY,GEMINI_API_KEY
+          envs: OPENAI_API_KEY,RESEND_API_KEY,GEMINI_API_KEY,DAILY_ADMIN_TOKEN
           script: |
             set -e
             echo "🚀 Deploying frontend..."
@@ -64,17 +65,19 @@ jobs:
             }
 
             cd ~/homebook
-            seed_kv ".env"       "OPENAI_API_KEY" "${OPENAI_API_KEY:-}"
-            seed_kv ".env"       "RESEND_API_KEY" "${RESEND_API_KEY:-}"
-            seed_kv ".env"       "GEMINI_API_KEY" "${GEMINI_API_KEY:-}"
-            seed_kv "resend.txt" "RESEND_API_KEY" "${RESEND_API_KEY:-}"
+            seed_kv ".env"       "OPENAI_API_KEY"     "${OPENAI_API_KEY:-}"
+            seed_kv ".env"       "RESEND_API_KEY"     "${RESEND_API_KEY:-}"
+            seed_kv ".env"       "GEMINI_API_KEY"     "${GEMINI_API_KEY:-}"
+            seed_kv ".env"       "DAILY_ADMIN_TOKEN"  "${DAILY_ADMIN_TOKEN:-}"
+            seed_kv "resend.txt" "RESEND_API_KEY"     "${RESEND_API_KEY:-}"
 
             cd apps/web
             : > .env.local
             chmod 600 .env.local
-            seed_kv ".env.local" "OPENAI_API_KEY" "${OPENAI_API_KEY:-}"
-            seed_kv ".env.local" "RESEND_API_KEY" "${RESEND_API_KEY:-}"
-            seed_kv ".env.local" "GEMINI_API_KEY" "${GEMINI_API_KEY:-}"
+            seed_kv ".env.local" "OPENAI_API_KEY"     "${OPENAI_API_KEY:-}"
+            seed_kv ".env.local" "RESEND_API_KEY"     "${RESEND_API_KEY:-}"
+            seed_kv ".env.local" "GEMINI_API_KEY"     "${GEMINI_API_KEY:-}"
+            seed_kv ".env.local" "DAILY_ADMIN_TOKEN"  "${DAILY_ADMIN_TOKEN:-}"
 
             rm -rf .next/lock
             npm ci --silent
@@ -90,3 +93,4 @@ jobs:
 #   OPENAI_API_KEY               — daily summary narrative (gpt-4o-mini)
 #   RESEND_API_KEY               — daily summary + bug-report email
 #   GEMINI_API_KEY  (optional)   — fallback LLM, not used yet
+#   DAILY_ADMIN_TOKEN            — guards GET /daily/api/bugs (admin reads)
