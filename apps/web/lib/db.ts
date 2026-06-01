@@ -140,6 +140,27 @@ export function getDb(): Database.Database {
       answers_json TEXT NOT NULL,
       UNIQUE(profile_id, date, version)
     );
+
+    -- Bug reports submitted via /daily/api/bug. No foreign key to profiles
+    -- because anonymous submissions are allowed (profile_id may be null
+    -- or a stringified id we don't know about yet).
+    CREATE TABLE IF NOT EXISTS bug_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      profile_id TEXT,
+      profile_name TEXT,
+      category TEXT,
+      page_url TEXT,
+      user_agent TEXT,
+      date TEXT,
+      version TEXT,
+      message TEXT NOT NULL,
+      email_ok INTEGER NOT NULL DEFAULT 0,
+      email_error TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_bug_reports_submitted_at
+      ON bug_reports(submitted_at DESC);
   `);
 
   migrateDailyExamsUnique(_db);
@@ -571,6 +592,109 @@ export function listDailyExams(profileId: string): DailyExamRow[] {
     )
     .all(profileId) as Array<Record<string, unknown>>;
   return rows.map(dailyExamFromRow);
+}
+
+// ---------------------------------------------------------------------------
+// Bug reports
+// ---------------------------------------------------------------------------
+
+export interface BugReportRow {
+  id: number;
+  submittedAt: string;
+  profileId: string | null;
+  profileName: string | null;
+  category: string | null;
+  pageUrl: string | null;
+  userAgent: string | null;
+  date: string | null;
+  version: string | null;
+  message: string;
+  emailOk: boolean;
+  emailError: string | null;
+}
+
+function bugReportFromRow(row: Record<string, unknown>): BugReportRow {
+  return {
+    id: row.id as number,
+    submittedAt: row.submitted_at as string,
+    profileId: (row.profile_id as string | null) ?? null,
+    profileName: (row.profile_name as string | null) ?? null,
+    category: (row.category as string | null) ?? null,
+    pageUrl: (row.page_url as string | null) ?? null,
+    userAgent: (row.user_agent as string | null) ?? null,
+    date: (row.date as string | null) ?? null,
+    version: (row.version as string | null) ?? null,
+    message: row.message as string,
+    emailOk: !!row.email_ok,
+    emailError: (row.email_error as string | null) ?? null,
+  };
+}
+
+export function saveBugReport(args: {
+  message: string;
+  category?: string;
+  pageUrl?: string;
+  userAgent?: string;
+  profileName?: string;
+  profileId?: string;
+  date?: string;
+  version?: "a" | "b";
+  emailOk: boolean;
+  emailError?: string;
+}): BugReportRow {
+  const db = getDb();
+  const info = db
+    .prepare(
+      `INSERT INTO bug_reports
+        (profile_id, profile_name, category, page_url, user_agent,
+         date, version, message, email_ok, email_error)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      args.profileId ?? null,
+      args.profileName ?? null,
+      args.category ?? null,
+      args.pageUrl ?? null,
+      args.userAgent ?? null,
+      args.date ?? null,
+      args.version ?? null,
+      args.message,
+      args.emailOk ? 1 : 0,
+      args.emailError ?? null,
+    );
+  const row = db
+    .prepare(`SELECT * FROM bug_reports WHERE id = ?`)
+    .get(info.lastInsertRowid as number) as Record<string, unknown>;
+  return bugReportFromRow(row);
+}
+
+/**
+ * List bug reports newest-first. `since` filters on submitted_at >= since
+ * (any SQLite-parseable timestamp). `limit` caps the result count.
+ */
+export function listBugReports(opts: {
+  since?: string;
+  limit?: number;
+} = {}): BugReportRow[] {
+  const db = getDb();
+  const limit = Math.max(1, Math.min(500, opts.limit ?? 100));
+  const rows = opts.since
+    ? (db
+        .prepare(
+          `SELECT * FROM bug_reports
+             WHERE submitted_at >= ?
+             ORDER BY submitted_at DESC, id DESC
+             LIMIT ?`,
+        )
+        .all(opts.since, limit) as Array<Record<string, unknown>>)
+    : (db
+        .prepare(
+          `SELECT * FROM bug_reports
+             ORDER BY submitted_at DESC, id DESC
+             LIMIT ?`,
+        )
+        .all(limit) as Array<Record<string, unknown>>);
+  return rows.map(bugReportFromRow);
 }
 
 export function syncFromLocalStorage(profileId: string, data: SyncData): void {

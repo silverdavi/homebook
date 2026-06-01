@@ -12,6 +12,7 @@
 
 import "server-only";
 import { sendEmail, type SendEmailResult } from "./email";
+import { saveBugReport as persistBugReport } from "@/lib/db";
 
 export const BUG_REPORT_TO = ["silverdavi@gmail.com"] as const;
 
@@ -119,12 +120,43 @@ export async function sendBugReport(
   input: BugReportInput,
   to: readonly string[] = BUG_REPORT_TO,
 ): Promise<SendBugReportResult> {
+  let emailOk = false;
+  let emailResult: SendEmailResult | undefined;
+  let emailError: string | undefined;
   try {
     const { subject, html, text } = buildBugEmail(input);
-    const email = await sendEmail({ to: [...to], subject, html, text });
-    return { ok: email.ok, email, error: email.error };
+    emailResult = await sendEmail({ to: [...to], subject, html, text });
+    emailOk = emailResult.ok;
+    emailError = emailResult.error;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: msg };
+    emailError = err instanceof Error ? err.message : String(err);
   }
+
+  // Persist the report regardless of email status — this is the queryable
+  // store so we don't lose reports if Resend is down or rate-limits us.
+  try {
+    persistBugReport({
+      message: input.message,
+      category: input.category,
+      pageUrl: input.pageUrl,
+      userAgent: input.userAgent,
+      profileName: input.profileName,
+      profileId: input.profileId,
+      date: input.date,
+      version: input.version,
+      emailOk,
+      emailError,
+    });
+  } catch (err) {
+    // Don't let a DB failure mask the email outcome — log and continue.
+    console.error(
+      "[bug-report] failed to persist bug report:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  if (emailOk) {
+    return { ok: true, email: emailResult };
+  }
+  return { ok: false, email: emailResult, error: emailError };
 }
