@@ -44,9 +44,13 @@ practice list in the lesson first.
 History is the 1970s cluster: Camp David (1978), Israel-Egypt (1979),
 Dayton (1995), and Westphalia (1648) as an anchor.
 
-22 questions. 9:30-12:30 NY time.
+22 questions. Study 9:30-12:00 NY time, two 20-minute breaks.
 
   https://teacher.ninja/daily/2026-06-03
+
+Then 12:00-1:00 is no school. Screen off — walk, talk, dance, sleep,
+whatever. Even school is digital now, so one hour with yourself matters
+(it should be five). Don't fill it with a screen.
 
 — Dad
 
@@ -62,8 +66,9 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">Math today brings back the inverse (flip the fraction: 3/7 becomes 7/3), plus two-digit multiplication breakdowns. Slow down on the last addition — that's where the points leak.</p>
 <p style="margin:0 0 14px 0;">Valence again: S is 6, Al is 3, Ne is 8. Read the group number. Run the practice list in the lesson first.</p>
 <p style="margin:0 0 14px 0;">History is the 1970s cluster: Camp David (1978), Israel-Egypt (1979), Dayton (1995), and Westphalia (1648) as an anchor.</p>
-<p style="margin:0 0 14px 0;">22 questions. 9:30–12:30 NY time.</p>
+<p style="margin:0 0 14px 0;">22 questions. Study 9:30–12:00 NY time, two 20-minute breaks.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-06-03" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-06-03 →</a></p>
+<p style="margin:0 0 14px 0;">Then 12:00–1:00 is no school. Screen off — walk, talk, dance, sleep, whatever. Even school is digital now, so one hour with yourself matters (it should be five). Don't fill it with a screen.</p>
 <p style="margin:0 0 6px 0;">— Dad</p>
 <p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
 </div></body></html>`;
