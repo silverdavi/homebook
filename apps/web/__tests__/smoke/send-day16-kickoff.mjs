@@ -38,7 +38,11 @@ four peace accords, evolution.
 
 Get Westphalia right today — 1648. That's the one that kept costing you.
 
-22 questions. 9:30-12:30 NY time.
+A and B share nothing — B is the harder set (bigger multiplications,
+tougher fractions). Do A, then take B if you want the real test.
+
+22 questions. Study 9:30-12:00 NY time, two 20-minute breaks. Phones off
+9:30 to 1:00 — the last hour is yours, no screen.
 
   https://teacher.ninja/daily/2026-06-05
 
@@ -58,7 +62,8 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
 <p style="margin:0 0 14px 0;">Last day of the trial. One full mixed exam: all four fraction operations, multiplication breakdown, GCF, LCM, valence (row 3), four peace accords, evolution.</p>
 <p style="margin:0 0 14px 0;">Get Westphalia right today — 1648. That's the one that kept costing you.</p>
-<p style="margin:0 0 14px 0;">22 questions. 9:30–12:30 NY time.</p>
+<p style="margin:0 0 14px 0;">A and B share nothing — B is the harder set (bigger multiplications, tougher fractions). Do A, then take B if you want the real test.</p>
+<p style="margin:0 0 14px 0;">22 questions. Study 9:30–12:00 NY time, two 20-minute breaks. Phones off 9:30 to 1:00 — the last hour is yours, no screen.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-06-05" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-06-05 →</a></p>
 <p style="margin:0 0 14px 0;">Four weeks. You ran the exams yourself, found a real bug we fixed, and got faster every week. The scores were never the point — the fact that you ran it was. Finish strong.</p>
 <p style="margin:0 0 6px 0;">— Dad</p>

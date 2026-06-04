@@ -19,28 +19,30 @@ const DATE = "2026-06-05";
 // fraction ops, valence row 3, the Israel-related peace cluster, and a
 // last decimal evolution answer. End of the four-week trial.
 
+// Final day. A and B share NO items. Content bumped; B is the harder set.
+
 const versionA: Question[] = [
-  multQ("a-m-1", 8, 9), // 72
-  multQ("a-m-2", 13, 13), // 169 — 2-digit breakdown
-  multQ("a-m-3", 18, 6), // 108 — 2-digit × 1-digit
-  gcfQ("a-gcf", 24, 40), // 8
-  lcmQ("a-lcm", 8, 10), // 40
-  fracAddQ("a-add", [1, 2], [2, 5]), // 9/10
-  fracSubQ("a-sub", [3, 4], [2, 3]), // 1/12
-  fracMulQ("a-mul", [4, 9], [3, 8]), // 1/6
-  fracDivQ("a-div", [3, 4], [3, 8]), // 2
+  multQ("a-m-1", 13, 14), // 182 — 2-digit × 2-digit
+  multQ("a-m-2", 15, 12), // 180
+  multQ("a-m-3", 16, 8), // 128
+  gcfQ("a-gcf", 36, 48), // 12
+  lcmQ("a-lcm", 6, 14), // 42
+  fracAddQ("a-add", [2, 3], [3, 4]), // 17/12
+  fracSubQ("a-sub", [7, 8], [1, 3]), // 13/24
+  fracMulQ("a-mul", [5, 6], [3, 8]), // 5/16
+  fracDivQ("a-div", [7, 8], [3, 4]), // 7/6
 
   periodicQ("a-v1", "Na", "v"), // 1
-  periodicQ("a-v2", "Mg", "v"), // 2
-  periodicQ("a-v3", "Cl", "v"), // 7
-  periodicQ("a-pn1", "P", "P"), // 15 protons
+  periodicQ("a-v2", "Al", "v"), // 3
+  periodicQ("a-v3", "O", "v"), // 6
+  periodicQ("a-pn1", "Mg", "P"), // 12 protons
   periodicQ("a-pn2", "Ar", "N"), // 22 neutrons
 
   peaceQ("a-pc1", "westphalia"), // 1648
   peaceQ("a-pc2", "osloI"), // 1993
   peaceQ("a-pc3", "abraham"), // 2020
-  peaceQ("a-pc4", "campDavid"), // 1978
-  warQ("a-war1", "wwi"), // 1914
+  peaceQ("a-pc4", "versailles"), // 1919
+  warQ("a-war1", "wwii"), // 1939
 
   evolutionQ("a-evo1", "firstLife"), // 3700
   evolutionQ("a-evo2", "firstDinos"), // 230
@@ -48,31 +50,31 @@ const versionA: Question[] = [
 ];
 
 const versionB: Question[] = [
-  multQ("b-m-1", 7, 8), // 56
-  multQ("b-m-2", 14, 12), // 168
-  multQ("b-m-3", 16, 9), // 144
-  gcfQ("b-gcf", 18, 30), // 6
-  lcmQ("b-lcm", 12, 8), // 24
-  fracAddQ("b-add", [1, 3], [1, 2]), // 5/6
-  fracSubQ("b-sub", [7, 8], [3, 4]), // 1/8
-  fracMulQ("b-mul", [3, 4], [4, 5]), // 3/5
-  fracDivQ("b-div", [3, 4], [9, 8]), // 2/3
+  multQ("b-m-1", 15, 14), // 210 — harder set
+  multQ("b-m-2", 16, 15), // 240
+  multQ("b-m-3", 19, 7), // 133
+  gcfQ("b-gcf", 40, 60), // 20
+  lcmQ("b-lcm", 12, 15), // 60
+  fracAddQ("b-add", [5, 6], [4, 9]), // 23/18
+  fracSubQ("b-sub", [5, 6], [7, 12]), // 1/4
+  fracMulQ("b-mul", [7, 8], [4, 9]), // 7/18
+  fracDivQ("b-div", [7, 9], [2, 3]), // 7/6
 
-  periodicQ("b-v1", "O", "v"), // 6
+  periodicQ("b-v1", "Mg", "v"), // 2
   periodicQ("b-v2", "Si", "v"), // 4
-  periodicQ("b-v3", "Ar", "v"), // 8
-  periodicQ("b-pn1", "N", "P"), // 7 protons
-  periodicQ("b-pn2", "Mg", "N"), // 12 neutrons
+  periodicQ("b-v3", "Cl", "v"), // 7
+  periodicQ("b-pn1", "P", "P"), // 15 protons
+  periodicQ("b-pn2", "Na", "N"), // 12 neutrons
 
-  peaceQ("b-pc1", "versailles"), // 1919
-  peaceQ("b-pc2", "vienna"), // 1815
-  peaceQ("b-pc3", "goodFriday"), // 1998
-  peaceQ("b-pc4", "osloI"), // 1993
-  warQ("b-war1", "wwii"), // 1939
+  peaceQ("b-pc1", "vienna"), // 1815
+  peaceQ("b-pc2", "goodFriday"), // 1998
+  peaceQ("b-pc3", "campDavid"), // 1978
+  peaceQ("b-pc4", "dayton"), // 1995
+  warQ("b-war1", "korean"), // 1950
 
   evolutionQ("b-evo1", "bigBang"), // 13800
   evolutionQ("b-evo2", "cambrian"), // 540
-  evolutionQ("b-evo3", "firstMammals"), // 210
+  evolutionQ("b-evo3", "firstHominids"), // 7
 ];
 
 export const day20260605: Day = {
