@@ -41,7 +41,13 @@ History is held-vs-failed: Westphalia and Paris held because they
 included everyone; Good Friday held because both sides voted for it;
 the Abraham Accords left the Palestinians out. The pattern is the point.
 
-22 questions. 9:30-12:30 NY time.
+You said B was basically A with two numbers swapped, so why bother. Fair.
+From today A and B share nothing — different numbers, different elements,
+different treaties. B is the harder set: bigger multiplications and
+tougher fractions. Do A, then take B if you want the real test.
+
+22 questions. Study 9:30-12:00 NY time, two 20-minute breaks. Phones off
+the whole block, 9:30 to 1:00 — the last hour is yours, no screen.
 
   https://teacher.ninja/daily/2026-06-04
 
@@ -58,7 +64,8 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">Lap 3. Division comes back: flip the second fraction, then multiply.</p>
 <p style="margin:0 0 14px 0;">Valence spans all three rows today — H is 1, C is 4, P is 5. If you can do those without looking at the table, valence is solved.</p>
 <p style="margin:0 0 14px 0;">History is held-vs-failed: Westphalia and Paris held because they included everyone; Good Friday held because both sides voted for it; the Abraham Accords left the Palestinians out. The pattern is the point.</p>
-<p style="margin:0 0 14px 0;">22 questions. 9:30–12:30 NY time.</p>
+<p style="margin:0 0 14px 0;">You said B was basically A with two numbers swapped, so why bother. Fair. From today A and B share nothing — different numbers, different elements, different treaties. B is the harder set: bigger multiplications and tougher fractions. Do A, then take B if you want the real test.</p>
+<p style="margin:0 0 14px 0;">22 questions. Study 9:30–12:00 NY time, two 20-minute breaks. Phones off the whole block, 9:30 to 1:00 — the last hour is yours, no screen.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-06-04" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-06-04 →</a></p>
 <p style="margin:0 0 6px 0;">— Dad</p>
 <p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
