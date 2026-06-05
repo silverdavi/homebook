@@ -14,6 +14,63 @@ number, you already know two of the three.
 
 ---
 
+## What these particles actually are
+
+An atom has a tiny, heavy **nucleus** in the middle and a cloud of
+**electrons** around it. Three particles matter:
+
+- **Protons** — positive charge (+), sit in the nucleus. Heavy.
+- **Neutrons** — no charge (neutral, hence the name), also in the nucleus.
+  Almost the same weight as a proton.
+- **Electrons** — negative charge (−), zoom around the outside. Almost
+  weightless (about 1/1800 of a proton).
+
+The nucleus (protons + neutrons) is basically all the **mass**. The
+electrons take up all the **space** and do all the **chemistry**.
+
+### Atomic number = identity
+
+The **atomic number** is just the **number of protons**. That single
+number *is* the element's identity:
+
+- 1 proton → it's hydrogen. Always. No exceptions.
+- 6 protons → it's carbon. Add a proton and it stops being carbon and
+  becomes nitrogen (7).
+
+You can change how many neutrons or electrons an atom has and it's still
+the same element. Change the proton count and it's a **different element**.
+That's why the periodic table is ordered by atomic number, 1, 2, 3, …
+
+### Charge: why neutral atoms have P = e
+
+Protons are +, electrons are −, and they're equal and opposite. A neutral
+atom has the **same number** of each, so the charges cancel: P = e.
+
+- Lose an electron → more + than − → a **positive ion** (e.g. Na⁺).
+- Gain an electron → more − than + → a **negative ion** (e.g. Cl⁻).
+
+(That's the valence story from the other lesson — atoms gain/lose
+electrons to fill their outer shell.)
+
+### Isotopes: same element, different neutron count
+
+Atoms of the same element **always** have the same number of protons, but
+can have **different numbers of neutrons**. Those versions are called
+**isotopes**.
+
+- Carbon-12 has 6 protons + 6 neutrons. Carbon-14 has 6 protons + 8
+  neutrons. Both are carbon (6 protons) — carbon-14 is just heavier, and
+  it's the radioactive one used for carbon dating.
+- Hydrogen has three: ¹H (0 neutrons, normal), ²H (1 neutron, "deuterium"),
+  ³H (2 neutrons, "tritium").
+- The **mass number** is protons + neutrons (the "12" in carbon-12).
+
+On the exam we use the **most common** isotope for the neutron count — so
+N for chlorine is 18 (Cl-35), even though the average atomic mass on a
+periodic table reads 35.45 because Cl-37 is also out there.
+
+---
+
 ## The three rules
 
 1. **P = atomic number.** Look it up once and remember it.

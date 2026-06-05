@@ -32,11 +32,17 @@ const FROM = "Dad <dad@dichotomies.me>";
 
 const TEXT = `Yerachmiel —
 
-Last day of the trial. One full mixed exam: all four fraction
-operations, multiplication breakdown, GCF, LCM, valence (row 3),
-four peace accords, evolution.
+Last day of the trial. You said you keep re-answering things you already
+know — the Big Bang / evolution "Gya" questions especially. So they're
+gone today. No evolution, no war dates you've locked in. Today is only
+what you still miss: two-digit multiplication, the harder fractions, and
+the peace dates.
 
 Get Westphalia right today — 1648. That's the one that kept costing you.
+
+Science is atomic structure, and the background material is expanded:
+what protons, neutrons, and electrons actually are, why the atomic number
+(= protons) is the element's identity, and what an isotope is. Read it.
 
 A and B share nothing — B is the harder set (bigger multiplications,
 tougher fractions). Do A, then take B if you want the real test.
@@ -60,8 +66,9 @@ const HTML = `<!doctype html>
 <body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.6;">
 <div style="max-width:580px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:24px 28px;">
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
-<p style="margin:0 0 14px 0;">Last day of the trial. One full mixed exam: all four fraction operations, multiplication breakdown, GCF, LCM, valence (row 3), four peace accords, evolution.</p>
+<p style="margin:0 0 14px 0;">Last day of the trial. You said you keep re-answering things you already know — the Big Bang / evolution "Gya" questions especially. So they're gone today. No evolution, no war dates you've locked in. Today is only what you still miss: two-digit multiplication, the harder fractions, and the peace dates.</p>
 <p style="margin:0 0 14px 0;">Get Westphalia right today — 1648. That's the one that kept costing you.</p>
+<p style="margin:0 0 14px 0;">Science is atomic structure, and the background material is expanded: what protons, neutrons, and electrons actually are, why the atomic number (= protons) is the element's identity, and what an isotope is. Read it.</p>
 <p style="margin:0 0 14px 0;">A and B share nothing — B is the harder set (bigger multiplications, tougher fractions). Do A, then take B if you want the real test.</p>
 <p style="margin:0 0 14px 0;">22 questions. Study 9:30–12:00 NY time, two 20-minute breaks. Phones off 9:30 to 1:00 — the last hour is yours, no screen.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-06-05" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-06-05 →</a></p>
