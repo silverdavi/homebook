@@ -152,16 +152,23 @@ ${statLinesText}
 That's the real result — not any single score, but that you showed up and
 ran it yourself, every morning, for five weeks.
 
-Today is different on purpose. You're sick of the same multiplication-
-fractions-valence grind, so today there's none of it. No messy fractions,
-no rote valence counting. Just the cool stuff: the timeline of everything
-(Big Bang to you, in five numbers), the elements that make you and the
-stars, and the treaties that drew the modern world — plus a couple of
-quick numbers to warm up. A victory lap.
+No drill today. You're sick of the same year/proton/fraction grind, so
+today is just cool facts — random, true, surprising — across everything
+you studied. A few to get you to click:
 
-18 questions. School 9:30-11:00 NY time — 90 minutes, that's it. Then no
-phone 11:00-12:00: go outside, eat something, do nothing. Both versions
-are fun today; B isn't the harder one.
+- Sharks are older than trees. And older than Saturn's rings.
+- T. rex lived closer in time to you than to Stegosaurus.
+- Helium was discovered in the Sun before anyone found it on Earth.
+- Mendeleev left blank squares in the table and correctly predicted the
+  elements that would fill them.
+- Korea never signed peace — the 1953 deal was just a cease-fire, so the
+  two Koreas are technically still at war.
+
+The rest are on the page. Read them, tell someone at lunch.
+
+School 9:30-11:00 NY time — 90 minutes, mostly reading. Then no phone
+11:00-12:00: outside, food, nothing. There's a short optional 18-question
+victory lap at the bottom if you want it — no pressure today.
 
   https://teacher.ninja/daily/2026-06-12
 
@@ -193,8 +200,16 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 16px 0;">Last day. Before you start, here's the whole thing in numbers (through yesterday):</p>
 <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:8px 16px;margin:0 0 16px 0;">${statRowsHtml}</div>
 <p style="margin:0 0 14px 0;">That's the real result — not any single score, but that you showed up and ran it yourself, every morning, for five weeks.</p>
-<p style="margin:0 0 14px 0;">Today is different on purpose. You're sick of the same multiplication-fractions-valence grind, so today there's none of it. No messy fractions, no rote valence counting. Just the cool stuff: the timeline of everything (Big Bang to you, in five numbers), the elements that make you and the stars, and the treaties that drew the modern world — plus a couple of quick numbers to warm up. A victory lap.</p>
-<p style="margin:0 0 14px 0;">18 questions. School 9:30–11:00 NY time — 90 minutes, that's it. Then no phone 11:00–12:00: go outside, eat something, do nothing. Both versions are fun today; B isn't the harder one.</p>
+<p style="margin:0 0 10px 0;">No drill today. You're sick of the same year/proton/fraction grind, so today is just cool facts — random, true, surprising — across everything you studied. A few to get you to click:</p>
+<ul style="margin:0 0 14px 0;padding-left:20px;color:#334155;">
+<li style="margin:0 0 6px 0;">Sharks are older than trees. And older than Saturn's rings.</li>
+<li style="margin:0 0 6px 0;">T. rex lived closer in time to you than to Stegosaurus.</li>
+<li style="margin:0 0 6px 0;">Helium was discovered in the Sun before anyone found it on Earth.</li>
+<li style="margin:0 0 6px 0;">Mendeleev left blank squares in the table and correctly predicted the elements that would fill them.</li>
+<li style="margin:0;">Korea never signed peace — the 1953 deal was a cease-fire, so the two Koreas are technically still at war.</li>
+</ul>
+<p style="margin:0 0 14px 0;">The rest are on the page. Read them, tell someone at lunch.</p>
+<p style="margin:0 0 14px 0;">School 9:30–11:00 NY time — 90 minutes, mostly reading. Then no phone 11:00–12:00: outside, food, nothing. There's a short optional 18-question victory lap at the bottom if you want it — no pressure today.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-06-12" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-06-12 →</a></p>
 <p style="margin:0 0 14px 0;">Finish strong. We're proud of you.</p>
 <p style="margin:0 0 6px 0;">— Dad</p>
