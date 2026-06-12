@@ -4,84 +4,82 @@ import { loadMarkdown } from "./loader";
 import { multQ } from "./banks/mult";
 import { gcfQ } from "./banks/gcf";
 import { lcmQ } from "./banks/lcm";
-import { fracAddQ } from "./banks/frac-add";
-import { fracSubQ } from "./banks/frac-sub";
-import { fracMulQ } from "./banks/frac-mul";
-import { fracDivQ } from "./banks/frac-div";
 import { periodicQ } from "./banks/periodic";
 import { peaceQ } from "./banks/peace";
+import { evolutionQ } from "./banks/evolution";
 
 const DATE = "2026-06-12";
 
-// Day 20 = Week 5, Day 4. LAST DAY of the trial. A celebratory capstone:
-// a clean mixed pass across everything he learned, tuned slightly gentler
-// than Day 19 so he ends on a win. 11 math + 7 science + 4 history.
-// A and B share no items; B is the harder set.
+// Day 20 = LAST DAY. A victory lap, not a drill. Adam said he's sick of
+// the same multiplication/fraction/valence grind every day, so today is
+// the *cool* stuff: the deep-time timeline of the whole universe, the
+// elements that make you and the stars, the treaties that drew the modern
+// world — plus a few quick, satisfying numbers. No messy fractions, no
+// rote valence counting. Both versions are fun (B isn't "harder" today),
+// just different cool facts. 18 questions; short day (9:30-11:00).
 
 const versionA: Question[] = [
-  multQ("a-m-1", 12, 12), // 144
-  multQ("a-m-2", 13, 14), // 182
-  multQ("a-m-3", 15, 13), // 195
-  multQ("a-m-4", 11, 13), // 143
-  multQ("a-m-5", 17, 12), // 204
-  gcfQ("a-gcf", 20, 30), // 10
-  lcmQ("a-lcm", 4, 6), // 12
-  fracAddQ("a-add", [1, 2], [1, 3]), // 5/6
-  fracSubQ("a-sub", [3, 4], [1, 2]), // 1/4
-  fracMulQ("a-mul", [2, 3], [3, 4]), // 1/2
-  fracDivQ("a-div", [1, 2], [3, 4]), // 2/3
+  // A few quick wins
+  multQ("a-m-1", 11, 11), // 121
+  multQ("a-m-2", 12, 12), // 144
+  gcfQ("a-gcf", 12, 18), // 6
+  lcmQ("a-lcm", 3, 4), // 12
 
-  periodicQ("a-v1", "H", "v"), // 1
-  periodicQ("a-v2", "C", "v"), // 4
-  periodicQ("a-v3", "O", "v"), // 6
-  periodicQ("a-pn1", "C", "P"), // 6 protons
-  periodicQ("a-pn2", "O", "N"), // 8 neutrons
-  periodicQ("a-pn3", "Ne", "e"), // 10 electrons
-  periodicQ("a-pn4", "Na", "P"), // 11 protons
+  // The timeline of everything (deep time — the "wow" scale)
+  evolutionQ("a-e1", "bigBang"), // 13,800 mya
+  evolutionQ("a-e2", "earthForms"), // 4,540 mya
+  evolutionQ("a-e3", "firstLife"), // 3,700 mya
+  evolutionQ("a-e4", "firstDinos"), // 230 mya
+  evolutionQ("a-e5", "homoSapiens"), // 0.3 mya
 
-  peaceQ("a-pc1", "westphalia"), // 1648
-  peaceQ("a-pc2", "osloI"), // 1993
-  peaceQ("a-pc3", "abraham"), // 2020
-  peaceQ("a-pc4", "goodFriday"), // 1998
+  // The elements that make you and the stars
+  periodicQ("a-s1", "H", "P"), // 1 — lightest thing there is
+  periodicQ("a-s2", "He", "v"), // 2 — the noble gas in the Sun
+  periodicQ("a-s3", "C", "P"), // 6 — the element of all life
+  periodicQ("a-s4", "O", "v"), // 6 — what you breathe
+  periodicQ("a-s5", "Ne", "v"), // 8 — neon lights
+
+  // Treaties that drew the modern world
+  peaceQ("a-pc1", "westphalia"), // 1648 — invented the nation-state
+  peaceQ("a-pc2", "versailles"), // 1919 — the peace that started WWII
+  peaceQ("a-pc3", "goodFriday"), // 1998 — ended the Troubles
+  peaceQ("a-pc4", "abraham"), // 2020
 ];
 
 const versionB: Question[] = [
-  multQ("b-m-1", 14, 13), // 182
-  multQ("b-m-2", 15, 14), // 210
-  multQ("b-m-3", 16, 12), // 192
-  multQ("b-m-4", 13, 16), // 208
-  multQ("b-m-5", 18, 11), // 198
-  gcfQ("b-gcf", 36, 60), // 12
-  lcmQ("b-lcm", 8, 10), // 40
-  fracAddQ("b-add", [2, 3], [1, 4]), // 11/12
-  fracSubQ("b-sub", [5, 6], [1, 3]), // 1/2
-  fracMulQ("b-mul", [3, 5], [5, 6]), // 1/2
-  fracDivQ("b-div", [2, 3], [1, 2]), // 4/3
+  multQ("b-m-1", 9, 9), // 81
+  multQ("b-m-2", 13, 13), // 169
+  gcfQ("b-gcf", 16, 24), // 8
+  lcmQ("b-lcm", 4, 6), // 12
 
-  periodicQ("b-v1", "He", "v"), // 2
-  periodicQ("b-v2", "N", "v"), // 5
-  periodicQ("b-v3", "Cl", "v"), // 7
-  periodicQ("b-pn1", "Mg", "P"), // 12 protons
-  periodicQ("b-pn2", "S", "N"), // 16 neutrons
-  periodicQ("b-pn3", "Ar", "e"), // 18 electrons
-  periodicQ("b-pn4", "Al", "P"), // 13 protons
+  evolutionQ("b-e1", "cambrian"), // 540 mya — life explodes
+  evolutionQ("b-e2", "firstFish"), // 520 mya
+  evolutionQ("b-e3", "firstPlants"), // 470 mya
+  evolutionQ("b-e4", "ktExtinction"), // 66 mya — the asteroid
+  evolutionQ("b-e5", "firstHominids"), // 7 mya
 
-  peaceQ("b-pc1", "versailles"), // 1919
+  periodicQ("b-s1", "He", "P"), // 2
+  periodicQ("b-s2", "C", "v"), // 4 — carbon makes 4 bonds
+  periodicQ("b-s3", "N", "v"), // 5 — most of the air
+  periodicQ("b-s4", "Ar", "v"), // 8 — noble, does nothing
+  periodicQ("b-s5", "Na", "v"), // 1 — half of table salt
+
+  peaceQ("b-pc1", "vienna"), // 1815
   peaceQ("b-pc2", "campDavid"), // 1978
-  peaceQ("b-pc3", "dayton"), // 1995
-  peaceQ("b-pc4", "vienna"), // 1815
+  peaceQ("b-pc3", "osloI"), // 1993
+  peaceQ("b-pc4", "dayton"), // 1995
 ];
 
 export const day20260612: Day = {
   date: DATE,
-  title: "Day 20 — Last day: the capstone",
+  title: "Day 20 — Last day: the cool stuff (victory lap)",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: [
-    "2-digit multiplication breakdown",
-    "GCF / LCM / all four fraction operations",
-    "Valence + protons / neutrons / electrons",
-    "Peace: Westphalia, Oslo, Abraham, Good Friday",
-    "Everything, one clean pass",
+    "The timeline of everything (Big Bang to you)",
+    "Elements that make you and the stars",
+    "Treaties that drew the modern world",
+    "A few quick, satisfying numbers",
+    "No drills — a victory lap",
   ],
   versionA,
   versionB,
