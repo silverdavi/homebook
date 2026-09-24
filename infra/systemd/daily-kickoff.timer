@@ -2,8 +2,7 @@
 Description=Adam daily school kickoff, 8:50 AM New York, weekdays
 
 [Timer]
-OnCalendar=Mon..Fri *-*-* 08:50:00
-Timezone=America/New_York
+OnCalendar=Mon..Fri *-*-* 08:50:00 America/New_York
 Persistent=true
 AccuracySec=1min
 Unit=daily-kickoff.service
