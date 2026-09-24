@@ -60,6 +60,8 @@ Phones stay off until 1:30. After you submit, the screen is done.
 
 Tomorrow is the three places the points kept falling out. Today is just the map.
 
+Bar mitzvah is separate, and it starts Monday. 20 minutes, not part of this block. Your reading is Revi'i of Vayakhel, the curtains: https://thesilvers.app/bar-mitzvah
+
 — Dad
 
 (CC: Mom, Enny)
@@ -84,6 +86,7 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">School is <strong>2 hours 30 minutes</strong> of work. A 20-minute break after every 40 minutes, no phone on the breaks: 9:30–10:10 read, break, 10:30–11:10 on paper, break, 11:30–12:10 the fuzzy thread, break, <strong>12:30–1:00 the exam</strong> (18 questions, A or B). Phones stay off until 1:30.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-09-24" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-09-24 →</a></p>
 <p style="margin:0 0 14px 0;">Tomorrow is the three places the points kept falling out. Today is just the map.</p>
+<p style="margin:0 0 14px 0;">Bar mitzvah is separate, and it starts Monday. 20 minutes, not part of this block. Your reading is Revi'i of Vayakhel, the curtains. <a href="https://thesilvers.app/bar-mitzvah" style="color:#4f46e5;font-weight:600;text-decoration:none;">thesilvers.app/bar-mitzvah</a></p>
 <p style="margin:0 0 6px 0;">— Dad</p>
 <p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
 </div></body></html>`;

@@ -44,6 +44,8 @@ Same clock as yesterday: 2 hours 30 minutes of work, a 20-minute break after eve
 
   https://teacher.ninja/daily/2026-09-25
 
+Monday the bar mitzvah reading starts. 20 minutes, not part of this block: https://thesilvers.app/bar-mitzvah
+
 — Dad
 
 (CC: Mom, Enny)
@@ -60,6 +62,7 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;"><strong>Two dates.</strong> Westphalia 1648. Versailles 1919.</p>
 <p style="margin:0 0 14px 0;">Same clock as yesterday: <strong>2 hours 30 minutes</strong> of work, a 20-minute break after every 40. Exam 12:30–1:00, 18 questions, A and B share nothing. Phones stay off until 1:30.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-09-25" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-09-25 →</a></p>
+<p style="margin:0 0 14px 0;">Monday the bar mitzvah reading starts. 20 minutes, not part of this block. <a href="https://thesilvers.app/bar-mitzvah" style="color:#4f46e5;font-weight:600;text-decoration:none;">thesilvers.app/bar-mitzvah</a></p>
 <p style="margin:0 0 6px 0;">— Dad</p>
 <p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
 </div></body></html>`;
