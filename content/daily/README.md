@@ -1,5 +1,7 @@
 # Daily — Independent Homeschool Trial
 
+How to add a day, deploy, and send the 8:50 AM email: **[OPS.md](OPS.md)**.
+
 > Week of **May 12 – 15, 2026**
 > Student: **Adam**
 > Route: `https://teacher.ninja/daily`

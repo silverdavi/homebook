@@ -5,6 +5,9 @@ on:
     branches: [main, master]
     paths:
       - 'apps/web/**'
+      - 'content/daily/**'
+      - 'scripts/daily-morning.sh'
+      - 'infra/systemd/**'
       - '.github/workflows/deploy-frontend.yml'
   # Manual trigger for env-only rotations (e.g. rotating OPENAI_API_KEY)
   # without touching app code.

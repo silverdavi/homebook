@@ -1,0 +1,12 @@
+[Unit]
+Description=Adam daily school kickoff email
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/homebook
+ExecStart=/home/ubuntu/homebook/scripts/daily-morning.sh
+StandardOutput=append:/home/ubuntu/daily-kickoff.log
+StandardError=append:/home/ubuntu/daily-kickoff.log
