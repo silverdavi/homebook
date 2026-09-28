@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WEEK, WEEK1, WEEK2, WEEK3, WEEK4, WEEK5, WEEK6 } from "@/lib/daily/week";
+import { WEEK, WEEK1, WEEK2, WEEK3, WEEK4, WEEK5, WEEK6, WEEK7 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
 
@@ -24,14 +24,15 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 22 days total across six weeks", () => {
+  it("has 25 days total across seven weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
     expect(WEEK4).toHaveLength(4);
     expect(WEEK5).toHaveLength(4);
     expect(WEEK6).toHaveLength(2);
-    expect(WEEK).toHaveLength(22);
+    expect(WEEK7).toHaveLength(3);
+    expect(WEEK).toHaveLength(25);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -79,6 +80,15 @@ describe("WEEK structure", () => {
 
   it("week 6 covers Sep 24-25 (Thu-Fri, back from summer)", () => {
     expect(WEEK6.map((d) => d.date)).toEqual(["2026-09-24", "2026-09-25"]);
+  });
+
+  it("week 7 covers Sep 29–Oct 1 with no peace questions", () => {
+    expect(WEEK7.map((d) => d.date)).toEqual(["2026-09-29", "2026-09-30", "2026-10-01"]);
+    for (const day of WEEK7) {
+      for (const q of [...day.versionA, ...day.versionB]) {
+        expect(q.kind).not.toBe("peace");
+      }
+    }
   });
 });
 

@@ -89,6 +89,10 @@ Last spring each day was a one-shot `systemd-run --on-calendar=...` unit (`day7-
 
 2 hours 30 minutes of work. A 20-minute break, no phone, after every 40 minutes. Exam 12:30–1:00. Phones off until 1:30.
 
+## Retired for now
+
+Peace dates, and Westphalia in particular, were on almost every exam from 26 May through 25 Sep 2026. Do not put a peace question on a new day unless David asks. Week 7 (29 Sep–1 Oct) is the first week with none.
+
 ## What the May–June trial was
 
 Twenty days, 12 May–12 Jun 2026. GCF, LCM, four fraction operations, inverses, times tables through 15×15, periodic table H–Ar, valence, 15 wars, peace dates, evolution timeline. The leaks he was still missing in June: valence off by one or two, the last addition on a two-digit multiply, Westphalia **1648**, Versailles **1919**. Days 21–22 (24–25 Sep 2026) review that. They do not add a subject.
