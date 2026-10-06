@@ -26,6 +26,9 @@ import { day20260929 } from "./content/day-2026-09-29";
 import { day20260930 } from "./content/day-2026-09-30";
 import { day20261001 } from "./content/day-2026-10-01";
 import { day20261006 } from "./content/day-2026-10-06";
+import { day20261007 } from "./content/day-2026-10-07";
+import { day20261008 } from "./content/day-2026-10-08";
+import { day20261009 } from "./content/day-2026-10-09";
 
 export const WEEK1: Day[] = [day20260512, day20260513, day20260514, day20260515];
 export const WEEK2: Day[] = [day20260518, day20260519, day20260520, day20260521];
@@ -34,7 +37,7 @@ export const WEEK4: Day[] = [day20260601, day20260603, day20260604, day20260605]
 export const WEEK5: Day[] = [day20260609, day20260610, day20260611, day20260612];
 export const WEEK6: Day[] = [day20260924, day20260925];
 export const WEEK7: Day[] = [day20260929, day20260930, day20261001];
-export const WEEK8: Day[] = [day20261006];
+export const WEEK8: Day[] = [day20261006, day20261007, day20261008, day20261009];
 
 export interface WeekSpec {
   id: number;
@@ -105,7 +108,7 @@ export const WEEKS: WeekSpec[] = [
   },
   {
     id: 8,
-    label: "Week 8 — Oct 6 (short day)",
+    label: "Week 8 — Oct 6–9",
     introFile: "WEEK-2026-10-06.md",
     days: WEEK8,
     startDayNumber:

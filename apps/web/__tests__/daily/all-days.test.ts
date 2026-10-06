@@ -24,7 +24,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 26 days total across eight weeks", () => {
+  it("has 29 days total across eight weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -32,8 +32,8 @@ describe("WEEK structure", () => {
     expect(WEEK5).toHaveLength(4);
     expect(WEEK6).toHaveLength(2);
     expect(WEEK7).toHaveLength(3);
-    expect(WEEK8).toHaveLength(1);
-    expect(WEEK).toHaveLength(26);
+    expect(WEEK8).toHaveLength(4);
+    expect(WEEK).toHaveLength(29);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -92,8 +92,13 @@ describe("WEEK structure", () => {
     }
   });
 
-  it("week 8 is the Oct 6 short day, valence, no peace questions", () => {
-    expect(WEEK8.map((d) => d.date)).toEqual(["2026-10-06"]);
+  it("week 8 covers Oct 6–9 with no peace questions", () => {
+    expect(WEEK8.map((d) => d.date)).toEqual([
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+    ]);
     for (const day of WEEK8) {
       for (const q of [...day.versionA, ...day.versionB]) {
         expect(q.kind).not.toBe("peace");
