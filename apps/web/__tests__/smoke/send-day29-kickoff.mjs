@@ -41,6 +41,8 @@ If one number is already a multiple of the other, that number is the answer. 5 a
 
 GCF goes down. LCM goes up. The exam says LCM.
 
+The sheet is on the desk. Filled side down when you practice. Away before the exam.
+
 Same clock: 2 hours 30 minutes, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.
 
   https://teacher.ninja/daily/2026-10-09
@@ -59,6 +61,7 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
 <p style="margin:0 0 14px 0;">LCM is the smallest number both reach. List the multiples. Take the first one in both lists. 4 and 6 meet at 12. 5 and 7 meet at 35.</p>
 <p style="margin:0 0 14px 0;">If one number is already a multiple of the other, that number is the answer. GCF goes down. LCM goes up. The exam says LCM.</p>
+<p style="margin:0 0 14px 0;">The sheet is on the desk. Filled side down when you practice. Away before the exam.</p>
 <p style="margin:0 0 14px 0;">Same clock: <strong>2 hours 30 minutes</strong>, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-10-09" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-10-09 →</a></p>
 <p style="margin:0 0 14px 0;">Bar mitzvah reading stays 20 minutes, separate. <a href="https://thesilvers.app/bar-mitzvah" style="color:#4f46e5;font-weight:600;text-decoration:none;">thesilvers.app/bar-mitzvah</a></p>

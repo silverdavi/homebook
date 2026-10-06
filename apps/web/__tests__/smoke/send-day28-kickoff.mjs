@@ -32,7 +32,7 @@ const FROM = "Dad <dad@dichotomies.me>";
 
 const TEXT = `Yerachmiel —
 
-One line. The number is millions of years ago. Big on the left, us on the right.
+One line. The number is millions of years ago. Oldest at the top, us at the bottom.
 
   Big Bang          13800
   Earth             4540
@@ -43,6 +43,8 @@ One line. The number is millions of years ago. Big on the left, us on the right.
   Humans            0.3
 
 Close is enough. A few multiplies from yesterday are on the exam too.
+
+The sheet is on the desk. Filled side down when you practice. Away before the exam.
 
 Same clock: 2 hours 30 minutes, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.
 
@@ -60,8 +62,9 @@ const HTML = `<!doctype html>
 <body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.6;">
 <div style="max-width:580px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:24px 28px;">
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
-<p style="margin:0 0 14px 0;">One line. The number is millions of years ago. Big Bang 13800, Earth 4540, first life 3700, first fish 520, first dinosaurs 230, the asteroid 66, humans 0.3.</p>
+<p style="margin:0 0 14px 0;">One line, oldest at the top. Big Bang 13800, Earth 4540, first life 3700, first fish 520, first dinosaurs 230, the asteroid 66, humans 0.3.</p>
 <p style="margin:0 0 14px 0;">Close is enough. A few multiplies from yesterday are on the exam too.</p>
+<p style="margin:0 0 14px 0;">The sheet is on the desk. Filled side down when you practice. Away before the exam.</p>
 <p style="margin:0 0 14px 0;">Same clock: <strong>2 hours 30 minutes</strong>, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-10-08" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-10-08 →</a></p>
 <p style="margin:0 0 14px 0;">Bar mitzvah reading stays 20 minutes, separate. <a href="https://thesilvers.app/bar-mitzvah" style="color:#4f46e5;font-weight:600;text-decoration:none;">thesilvers.app/bar-mitzvah</a></p>

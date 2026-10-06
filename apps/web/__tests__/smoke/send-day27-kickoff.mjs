@@ -39,6 +39,8 @@ Split the number, multiply both pieces, then add. The miss is stopping before th
 24 × 3 = 72.
 240 + 72 = 312.
 
+The sheet is on the desk. Filled side down when you practice. Away before the exam.
+
 Full clock again: 2 hours 30 minutes, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.
 
   https://teacher.ninja/daily/2026-10-07
@@ -57,6 +59,7 @@ const HTML = `<!doctype html>
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
 <p style="margin:0 0 14px 0;">Split the number, multiply both pieces, then add. The miss is stopping before that add.</p>
 <p style="margin:0 0 14px 0;">24 × 13. That is 24 × 10 = 240, and 24 × 3 = 72. 240 + 72 = <strong>312</strong>.</p>
+<p style="margin:0 0 14px 0;">The sheet is on the desk. Filled side down when you practice. Away before the exam.</p>
 <p style="margin:0 0 14px 0;">Full clock again: <strong>2 hours 30 minutes</strong>, a 20-minute break after every 40. Exam 12:30–1:00. Phones off until 1:30.</p>
 <p style="margin:18px 0;"><a href="https://teacher.ninja/daily/2026-10-07" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">teacher.ninja/daily/2026-10-07 →</a></p>
 <p style="margin:0 0 14px 0;">Bar mitzvah reading stays 20 minutes, separate. <a href="https://thesilvers.app/bar-mitzvah" style="color:#4f46e5;font-weight:600;text-decoration:none;">thesilvers.app/bar-mitzvah</a></p>
