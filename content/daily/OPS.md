@@ -21,12 +21,15 @@ He opens the page, studies alone, picks exam A or B. One attempt per version. Th
 
 Either chat can do the work. The files that matter are in homebook.
 
-## A day is four files
+## A day is five pieces
 
 1. `content/daily/day-YYYY-MM-DD.md` — the brief he reads.
 2. `apps/web/lib/daily/content/day-YYYY-MM-DD.ts` — version A and version B, built from the banks in `content/banks/`. Register it in `apps/web/lib/daily/week.ts`.
-3. `apps/web/__tests__/smoke/send-dayN-kickoff.mjs` — the morning email. The ISO date must appear in the file (the page URL is enough). Dry-run with no flag. Send with `--send`.
-4. Style: `.cursor/rules/email-style.mdc`. Short, one card, one link, no emoji.
+3. `apps/web/lib/daily/plans.ts` — the complete schedule shown above the brief. Every work step needs a realistic minute estimate and an observable “done when.” List the exact printed material. The exam estimate is realistic and the student submits when finished; never pad a short exam with sitting.
+4. `apps/web/__tests__/smoke/send-dayN-kickoff.mjs` — the morning email. The ISO date must appear in the file (the page URL is enough). Dry-run with no flag. Send with `--send`.
+5. Style: `.cursor/rules/email-style.mdc`. Short, one card, one link, no emoji.
+
+The website is canonical; the email is only a link. A missing date displays a clear “Schedule missing” page. Do not tell Adam to repeat an old day or fill an empty timer. Fix the page.
 
 `npx vitest run __tests__/daily/all-days.test.ts` from `apps/web` grades every question. Do that before pushing.
 

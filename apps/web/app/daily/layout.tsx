@@ -4,9 +4,9 @@ import { DailyProviders } from "./DailyProviders";
 import { BugReportButton } from "@/components/daily/BugReportButton";
 
 export const metadata: Metadata = {
-  title: "Daily — Independent homeschool trial | teacher.ninja",
+  title: "Daily homeschool plan | teacher.ninja",
   description:
-    "A four-day, fully self-driven homeschool trial covering fractions, the periodic table, history, and biology.",
+    "The complete daily homeschool schedule, materials, tasks, and exam.",
 };
 
 export default function DailyLayout({

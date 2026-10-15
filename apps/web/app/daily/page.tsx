@@ -16,9 +16,10 @@ export default function DailyIndexPage() {
           Daily
         </h1>
         <p className="text-slate-600 max-w-2xl">
-          Two weeks of math, science, history, and biology. You read the
-          brief, decide how to study, and take the exam. One attempt per
-          version (A and B are independent). That&apos;s the whole thing.
+          Each posted day contains the complete schedule: exact times,
+          realistic minute estimates, materials, a finished result for every
+          task, and the exam. The email is only a link. This page is the source
+          of truth.
         </p>
         <div className="mt-3 text-sm">
           <Link

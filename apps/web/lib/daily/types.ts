@@ -133,6 +133,51 @@ export interface Day {
   versionB: Question[];
 }
 
+export interface DayPlanStep {
+  /** Realistic estimate, not a timer Adam must fill. */
+  minutes: number;
+  task: string;
+  /** Observable result that means this step is finished. */
+  doneWhen: string;
+}
+
+export interface DayPlanWorkBlock {
+  kind: "work";
+  time: string;
+  title: string;
+  steps: DayPlanStep[];
+}
+
+export interface DayPlanBreakBlock {
+  kind: "break";
+  time: string;
+  title: string;
+}
+
+export interface DayPlanExamBlock {
+  kind: "exam";
+  time: string;
+  title: string;
+  expectedMinutes: number;
+  maxMinutes: number;
+  instruction: string;
+}
+
+export type DayPlanBlock =
+  | DayPlanWorkBlock
+  | DayPlanBreakBlock
+  | DayPlanExamBlock;
+
+/** The complete, canonical schedule shown above a day's lesson. */
+export interface DayPlan {
+  startTime: string;
+  scheduledEndTime: string;
+  phoneUntil: string;
+  deviceRule: string;
+  materials: string[];
+  blocks: DayPlanBlock[];
+}
+
 // ── Submission shapes (client → server → db) ───────────────────────────
 
 export type ExamVersion = "a" | "b";

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Markdown } from "./Markdown";
 import { ExamStartButtons } from "./ExamStartButtons";
+import { DayPlan } from "./DayPlan";
+import { getDayPlan } from "@/lib/daily/plans";
 import type { Day } from "@/lib/daily/types";
 
 interface Props {
@@ -8,6 +10,8 @@ interface Props {
 }
 
 export function MorningBrief({ day }: Props) {
+  const plan = getDayPlan(day.date);
+
   return (
     <div>
       <div className="mb-4">
@@ -18,6 +22,8 @@ export function MorningBrief({ day }: Props) {
           ← The week
         </Link>
       </div>
+
+      {plan && <DayPlan plan={plan} />}
 
       <Markdown content={day.brief} />
 
