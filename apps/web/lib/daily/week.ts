@@ -29,6 +29,7 @@ import { day20261006 } from "./content/day-2026-10-06";
 import { day20261007 } from "./content/day-2026-10-07";
 import { day20261008 } from "./content/day-2026-10-08";
 import { day20261009 } from "./content/day-2026-10-09";
+import { day20261015 } from "./content/day-2026-10-15";
 
 export const WEEK1: Day[] = [day20260512, day20260513, day20260514, day20260515];
 export const WEEK2: Day[] = [day20260518, day20260519, day20260520, day20260521];
@@ -38,6 +39,7 @@ export const WEEK5: Day[] = [day20260609, day20260610, day20260611, day20260612]
 export const WEEK6: Day[] = [day20260924, day20260925];
 export const WEEK7: Day[] = [day20260929, day20260930, day20261001];
 export const WEEK8: Day[] = [day20261006, day20261007, day20261008, day20261009];
+export const WEEK9: Day[] = [day20261015];
 
 export interface WeekSpec {
   id: number;
@@ -121,10 +123,36 @@ export const WEEKS: WeekSpec[] = [
       WEEK7.length +
       1,
   },
+  {
+    id: 9,
+    label: "Week 9 — Oct 15",
+    introFile: "WEEK-2026-10-15.md",
+    days: WEEK9,
+    startDayNumber:
+      WEEK1.length +
+      WEEK2.length +
+      WEEK3.length +
+      WEEK4.length +
+      WEEK5.length +
+      WEEK6.length +
+      WEEK7.length +
+      WEEK8.length +
+      1,
+  },
 ];
 
 /** Backward-compat: the full flat list of days across all weeks. */
-export const WEEK: Day[] = [...WEEK1, ...WEEK2, ...WEEK3, ...WEEK4, ...WEEK5, ...WEEK6, ...WEEK7, ...WEEK8];
+export const WEEK: Day[] = [
+  ...WEEK1,
+  ...WEEK2,
+  ...WEEK3,
+  ...WEEK4,
+  ...WEEK5,
+  ...WEEK6,
+  ...WEEK7,
+  ...WEEK8,
+  ...WEEK9,
+];
 
 export const WEEK_RANGE = {
   start: WEEK[0].date,

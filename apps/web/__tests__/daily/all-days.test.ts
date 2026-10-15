@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { WEEK, WEEK1, WEEK2, WEEK3, WEEK4, WEEK5, WEEK6, WEEK7, WEEK8 } from "@/lib/daily/week";
+import {
+  WEEK,
+  WEEK1,
+  WEEK2,
+  WEEK3,
+  WEEK4,
+  WEEK5,
+  WEEK6,
+  WEEK7,
+  WEEK8,
+  WEEK9,
+} from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
 
@@ -24,7 +35,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 29 days total across eight weeks", () => {
+  it("has 30 days total across nine weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -33,7 +44,8 @@ describe("WEEK structure", () => {
     expect(WEEK6).toHaveLength(2);
     expect(WEEK7).toHaveLength(3);
     expect(WEEK8).toHaveLength(4);
-    expect(WEEK).toHaveLength(29);
+    expect(WEEK9).toHaveLength(1);
+    expect(WEEK).toHaveLength(30);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -100,6 +112,15 @@ describe("WEEK structure", () => {
       "2026-10-09",
     ]);
     for (const day of WEEK8) {
+      for (const q of [...day.versionA, ...day.versionB]) {
+        expect(q.kind).not.toBe("peace");
+      }
+    }
+  });
+
+  it("week 9 starts Oct 15 with no peace questions", () => {
+    expect(WEEK9.map((d) => d.date)).toEqual(["2026-10-15"]);
+    for (const day of WEEK9) {
       for (const q of [...day.versionA, ...day.versionB]) {
         expect(q.kind).not.toBe("peace");
       }

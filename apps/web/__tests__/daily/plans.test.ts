@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getDayPlan } from "@/lib/daily/plans";
-import { WEEK8 } from "@/lib/daily/week";
+import { WEEK } from "@/lib/daily/week";
 
 describe("canonical daily plans", () => {
-  it("gives every October 6–9 day a complete plan", () => {
-    for (const day of WEEK8) {
+  const plannedDays = WEEK.filter((day) => day.date >= "2026-10-06");
+
+  it("gives every current day a complete plan", () => {
+    for (const day of plannedDays) {
       const plan = getDayPlan(day.date);
       expect(plan, `${day.date} plan`).not.toBeNull();
       expect(plan?.materials.length).toBeGreaterThan(0);
@@ -14,7 +16,7 @@ describe("canonical daily plans", () => {
   });
 
   it("fills each work block with specific, estimated steps", () => {
-    for (const day of WEEK8) {
+    for (const day of plannedDays) {
       const plan = getDayPlan(day.date);
       expect(plan).not.toBeNull();
       for (const block of plan?.blocks ?? []) {
@@ -33,7 +35,7 @@ describe("canonical daily plans", () => {
   });
 
   it("estimates reading and lets the exam end early", () => {
-    for (const day of WEEK8) {
+    for (const day of plannedDays) {
       const plan = getDayPlan(day.date);
       const workText = (plan?.blocks ?? [])
         .flatMap((block) => (block.kind === "work" ? block.steps : []))

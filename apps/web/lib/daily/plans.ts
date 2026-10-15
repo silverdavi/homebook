@@ -361,6 +361,106 @@ const plans: Record<string, DayPlan> = {
       },
     ],
   },
+  "2026-10-15": {
+    startTime: "10:10",
+    scheduledEndTime: "1:40",
+    phoneUntil: "1:40",
+    deviceRule: SCHOOL_DEVICE_RULE,
+    materials: [
+      "Thursday • Day 30 double-sided estimate-and-mass sheet",
+      "Pencil",
+    ],
+    blocks: [
+      {
+        kind: "work",
+        time: "10:10–10:50",
+        title: "Estimate, then calculate",
+        steps: [
+          {
+            minutes: 8,
+            task: "Read the estimate-first explanation and the 47 × 6 example below.",
+            doneWhen: "You can explain why 282 is believable.",
+          },
+          {
+            minutes: 12,
+            task: "Copy the example with an estimate, exact work, and check.",
+            doneWhen: "All 3 lines are written.",
+          },
+          {
+            minutes: 15,
+            task: "Do the first 4 multiplication rows on the printed sheet.",
+            doneWhen: "Each row has an estimate and exact answer.",
+          },
+          {
+            minutes: 5,
+            task: "Turn to the answer side and check those 4 rows.",
+            doneWhen: "Every miss is circled.",
+          },
+        ],
+      },
+      { kind: "break", time: "10:50–11:10", title: "Break. No phone." },
+      {
+        kind: "work",
+        time: "11:10–11:50",
+        title: "Finish and use the estimate",
+        steps: [
+          {
+            minutes: 20,
+            task: "Finish the last 4 multiplication rows with the answers face down.",
+            doneWhen: "All 8 rows have estimates and exact answers.",
+          },
+          {
+            minutes: 10,
+            task: "Check every exact answer and correct each miss.",
+            doneWhen: "All 8 rows are checked.",
+          },
+          {
+            minutes: 10,
+            task: "For each answer, mark whether it is reasonably close to its estimate.",
+            doneWhen: "All 8 rows are marked reasonable or corrected.",
+          },
+        ],
+      },
+      { kind: "break", time: "11:50–12:10", title: "Break. No phone." },
+      {
+        kind: "work",
+        time: "12:10–12:50",
+        title: "Build atomic mass",
+        steps: [
+          {
+            minutes: 8,
+            task: "Read the mass-number explanation below.",
+            doneWhen: "You can state the mass-number rule without looking.",
+          },
+          {
+            minutes: 12,
+            task: "Study the 4 atom examples on the sheet, then cover the answer side.",
+            doneWhen: "You know which 2 particle counts are added.",
+          },
+          {
+            minutes: 15,
+            task: "Complete the 6 atom rows on the practice side.",
+            doneWhen: "Every row has protons, neutrons, and mass number.",
+          },
+          {
+            minutes: 5,
+            task: "Check all 6 rows and put the sheet away.",
+            doneWhen: "Every row is correct and the sheet is away.",
+          },
+        ],
+      },
+      { kind: "break", time: "12:50–1:10", title: "Break. No phone." },
+      {
+        kind: "exam",
+        time: "1:10–1:40",
+        title: "Exam A or B",
+        expectedMinutes: 12,
+        maxMinutes: 30,
+        instruction:
+          "Submit when you finish. The 30-minute window is not required sitting time.",
+      },
+    ],
+  },
 };
 
 export function getDayPlan(date: string): DayPlan | null {
