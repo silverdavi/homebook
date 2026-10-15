@@ -17,7 +17,8 @@ export type QuestionKind =
   | "periodic"
   | "war"
   | "peace"
-  | "evolution";
+  | "evolution"
+  | "numeric";
 
 export type FracKind = "fracAdd" | "fracSub" | "fracMul" | "fracDiv";
 
@@ -111,6 +112,16 @@ export interface EvolutionQuestion extends BaseQuestion {
   tolerance: number;
 }
 
+/** A plainly worded numeric application question, optionally with units. */
+export interface NumericQuestion extends BaseQuestion {
+  kind: "numeric";
+  prompt: string;
+  answer: number;
+  tolerance: number;
+  unit?: string;
+  explanation: string;
+}
+
 export type Question =
   | IntegerOpQuestion
   | MultQuestion
@@ -119,7 +130,8 @@ export type Question =
   | PeriodicQuestion
   | WarQuestion
   | PeaceQuestion
-  | EvolutionQuestion;
+  | EvolutionQuestion
+  | NumericQuestion;
 
 /** A single day's worth of content. */
 export interface Day {

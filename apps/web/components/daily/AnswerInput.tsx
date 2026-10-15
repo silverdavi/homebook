@@ -179,7 +179,8 @@ export function AnswerInput({ question, answer, onChange }: Props) {
     case "periodic":
     case "war":
     case "peace":
-    case "evolution": {
+    case "evolution":
+    case "numeric": {
       const v = answer.kind === "integer" ? answer.value : null;
       const placeholder =
         question.kind === "war" || question.kind === "peace"
@@ -191,7 +192,7 @@ export function AnswerInput({ question, answer, onChange }: Props) {
         <IntegerInput
           value={v}
           placeholder={placeholder}
-          allowDecimal={question.kind === "evolution"}
+          allowDecimal={question.kind === "evolution" || question.kind === "numeric"}
           onChange={(value) => onChange({ kind: "integer", value })}
         />
       );

@@ -91,5 +91,16 @@ export function PromptForQuestion({ question }: { question: Question }) {
           <span className="font-semibold">{question.event}</span>?
         </span>
       );
+    case "numeric":
+      return (
+        <span>
+          {question.prompt}
+          {question.unit && (
+            <span className="ml-1 text-slate-500">
+              Answer in {question.unit}.
+            </span>
+          )}
+        </span>
+      );
   }
 }

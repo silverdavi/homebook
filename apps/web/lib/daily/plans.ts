@@ -1,4 +1,5 @@
 import type { DayPlan } from "./types";
+import { UPCOMING_PLANS } from "./plans-upcoming";
 
 const SCHOOL_DEVICE_RULE =
   "Phone away. Computer only for teacher.ninja and the lesson links on this page.";
@@ -461,6 +462,7 @@ const plans: Record<string, DayPlan> = {
       },
     ],
   },
+  ...UPCOMING_PLANS,
 };
 
 export function getDayPlan(date: string): DayPlan | null {

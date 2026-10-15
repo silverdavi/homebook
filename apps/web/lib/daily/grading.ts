@@ -107,6 +107,18 @@ function gradeOne(question: Question, raw: RawAnswer): {
         userDisplay: fmtIntAnswer(raw.value),
       };
     }
+
+    case "numeric": {
+      const expected = `${question.answer}${question.unit ? ` ${question.unit}` : ""}`;
+      if (raw.kind !== "integer" || raw.value === null) {
+        return { correct: false, expected, userDisplay: "(blank)" };
+      }
+      return {
+        correct: Math.abs(raw.value - question.answer) <= question.tolerance,
+        expected,
+        userDisplay: `${fmtIntAnswer(raw.value)}${question.unit ? ` ${question.unit}` : ""}`,
+      };
+    }
   }
 }
 
@@ -180,5 +192,7 @@ export function formatExpected(question: Question): string {
       return `${question.answer}`;
     case "evolution":
       return `${question.answerMya}`;
+    case "numeric":
+      return `${question.answer}${question.unit ? ` ${question.unit}` : ""}`;
   }
 }

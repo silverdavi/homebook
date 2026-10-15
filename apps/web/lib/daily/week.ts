@@ -30,6 +30,12 @@ import { day20261007 } from "./content/day-2026-10-07";
 import { day20261008 } from "./content/day-2026-10-08";
 import { day20261009 } from "./content/day-2026-10-09";
 import { day20261015 } from "./content/day-2026-10-15";
+import { day20261016 } from "./content/day-2026-10-16";
+import { day20261019 } from "./content/day-2026-10-19";
+import { day20261020 } from "./content/day-2026-10-20";
+import { day20261021 } from "./content/day-2026-10-21";
+import { day20261022 } from "./content/day-2026-10-22";
+import { day20261023 } from "./content/day-2026-10-23";
 
 export const WEEK1: Day[] = [day20260512, day20260513, day20260514, day20260515];
 export const WEEK2: Day[] = [day20260518, day20260519, day20260520, day20260521];
@@ -39,7 +45,14 @@ export const WEEK5: Day[] = [day20260609, day20260610, day20260611, day20260612]
 export const WEEK6: Day[] = [day20260924, day20260925];
 export const WEEK7: Day[] = [day20260929, day20260930, day20261001];
 export const WEEK8: Day[] = [day20261006, day20261007, day20261008, day20261009];
-export const WEEK9: Day[] = [day20261015];
+export const WEEK9: Day[] = [day20261015, day20261016];
+export const WEEK10: Day[] = [
+  day20261019,
+  day20261020,
+  day20261021,
+  day20261022,
+  day20261023,
+];
 
 export interface WeekSpec {
   id: number;
@@ -125,7 +138,7 @@ export const WEEKS: WeekSpec[] = [
   },
   {
     id: 9,
-    label: "Week 9 — Oct 15",
+    label: "Week 9 — Oct 15–16",
     introFile: "WEEK-2026-10-15.md",
     days: WEEK9,
     startDayNumber:
@@ -137,6 +150,23 @@ export const WEEKS: WeekSpec[] = [
       WEEK6.length +
       WEEK7.length +
       WEEK8.length +
+      1,
+  },
+  {
+    id: 10,
+    label: "Week 10 — Oct 19–23",
+    introFile: "WEEK-2026-10-19.md",
+    days: WEEK10,
+    startDayNumber:
+      WEEK1.length +
+      WEEK2.length +
+      WEEK3.length +
+      WEEK4.length +
+      WEEK5.length +
+      WEEK6.length +
+      WEEK7.length +
+      WEEK8.length +
+      WEEK9.length +
       1,
   },
 ];
@@ -152,6 +182,7 @@ export const WEEK: Day[] = [
   ...WEEK7,
   ...WEEK8,
   ...WEEK9,
+  ...WEEK10,
 ];
 
 export const WEEK_RANGE = {

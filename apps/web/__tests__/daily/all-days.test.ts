@@ -10,6 +10,7 @@ import {
   WEEK7,
   WEEK8,
   WEEK9,
+  WEEK10,
 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
@@ -23,6 +24,8 @@ function correctRaw(q: Question): RawAnswer {
     case "war":
     case "peace":
       return { kind: "integer", value: q.answer };
+    case "numeric":
+      return { kind: "integer", value: q.answer };
     case "evolution":
       return { kind: "integer", value: q.answerMya };
     case "fracAdd":
@@ -35,7 +38,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 30 days total across nine weeks", () => {
+  it("has 36 days total across ten weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -44,8 +47,9 @@ describe("WEEK structure", () => {
     expect(WEEK6).toHaveLength(2);
     expect(WEEK7).toHaveLength(3);
     expect(WEEK8).toHaveLength(4);
-    expect(WEEK9).toHaveLength(1);
-    expect(WEEK).toHaveLength(30);
+    expect(WEEK9).toHaveLength(2);
+    expect(WEEK10).toHaveLength(5);
+    expect(WEEK).toHaveLength(36);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -118,9 +122,24 @@ describe("WEEK structure", () => {
     }
   });
 
-  it("week 9 starts Oct 15 with no peace questions", () => {
-    expect(WEEK9.map((d) => d.date)).toEqual(["2026-10-15"]);
+  it("week 9 covers Oct 15–16 with no peace questions", () => {
+    expect(WEEK9.map((d) => d.date)).toEqual(["2026-10-15", "2026-10-16"]);
     for (const day of WEEK9) {
+      for (const q of [...day.versionA, ...day.versionB]) {
+        expect(q.kind).not.toBe("peace");
+      }
+    }
+  });
+
+  it("week 10 covers Oct 19–23 with no peace questions", () => {
+    expect(WEEK10.map((d) => d.date)).toEqual([
+      "2026-10-19",
+      "2026-10-20",
+      "2026-10-21",
+      "2026-10-22",
+      "2026-10-23",
+    ]);
+    for (const day of WEEK10) {
       for (const q of [...day.versionA, ...day.versionB]) {
         expect(q.kind).not.toBe("peace");
       }
