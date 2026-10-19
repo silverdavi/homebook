@@ -2,6 +2,12 @@ import type { DayPlan } from "./types";
 
 interface Copy {
   material: string;
+  extraMaterials?: string[];
+  introduction: {
+    newToday: string;
+    buildsOn: string;
+    whyItMatters: string;
+  };
   learn: {
     title: string;
     read: string;
@@ -38,7 +44,8 @@ function fullDay(copy: Copy): DayPlan {
     phoneUntil: "1:30",
     deviceRule:
       "Phone away. Computer only for teacher.ninja and the lesson links on this page.",
-    materials: [copy.material, "Pencil"],
+    materials: [copy.material, ...(copy.extraMaterials ?? []), "Pencil"],
+    introduction: copy.introduction,
     blocks: [
       {
         kind: "work",
@@ -94,6 +101,11 @@ function fullDay(copy: Copy): DayPlan {
 export const UPCOMING_PLANS: Record<string, DayPlan> = {
   "2026-10-16": fullDay({
     material: "Friday • Day 31 double-sided percentages sheet",
+    introduction: {
+      newToday: "Percent is a new way to describe a part as an amount out of 100.",
+      buildsOn: "Fractions, division, and the 10-times pattern.",
+      whyItMatters: "Discounts, tips, taxes, polls, and statistics all use percentages.",
+    },
     learn: {
       title: "Build percent anchors",
       read: "Read the percentage explanation and 2 worked examples below.",
@@ -124,6 +136,11 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
   }),
   "2026-10-19": fullDay({
     material: "Monday • Day 32 double-sided unit-rate sheet",
+    introduction: {
+      newToday: "A unit rate compares an amount to exactly 1 unit.",
+      buildsOn: "Division and reading units such as miles, hours, dollars, and items.",
+      whyItMatters: "Unit rates let you compare prices and speeds fairly.",
+    },
     learn: {
       title: "Make the denominator 1",
       read: "Read the unit-rate explanation and both examples below.",
@@ -154,6 +171,12 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
   }),
   "2026-10-20": fullDay({
     material: "Tuesday • Day 33 double-sided geometry sheet and ruler",
+    extraMaterials: ["World • Tuesday maps and flags sheet"],
+    introduction: {
+      newToday: "Geometry uses different measurements for a boundary, a flat surface, and space inside a box.",
+      buildsOn: "Multiplication, addition, and recognizing rectangles and triangles.",
+      whyItMatters: "Building, maps, rooms, screens, fabric, and storage all require the right measurement.",
+    },
     learn: {
       title: "Around, across, and inside",
       read: "Read the perimeter, area, triangle, and volume examples below.",
@@ -173,17 +196,23 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       correctDone: "Every miss has a corrected formula and answer.",
     },
     apply: {
-      title: "Measure real objects",
-      review: "Write the formulas from memory.",
-      reviewDone: "Rectangle perimeter, rectangle area, triangle area, and box volume are present.",
-      task: "Measure 2 rectangular objects and calculate both perimeter and area.",
-      taskDone: "2 measurements produce 4 labeled answers.",
-      explain: "Write why area uses square units while perimeter does not.",
-      explainDone: "One clear sentence uses boundary and surface.",
+      title: "World: maps, flags, and power",
+      review: "Read the World block below and locate Japan, Brazil, Canada, and South Africa on the printed map.",
+      reviewDone: "All 4 countries and continents are labeled.",
+      task: "Complete Tuesday's flags, hemispheres, and map-projection questions on the World sheet.",
+      taskDone: "Every Tuesday World question has an answer.",
+      explain: "Write who can gain or lose when a map or border is treated as neutral.",
+      explainDone: "One complete sentence mentions people and power.",
     },
   }),
   "2026-10-21": fullDay({
     material: "Wednesday • Day 34 double-sided density sheet",
+    extraMaterials: ["World • Wednesday biomes and climate sheet"],
+    introduction: {
+      newToday: "Density measures how much mass is packed into each unit of volume.",
+      buildsOn: "Tuesday's volume, Monday's unit rates, multiplication, and division.",
+      whyItMatters: "Density helps explain why materials feel heavy and why some objects float.",
+    },
     learn: {
       title: "Pack mass into volume",
       read: "Read the density, mass, and volume examples below.",
@@ -203,17 +232,23 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       correctDone: "Each missed problem is corrected.",
     },
     apply: {
-      title: "Compare materials",
-      review: "Write density = mass ÷ volume and its unit.",
-      reviewDone: "The equation and g/cm³ are written.",
-      task: "Calculate the density of 4 sample blocks on the sheet and rank them.",
-      taskDone: "4 densities and a least-to-most ranking are written.",
-      explain: "Write what a larger density means physically.",
-      explainDone: "One sentence mentions more mass in the same space.",
+      title: "World: biomes and climate justice",
+      review: "Read the World block and underline one defining feature of tundra, desert, rainforest, and grassland.",
+      reviewDone: "All 4 biomes have one correct feature.",
+      task: "Complete Wednesday's biome and climate-justice questions on the World sheet.",
+      taskDone: "Every Wednesday World question has an answer.",
+      explain: "Write why climate harm and responsibility are not distributed equally.",
+      explainDone: "One complete sentence connects emissions, power, and exposure.",
     },
   }),
   "2026-10-22": fullDay({
     material: "Thursday • Day 35 double-sided integers sheet",
+    extraMaterials: ["World • Thursday flags, borders, and migration sheet"],
+    introduction: {
+      newToday: "Integers extend the number line below zero.",
+      buildsOn: "Addition, subtraction, and moving left or right on a line.",
+      whyItMatters: "Temperatures, debts, elevations, and score changes all cross zero.",
+    },
     learn: {
       title: "Move on the number line",
       read: "Read the integer and temperature examples below.",
@@ -233,17 +268,23 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       correctDone: "Every miss has a corrected number-line move.",
     },
     apply: {
-      title: "Track temperature",
-      review: "Write one rule for rise and one for fall.",
-      reviewDone: "Both rules include the correct operation.",
-      task: "Complete the 6-temperature weather log on the sheet.",
-      taskDone: "All 6 new temperatures include signs.",
-      explain: "Write why −8 is colder than −3.",
-      explainDone: "One sentence refers to position left of zero.",
+      title: "World: flags, borders, and migration",
+      review: "Read the World block and identify the 4 flags on Thursday's World sheet.",
+      reviewDone: "Ukraine, Israel, Palestine, and South Africa are labeled.",
+      task: "Complete Thursday's state, nation, refugee, and border questions.",
+      taskDone: "Every Thursday World question has an answer.",
+      explain: "Write why studying migration requires listening to people, not only governments.",
+      explainDone: "One complete sentence mentions lived experience.",
     },
   }),
   "2026-10-23": fullDay({
     material: "Friday • Day 36 double-sided data sheet",
+    extraMaterials: ["World • Friday current-crises sheet"],
+    introduction: {
+      newToday: "Mean, median, and range describe the center and spread of a set of numbers.",
+      buildsOn: "Adding, dividing, ordering numbers, and subtraction.",
+      whyItMatters: "News, science, sports, and public policy use data summaries to make claims.",
+    },
     learn: {
       title: "Center and spread",
       read: "Read the mean, median, and range examples below.",
@@ -263,13 +304,13 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       correctDone: "Every miss has corrected work.",
     },
     apply: {
-      title: "Describe a week",
-      review: "Write the 3 procedures from memory.",
-      reviewDone: "Mean, median, and range each have a distinct rule.",
-      task: "Use the 7-day data set on the sheet to calculate all 3 measures and draw a bar graph.",
-      taskDone: "3 measures and 7 bars are complete.",
-      explain: "Write which measure best describes the typical day and why.",
-      explainDone: "One choice is supported by the data.",
+      title: "World: current crises",
+      review: "Read the dated World block and locate Ukraine, Sudan, Gaza, and Myanmar.",
+      reviewDone: "All 4 places are labeled on Friday's World sheet.",
+      task: "Complete Friday's current-crises questions, separating place, cause, and civilian impact.",
+      taskDone: "Every Friday World question has an answer.",
+      explain: "Write the 4 principles used on this page to evaluate a conflict.",
+      explainDone: "Civilian protection, human rights, self-determination, and aid are present.",
     },
   }),
 };

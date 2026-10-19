@@ -18,7 +18,10 @@ export type QuestionKind =
   | "war"
   | "peace"
   | "evolution"
-  | "numeric";
+  | "numeric"
+  | "geography"
+  | "history"
+  | "generalKnowledge";
 
 export type FracKind = "fracAdd" | "fracSub" | "fracMul" | "fracDiv";
 
@@ -122,6 +125,15 @@ export interface NumericQuestion extends BaseQuestion {
   explanation: string;
 }
 
+/** Auto-graded humanities/general-knowledge multiple choice. */
+export interface ChoiceQuestion extends BaseQuestion {
+  kind: "geography" | "history" | "generalKnowledge";
+  prompt: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
 export type Question =
   | IntegerOpQuestion
   | MultQuestion
@@ -131,7 +143,8 @@ export type Question =
   | WarQuestion
   | PeaceQuestion
   | EvolutionQuestion
-  | NumericQuestion;
+  | NumericQuestion
+  | ChoiceQuestion;
 
 /** A single day's worth of content. */
 export interface Day {
@@ -187,6 +200,11 @@ export interface DayPlan {
   phoneUntil: string;
   deviceRule: string;
   materials: string[];
+  introduction?: {
+    newToday: string;
+    buildsOn: string;
+    whyItMatters: string;
+  };
   blocks: DayPlanBlock[];
 }
 

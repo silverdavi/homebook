@@ -95,6 +95,10 @@ function renderPrompt(q: Question): string {
       return `${q.event} (mya)`;
     case "numeric":
       return q.prompt;
+    case "geography":
+    case "history":
+    case "generalKnowledge":
+      return q.prompt;
   }
 }
 
@@ -346,6 +350,10 @@ export function renderExplanation(q: Question): string {
       return explainEvolution(q);
     case "numeric":
       return q.explanation;
+    case "geography":
+    case "history":
+    case "generalKnowledge":
+      return q.explanation;
   }
 }
 
@@ -363,6 +371,9 @@ const KIND_LABEL: Record<Question["kind"], string> = {
   peace: "History — peace",
   evolution: "Evolution",
   numeric: "Applied problem",
+  geography: "Geography",
+  history: "History",
+  generalKnowledge: "General knowledge",
 };
 
 // ── Digest: a stable JSON-ish shape we feed to the LLM and the template ─

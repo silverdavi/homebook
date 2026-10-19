@@ -165,6 +165,43 @@ function FractionInput({
   );
 }
 
+function ChoiceInput({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: number | null;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <div className="grid gap-2" role="radiogroup" aria-label="Answer choices">
+      {options.map((option, index) => {
+        const selected = value === index;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(index)}
+            className={`rounded-lg border px-4 py-3 text-left text-sm transition ${
+              selected
+                ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-900"
+                : "border-slate-300 bg-white text-slate-800 hover:border-indigo-300"
+            }`}
+          >
+            <span className="mr-2 font-mono text-slate-500">
+              {String.fromCharCode(65 + index)}.
+            </span>
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface Props {
   question: Question;
   answer: RawAnswer;
@@ -194,6 +231,18 @@ export function AnswerInput({ question, answer, onChange }: Props) {
           placeholder={placeholder}
           allowDecimal={question.kind === "evolution" || question.kind === "numeric"}
           onChange={(value) => onChange({ kind: "integer", value })}
+        />
+      );
+    }
+    case "geography":
+    case "history":
+    case "generalKnowledge": {
+      const value = answer.kind === "integer" ? answer.value : null;
+      return (
+        <ChoiceInput
+          options={question.options}
+          value={value}
+          onChange={(next) => onChange({ kind: "integer", value: next })}
         />
       );
     }

@@ -5,6 +5,7 @@ import {
   Laptop,
   ListChecks,
   Printer,
+  Sparkles,
 } from "lucide-react";
 import type { DayPlan as DayPlanData } from "@/lib/daily/types";
 
@@ -51,6 +52,32 @@ export function DayPlan({ plan }: Props) {
           )}
         </div>
       </div>
+
+      {plan.introduction && (
+        <div className="border-b border-indigo-200 bg-amber-50 px-5 py-5 sm:px-6">
+          <div className="flex items-start gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                New today — you are not expected to know this yet
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {plan.introduction.newToday}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                <strong>You already know:</strong> {plan.introduction.buildsOn}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                <strong>Why it matters:</strong>{" "}
+                {plan.introduction.whyItMatters}
+              </p>
+              <p className="mt-2 text-xs font-medium text-amber-800">
+                The first work block teaches it before asking you to use it.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 border-b border-indigo-200 px-5 py-4 sm:grid-cols-2 sm:px-6">
         <div className="flex gap-3 rounded-xl bg-white p-4">
@@ -160,4 +187,3 @@ export function DayPlan({ plan }: Props) {
     </section>
   );
 }
-

@@ -51,5 +51,15 @@ describe("canonical daily plans", () => {
       }
     }
   });
+
+  it("introduces each new subject before assigning it", () => {
+    for (const day of plannedDays.filter((item) => item.date >= "2026-10-16")) {
+      const introduction = getDayPlan(day.date)?.introduction;
+      expect(introduction, `${day.date} introduction`).toBeDefined();
+      expect(introduction?.newToday.length).toBeGreaterThan(20);
+      expect(introduction?.buildsOn.length).toBeGreaterThan(20);
+      expect(introduction?.whyItMatters.length).toBeGreaterThan(20);
+    }
+  });
 });
 

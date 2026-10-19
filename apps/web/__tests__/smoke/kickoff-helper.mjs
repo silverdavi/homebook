@@ -32,15 +32,17 @@ export async function runKickoff({
   subject,
   topic,
   material,
+  note,
 }) {
   const url = `https://teacher.ninja/daily/${date}`;
+  const noteText = note ? `${note}\n\n` : "";
   const text = `Yerachmiel —
 
 Today's complete plan is on the website. Start at 9:30.
 
 ${topic}
 
-${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.
+${noteText}${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.
 
 Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.
 
@@ -58,6 +60,7 @@ ${url}
 <p style="margin:0 0 14px 0;">Yerachmiel —</p>
 <p style="margin:0 0 14px 0;">Today&apos;s complete plan is on the website. <strong>Start at 9:30.</strong></p>
 <p style="margin:0 0 14px 0;">${topic}</p>
+${note ? `<p style="margin:0 0 14px 0;">${note}</p>` : ""}
 <p style="margin:0 0 14px 0;">${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.</p>
 <p style="margin:0 0 14px 0;">Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.</p>
 <p style="margin:18px 0;"><a href="${url}" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">${url.replace("https://", "")} →</a></p>

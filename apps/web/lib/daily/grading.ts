@@ -119,6 +119,20 @@ function gradeOne(question: Question, raw: RawAnswer): {
         userDisplay: `${fmtIntAnswer(raw.value)}${question.unit ? ` ${question.unit}` : ""}`,
       };
     }
+
+    case "geography":
+    case "history":
+    case "generalKnowledge": {
+      const expected = question.options[question.answerIndex];
+      if (raw.kind !== "integer" || raw.value === null) {
+        return { correct: false, expected, userDisplay: "(blank)" };
+      }
+      return {
+        correct: raw.value === question.answerIndex,
+        expected,
+        userDisplay: question.options[raw.value] ?? "(invalid choice)",
+      };
+    }
   }
 }
 
@@ -194,5 +208,9 @@ export function formatExpected(question: Question): string {
       return `${question.answerMya}`;
     case "numeric":
       return `${question.answer}${question.unit ? ` ${question.unit}` : ""}`;
+    case "geography":
+    case "history":
+    case "generalKnowledge":
+      return question.options[question.answerIndex];
   }
 }

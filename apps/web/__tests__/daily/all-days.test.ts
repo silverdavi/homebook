@@ -26,6 +26,10 @@ function correctRaw(q: Question): RawAnswer {
       return { kind: "integer", value: q.answer };
     case "numeric":
       return { kind: "integer", value: q.answer };
+    case "geography":
+    case "history":
+    case "generalKnowledge":
+      return { kind: "integer", value: q.answerIndex };
     case "evolution":
       return { kind: "integer", value: q.answerMya };
     case "fracAdd":
@@ -142,6 +146,17 @@ describe("WEEK structure", () => {
     for (const day of WEEK10) {
       for (const q of [...day.versionA, ...day.versionB]) {
         expect(q.kind).not.toBe("peace");
+      }
+    }
+  });
+
+  it("Tuesday–Friday restore tracked geography, history, and general knowledge", () => {
+    for (const day of WEEK10.slice(1)) {
+      for (const version of [day.versionA, day.versionB]) {
+        const kinds = version.map((q) => q.kind);
+        expect(kinds.filter((kind) => kind === "geography")).toHaveLength(2);
+        expect(kinds.filter((kind) => kind === "history")).toHaveLength(2);
+        expect(kinds.filter((kind) => kind === "generalKnowledge")).toHaveLength(2);
       }
     }
   });

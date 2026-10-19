@@ -102,5 +102,9 @@ export function PromptForQuestion({ question }: { question: Question }) {
           )}
         </span>
       );
+    case "geography":
+    case "history":
+    case "generalKnowledge":
+      return <span>{question.prompt}</span>;
   }
 }

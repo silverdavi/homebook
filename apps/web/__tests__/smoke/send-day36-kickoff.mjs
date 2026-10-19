@@ -5,5 +5,5 @@ await runKickoff({
   date: "2026-10-23",
   subject: "Day 36 — center and spread.",
   topic: "Mean, median, and range describe different parts of a data set.",
-  material: "The Friday Day 36 data sheet",
+  material: "The Friday Day 36 data and World sheets",
 });
