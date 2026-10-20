@@ -211,7 +211,7 @@ const versionB: Question[] = [
 
 export const day20261021: Day = {
   date: DATE,
-  title: "Day 34 — Perimeter and area, from zero",
+  title: "Day 34 — Perimeter and area: around vs. inside",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Perimeter and area", "Biomes", "Climate justice"],
   versionA,

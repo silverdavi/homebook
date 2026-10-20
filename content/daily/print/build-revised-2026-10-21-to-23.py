@@ -35,23 +35,54 @@ def header(c, sheet: Sheet, side: str):
     c.setFillColor(black)
 
 
+GUIDED = {
+    "area-perimeter": {
+        1: "4 + 3 + 4 + 3 = ____",
+        2: "6 + 2 + 6 + 2 = ____",
+        7: "4 × 3 = ____",
+        8: "6 × 2 = ____",
+    },
+}
+
+
 def geometry_picture(c):
-    x, y, cell = LEFT, 505, 42
-    c.setFillColor(HexColor("#eef2ff"))
+    x, y, cell = LEFT + 18, 535, 36
+    c.setStrokeColor(HexColor("#94a3b8"))
+    c.setLineWidth(0.8)
+    c.setFillColor(HexColor("#e0e7ff"))
     for row in range(3):
         for col in range(4):
             c.rect(x + col * cell, y + row * cell, cell, cell, fill=1, stroke=1)
+            c.setFillColor(HexColor("#4338ca"))
+            c.setFont("Helvetica-Bold", 9)
+            c.drawCentredString(
+                x + col * cell + cell / 2, y + row * cell + cell / 2 - 3,
+                str((2 - row) * 4 + col + 1),
+            )
+            c.setFillColor(HexColor("#e0e7ff"))
     c.setStrokeColor(HexColor("#f59e0b"))
-    c.setLineWidth(5)
+    c.setLineWidth(4)
     c.rect(x, y, 4 * cell, 3 * cell, fill=0, stroke=1)
     c.setFillColor(black)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(x, y - 20, "4 columns × 3 rows = 12 square units inside")
-    c.drawString(x + 205, y + 106, "Outside edge:")
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(x + 2 * cell, y - 13, "4 cm")
+    c.drawRightString(x - 6, y + 1.5 * cell - 3, "3 cm")
+
+    tx = x + 4 * cell + 36
+    c.setFillColor(HexColor("#b45309"))
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(tx, y + 92, "PERIMETER = AROUND  (orange edge)")
+    c.setFillColor(black)
     c.setFont("Helvetica", 10)
-    c.drawString(x + 205, y + 88, "4 + 3 + 4 + 3 = 14 units")
-    c.drawString(x + 205, y + 58, "Perimeter = around")
-    c.drawString(x + 205, y + 40, "Area = inside")
+    c.drawString(tx, y + 76, "Add the 4 sides:  4 + 3 + 4 + 3 = 14 cm")
+    c.drawString(tx, y + 62, "Like a fence around a yard.")
+    c.setFillColor(HexColor("#4338ca"))
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(tx, y + 34, "AREA = INSIDE  (numbered squares)")
+    c.setFillColor(black)
+    c.setFont("Helvetica", 10)
+    c.drawString(tx, y + 18, "Count 12 squares, or 4 × 3 = 12 cm²")
+    c.drawString(tx, y + 4, "Like carpet covering a floor.")
 
 
 def number_line(c):
@@ -80,24 +111,35 @@ def practice_page(c, sheet: Sheet):
 
     if sheet.slug == "area-perimeter":
         geometry_picture(c)
-        y = 475
+        y = 485
     elif sheet.slug == "integers":
         number_line(c)
         y = 555
     else:
         y = H - 158
 
-    c.setFont("Helvetica", 10)
+    guided = GUIDED.get(sheet.slug, {})
     for index, (prompt, _answer) in enumerate(sheet.rows, start=1):
         if index == 7:
-            y -= 10
+            y -= 8
             c.setStrokeColor(HexColor("#cbd5e1"))
+            c.setLineWidth(0.8)
             c.line(LEFT, y, RIGHT, y)
-            y -= 23
+            y -= 21
+        c.setFillColor(black)
+        c.setFont("Helvetica", 10)
         c.drawString(LEFT, y, f"{index}. {prompt}")
+        if index in guided:
+            c.setFillColor(HexColor("#047857"))
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(LEFT + 255, y, "GUIDED")
+            c.setFont("Helvetica", 10)
+            c.drawString(LEFT + 300, y, guided[index])
+            c.setFillColor(black)
         c.setStrokeColor(HexColor("#94a3b8"))
-        c.line(RIGHT - 120, y - 2, RIGHT, y - 2)
-        y -= 29
+        c.setLineWidth(0.8)
+        c.line(RIGHT - 90, y - 2, RIGHT, y - 2)
+        y -= 27
 
     c.setFont("Helvetica-Oblique", 8.5)
     c.setFillColor(HexColor("#475569"))
@@ -123,7 +165,7 @@ SHEETS = [
     Sheet(
         "2026-10-21",
         34,
-        "Perimeter and area — from zero",
+        "Perimeter and area — around vs. inside",
         "area-perimeter",
         "Perimeter: add all 4 sides.  Area: length × width.  Never divide.",
         [

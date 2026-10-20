@@ -189,7 +189,7 @@ function ChoiceInput({
             onClick={() => onChange(index)}
             className={`rounded-lg border px-4 py-3 text-left text-sm transition ${
               selected
-                ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-900 dark:border-indigo-400 dark:bg-indigo-950 dark:text-indigo-100"
+                ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-900 dark:border-indigo-300 dark:bg-indigo-600 dark:text-white"
                 : "border-slate-300 bg-white text-slate-800 hover:border-indigo-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-indigo-500"
             }`}
           >

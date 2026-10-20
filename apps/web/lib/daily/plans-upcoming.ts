@@ -247,7 +247,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     extraMaterials: ["World • Wednesday biomes and climate sheet"],
     introduction: {
       newToday:
-        "Perimeter and area are being retaught from the beginning; nothing from Tuesday is assumed.",
+        "Perimeter and area, slowly and from the beginning. Start with the “Around vs. inside” animation just below this schedule.",
       buildsOn:
         "Addition, multiplication, and recognizing the four sides of a rectangle.",
       whyItMatters:
@@ -255,12 +255,13 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     learn: {
       title: "See around versus inside",
-      read: "Use both views in the animation, then read the perimeter-and-area explanation below.",
+      read: "Play all 3 steps of the “Around vs. inside” animation below, then read the short explanation under it.",
       readDone: "You can say perimeter means around and area means inside.",
       example:
         "Trace a 4-by-3 rectangle, then draw and count its 12 inside squares.",
       exampleDone: "The drawing shows perimeter 14 cm and area 12 cm².",
-      practice: "Do only the 4 guided examples on the restart sheet.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 2, 7, 8).",
       practiceDone:
         "Each answer names perimeter or area and includes the correct unit.",
     },
