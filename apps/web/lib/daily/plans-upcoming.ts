@@ -53,8 +53,16 @@ function fullDay(copy: Copy): DayPlan {
         title: copy.learn.title,
         steps: [
           { minutes: 8, task: copy.learn.read, doneWhen: copy.learn.readDone },
-          { minutes: 12, task: copy.learn.example, doneWhen: copy.learn.exampleDone },
-          { minutes: 15, task: copy.learn.practice, doneWhen: copy.learn.practiceDone },
+          {
+            minutes: 12,
+            task: copy.learn.example,
+            doneWhen: copy.learn.exampleDone,
+          },
+          {
+            minutes: 15,
+            task: copy.learn.practice,
+            doneWhen: copy.learn.practiceDone,
+          },
           {
             minutes: 5,
             task: "Check that work with the answer side.",
@@ -68,9 +76,21 @@ function fullDay(copy: Copy): DayPlan {
         time: "10:30–11:10",
         title: copy.practice.title,
         steps: [
-          { minutes: 20, task: copy.practice.finish, doneWhen: copy.practice.finishDone },
-          { minutes: 10, task: copy.practice.check, doneWhen: copy.practice.checkDone },
-          { minutes: 10, task: copy.practice.correct, doneWhen: copy.practice.correctDone },
+          {
+            minutes: 20,
+            task: copy.practice.finish,
+            doneWhen: copy.practice.finishDone,
+          },
+          {
+            minutes: 10,
+            task: copy.practice.check,
+            doneWhen: copy.practice.checkDone,
+          },
+          {
+            minutes: 10,
+            task: copy.practice.correct,
+            doneWhen: copy.practice.correctDone,
+          },
         ],
       },
       { kind: "break", time: "11:10–11:30", title: "Break. No phone." },
@@ -79,9 +99,17 @@ function fullDay(copy: Copy): DayPlan {
         time: "11:30–12:10",
         title: copy.apply.title,
         steps: [
-          { minutes: 10, task: copy.apply.review, doneWhen: copy.apply.reviewDone },
+          {
+            minutes: 10,
+            task: copy.apply.review,
+            doneWhen: copy.apply.reviewDone,
+          },
           { minutes: 20, task: copy.apply.task, doneWhen: copy.apply.taskDone },
-          { minutes: 10, task: copy.apply.explain, doneWhen: copy.apply.explainDone },
+          {
+            minutes: 10,
+            task: copy.apply.explain,
+            doneWhen: copy.apply.explainDone,
+          },
         ],
       },
       { kind: "break", time: "12:10–12:30", title: "Break. No phone." },
@@ -102,9 +130,11 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
   "2026-10-16": fullDay({
     material: "Friday • Day 31 double-sided percentages sheet",
     introduction: {
-      newToday: "Percent is a new way to describe a part as an amount out of 100.",
+      newToday:
+        "Percent is a new way to describe a part as an amount out of 100.",
       buildsOn: "Fractions, division, and the 10-times pattern.",
-      whyItMatters: "Discounts, tips, taxes, polls, and statistics all use percentages.",
+      whyItMatters:
+        "Discounts, tips, taxes, polls, and statistics all use percentages.",
     },
     learn: {
       title: "Build percent anchors",
@@ -130,7 +160,8 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       reviewDone: "All 4 shortcuts are written correctly.",
       task: "Create 4 price tags and calculate a different discount on each.",
       taskDone: "4 original prices, discounts, and final prices are written.",
-      explain: "Write 2 sentences explaining discount amount versus final price.",
+      explain:
+        "Write 2 sentences explaining discount amount versus final price.",
       explainDone: "Both quantities are distinguished clearly.",
     },
   }),
@@ -138,7 +169,8 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     material: "Monday • Day 32 double-sided unit-rate sheet",
     introduction: {
       newToday: "A unit rate compares an amount to exactly 1 unit.",
-      buildsOn: "Division and reading units such as miles, hours, dollars, and items.",
+      buildsOn:
+        "Division and reading units such as miles, hours, dollars, and items.",
       whyItMatters: "Unit rates let you compare prices and speeds fairly.",
     },
     learn: {
@@ -173,9 +205,12 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     material: "Tuesday • Day 33 double-sided geometry sheet and ruler",
     extraMaterials: ["World • Tuesday maps and flags sheet"],
     introduction: {
-      newToday: "Geometry uses different measurements for a boundary, a flat surface, and space inside a box.",
-      buildsOn: "Multiplication, addition, and recognizing rectangles and triangles.",
-      whyItMatters: "Building, maps, rooms, screens, fabric, and storage all require the right measurement.",
+      newToday:
+        "Geometry uses different measurements for a boundary, a flat surface, and space inside a box.",
+      buildsOn:
+        "Multiplication, addition, and recognizing rectangles and triangles.",
+      whyItMatters:
+        "Building, maps, rooms, screens, fabric, and storage all require the right measurement.",
     },
     learn: {
       title: "Around, across, and inside",
@@ -197,120 +232,145 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     apply: {
       title: "World: maps, flags, and power",
-      review: "Read the World block below and locate Japan, Brazil, Canada, and South Africa on the printed map.",
+      review:
+        "Read the World block below and locate Japan, Brazil, Canada, and South Africa on the printed map.",
       reviewDone: "All 4 countries and continents are labeled.",
       task: "Complete Tuesday's flags, hemispheres, and map-projection questions on the World sheet.",
       taskDone: "Every Tuesday World question has an answer.",
-      explain: "Write who can gain or lose when a map or border is treated as neutral.",
+      explain:
+        "Write who can gain or lose when a map or border is treated as neutral.",
       explainDone: "One complete sentence mentions people and power.",
     },
   }),
   "2026-10-21": fullDay({
-    material: "Wednesday • Day 34 double-sided density sheet",
+    material: "Wednesday • Day 34 perimeter-and-area restart sheet and ruler",
     extraMaterials: ["World • Wednesday biomes and climate sheet"],
     introduction: {
-      newToday: "Density measures how much mass is packed into each unit of volume.",
-      buildsOn: "Tuesday's volume, Monday's unit rates, multiplication, and division.",
-      whyItMatters: "Density helps explain why materials feel heavy and why some objects float.",
+      newToday:
+        "Perimeter and area are being retaught from the beginning; nothing from Tuesday is assumed.",
+      buildsOn:
+        "Addition, multiplication, and recognizing the four sides of a rectangle.",
+      whyItMatters:
+        "Rooms, screens, fences, floors, maps, and building plans require the correct measurement.",
     },
     learn: {
-      title: "Pack mass into volume",
-      read: "Read the density, mass, and volume examples below.",
-      readDone: "You can state all 3 rearranged rules.",
-      example: "Copy one example for density, mass, and volume.",
-      exampleDone: "3 equations with units are written.",
-      practice: "Do density questions 1–4 on the practice side.",
-      practiceDone: "4 answers include the correct units.",
+      title: "See around versus inside",
+      read: "Use both views in the animation, then read the perimeter-and-area explanation below.",
+      readDone: "You can say perimeter means around and area means inside.",
+      example:
+        "Trace a 4-by-3 rectangle, then draw and count its 12 inside squares.",
+      exampleDone: "The drawing shows perimeter 14 cm and area 12 cm².",
+      practice: "Do only the 4 guided examples on the restart sheet.",
+      practiceDone:
+        "Each answer names perimeter or area and includes the correct unit.",
     },
     practice: {
-      title: "Find the missing quantity",
-      finish: "Finish questions 5–10 with the answers face down.",
-      finishDone: "All 10 missing quantities are calculated.",
-      check: "Check the operation and unit for every answer.",
-      checkDone: "All 10 are checked.",
-      correct: "Redo each miss from the written rule.",
-      correctDone: "Each missed problem is corrected.",
+      title: "Practice one idea at a time",
+      finish:
+        "Finish the perimeter section first; then finish the separate area section.",
+      finishDone: "All 12 problems show work and use cm or cm² correctly.",
+      check: "Check one section at a time with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct: "Redo each miss by drawing the edge or the inside squares.",
+      correctDone: "Every miss has a corrected drawing, calculation, and unit.",
     },
     apply: {
       title: "World: biomes and climate justice",
-      review: "Read the World block and underline one defining feature of tundra, desert, rainforest, and grassland.",
+      review:
+        "Read the World block and underline one defining feature of tundra, desert, rainforest, and grassland.",
       reviewDone: "All 4 biomes have one correct feature.",
       task: "Complete Wednesday's biome and climate-justice questions on the World sheet.",
       taskDone: "Every Wednesday World question has an answer.",
-      explain: "Write why climate harm and responsibility are not distributed equally.",
-      explainDone: "One complete sentence connects emissions, power, and exposure.",
+      explain:
+        "Write why climate harm and responsibility are not distributed equally.",
+      explainDone:
+        "One complete sentence connects emissions, power, and exposure.",
     },
   }),
   "2026-10-22": fullDay({
-    material: "Thursday • Day 35 double-sided integers sheet",
+    material: "Thursday • Day 35 double-sided density sheet",
     extraMaterials: ["World • Thursday flags, borders, and migration sheet"],
     introduction: {
-      newToday: "Integers extend the number line below zero.",
-      buildsOn: "Addition, subtraction, and moving left or right on a line.",
-      whyItMatters: "Temperatures, debts, elevations, and score changes all cross zero.",
+      newToday:
+        "Density measures the amount of mass packed into each unit of volume.",
+      buildsOn:
+        "Wednesday's area, multiplication, division, and reading measurement units.",
+      whyItMatters:
+        "Density helps explain why materials feel heavy and why some objects float.",
     },
     learn: {
-      title: "Move on the number line",
-      read: "Read the integer and temperature examples below.",
-      readDone: "You can explain adding as right and subtracting as left.",
-      example: "Draw a number line from −15 to 15 and copy 2 examples.",
-      exampleDone: "The line and both moves are shown.",
-      practice: "Do integer questions 1–5 on the practice side.",
-      practiceDone: "5 signed answers are written.",
+      title: "Learn one density rule",
+      read: "Read the density explanation and the worked mass-divided-by-volume example below.",
+      readDone: "You can explain density as mass in each cm³.",
+      example: "Copy and label the 24 g ÷ 6 cm³ example.",
+      exampleDone:
+        "The calculation ends with 4 g/cm³ and a written interpretation.",
+      practice: "Do density questions 1–4 on the practice side.",
+      practiceDone: "4 answers show division and include g/cm³.",
     },
     practice: {
-      title: "Keep the minus sign",
-      finish: "Finish questions 6–12 with the answers face down.",
-      finishDone: "All 12 integer answers are written.",
-      check: "Check each move on the number line.",
-      checkDone: "Every answer is marked right or circled.",
-      correct: "Redo each miss by drawing its start and movement.",
-      correctDone: "Every miss has a corrected number-line move.",
+      title: "Density first, then mass",
+      finish:
+        "Finish the remaining density problems, then use mass = density × volume.",
+      finishDone: "All 12 answers show the operation and unit.",
+      check:
+        "Check whether each problem asks for density or mass before checking the arithmetic.",
+      checkDone: "Every operation and unit is checked.",
+      correct: "Redo each miss from the named rule at the top of its section.",
+      correctDone:
+        "Each missed problem has a corrected rule, calculation, and unit.",
     },
     apply: {
       title: "World: flags, borders, and migration",
-      review: "Read the World block and identify the 4 flags on Thursday's World sheet.",
+      review:
+        "Read the World block and identify the 4 flags on Thursday's World sheet.",
       reviewDone: "Ukraine, Israel, Palestine, and South Africa are labeled.",
       task: "Complete Thursday's state, nation, refugee, and border questions.",
       taskDone: "Every Thursday World question has an answer.",
-      explain: "Write why studying migration requires listening to people, not only governments.",
+      explain:
+        "Write why studying migration requires listening to people, not only governments.",
       explainDone: "One complete sentence mentions lived experience.",
     },
   }),
   "2026-10-23": fullDay({
-    material: "Friday • Day 36 double-sided data sheet",
+    material: "Friday • Day 36 double-sided integers sheet",
     extraMaterials: ["World • Friday current-crises sheet"],
     introduction: {
-      newToday: "Mean, median, and range describe the center and spread of a set of numbers.",
-      buildsOn: "Adding, dividing, ordering numbers, and subtraction.",
-      whyItMatters: "News, science, sports, and public policy use data summaries to make claims.",
+      newToday: "Integers extend the number line below zero.",
+      buildsOn:
+        "Addition, subtraction, temperature, and moving left or right on a line.",
+      whyItMatters:
+        "Temperatures, debts, elevations, and score changes can all cross zero.",
     },
     learn: {
-      title: "Center and spread",
-      read: "Read the mean, median, and range examples below.",
-      readDone: "You can state the procedure for all 3.",
-      example: "Copy the worked data set and calculate all 3 measures.",
-      exampleDone: "Mean, median, and range are labeled.",
-      practice: "Do data sets 1–3 on the practice side.",
-      practiceDone: "Each set has 3 labeled answers.",
+      title: "Move through zero",
+      read: "Read the number-line and temperature examples below.",
+      readDone: "You can explain positive as right and negative as left.",
+      example: "Draw a number line from −15 to 15 and copy the 2 worked moves.",
+      exampleDone: "Both starts, directions, and ending numbers are shown.",
+      practice: "Do integer questions 1–5 on the practice side.",
+      practiceDone: "5 signed answers are shown on the number line.",
     },
     practice: {
-      title: "Do not mix the measures",
-      finish: "Finish data sets 4–6 with the answers face down.",
-      finishDone: "All 6 sets have mean, median, and range.",
-      check: "Check each sum, ordered list, and subtraction.",
-      checkDone: "All 18 results are checked.",
-      correct: "Redo each miss using the named procedure.",
-      correctDone: "Every miss has corrected work.",
+      title: "Keep the minus sign",
+      finish: "Finish questions 6–12, then complete the temperature section.",
+      finishDone: "All integer and temperature answers are written.",
+      check: "Check each answer by replaying its movement on the number line.",
+      checkDone: "Every answer is marked right or circled.",
+      correct: "Redo each miss by drawing its start, direction, and endpoint.",
+      correctDone: "Every miss has a corrected number-line move.",
     },
     apply: {
       title: "World: current crises",
-      review: "Read the dated World block and locate Ukraine, Sudan, Gaza, and Myanmar.",
+      review:
+        "Read the dated World block and locate Ukraine, Sudan, Gaza, and Myanmar.",
       reviewDone: "All 4 places are labeled on Friday's World sheet.",
       task: "Complete Friday's current-crises questions, separating place, cause, and civilian impact.",
       taskDone: "Every Friday World question has an answer.",
-      explain: "Write the 4 principles used on this page to evaluate a conflict.",
-      explainDone: "Civilian protection, human rights, self-determination, and aid are present.",
+      explain:
+        "Write the 4 principles used on this page to evaluate a conflict.",
+      explainDone:
+        "Civilian protection, human rights, self-determination, and aid are present.",
     },
   }),
 };

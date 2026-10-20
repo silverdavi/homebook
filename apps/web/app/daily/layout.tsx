@@ -16,40 +16,38 @@ export default function DailyLayout({
 }) {
   return (
     <DailyProviders>
-      <div className="min-h-screen bg-slate-50/40">
-        <nav className="border-b border-slate-100 bg-white">
+      <div className="min-h-screen bg-slate-50/40 transition-colors dark:bg-slate-950">
+        <nav className="border-b border-slate-100 bg-white transition-colors dark:border-slate-800 dark:bg-slate-950">
           <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
             <Link
               href="/daily"
-              className="font-display text-xl font-bold text-slate-800"
+              className="font-display text-xl font-bold text-slate-800 dark:text-slate-100"
             >
               Daily<span className="text-indigo-600">.</span>
             </Link>
             <div className="flex items-center gap-4 text-sm">
               <Link
                 href="/daily/principles"
-                className="text-slate-500 hover:text-slate-700"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 The trial
               </Link>
               <Link
                 href="/fractions"
-                className="text-slate-500 hover:text-slate-700"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 Fractions Lab
               </Link>
               <Link
                 href="/games/progress"
-                className="text-slate-500 hover:text-slate-700"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 Profile
               </Link>
             </div>
           </div>
         </nav>
-        <main className="mx-auto max-w-3xl px-6 py-8 md:py-12">
-          {children}
-        </main>
+        <main className="mx-auto max-w-3xl px-6 py-8 md:py-12">{children}</main>
         <BugReportButton />
       </div>
     </DailyProviders>

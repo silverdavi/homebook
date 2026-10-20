@@ -18,10 +18,10 @@ export default async function ExamPage({ params }: PageProps) {
   return (
     <div className="space-y-4">
       <header className="mb-2">
-        <p className="text-xs uppercase tracking-wide text-indigo-600 font-semibold mb-1">
+        <p className="text-xs uppercase tracking-wide text-indigo-600 font-semibold mb-1 dark:text-indigo-400">
           {date} — Version {version.toUpperCase()}
         </p>
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900">
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
           {day.title}
         </h1>
       </header>

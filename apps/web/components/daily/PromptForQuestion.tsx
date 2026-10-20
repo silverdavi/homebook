@@ -18,10 +18,12 @@ export function PromptForQuestion({ question }: { question: Question }) {
     case "lcm":
       return (
         <span>
-          <span className="font-mono">{question.kind === "gcf" ? "GCF" : "LCM"}</span>
+          <span className="font-mono">
+            {question.kind === "gcf" ? "GCF" : "LCM"}
+          </span>
           (<span className="font-mono">{question.a}</span>,{" "}
           <span className="font-mono">{question.b}</span>) ={" "}
-          <span className="text-slate-400">?</span>
+          <span className="text-slate-400 dark:text-slate-500">?</span>
         </span>
       );
     case "fracAdd":
@@ -30,18 +32,19 @@ export function PromptForQuestion({ question }: { question: Question }) {
     case "fracDiv":
       return (
         <span className="font-mono">
-          {fmtFrac(question.x)} {KIND_VERB[question.kind]} {fmtFrac(question.y)} ={" "}
-          <span className="text-slate-400">?</span>
+          {fmtFrac(question.x)} {KIND_VERB[question.kind]} {fmtFrac(question.y)}{" "}
+          = <span className="text-slate-400 dark:text-slate-500">?</span>
         </span>
       );
     case "fracInverse": {
-      const v = typeof question.value === "number"
-        ? `${question.value}`
-        : fmtFrac(question.value);
+      const v =
+        typeof question.value === "number"
+          ? `${question.value}`
+          : fmtFrac(question.value);
       return (
         <span>
           Inverse of <span className="font-mono font-semibold">{v}</span> ={" "}
-          <span className="text-slate-400">?</span>
+          <span className="text-slate-400 dark:text-slate-500">?</span>
         </span>
       );
     }
@@ -49,7 +52,7 @@ export function PromptForQuestion({ question }: { question: Question }) {
       return (
         <span className="font-mono">
           {question.a} × {question.b} ={" "}
-          <span className="text-slate-400">?</span>
+          <span className="text-slate-400 dark:text-slate-500">?</span>
         </span>
       );
     case "periodic": {
@@ -65,7 +68,10 @@ export function PromptForQuestion({ question }: { question: Question }) {
         <span>
           How many <span className="font-semibold">{askLabel}</span> in{" "}
           <span className="font-mono font-semibold">{question.symbol}</span>{" "}
-          <span className="text-slate-500">({question.elementName})</span>?
+          <span className="text-slate-500 dark:text-slate-400">
+            ({question.elementName})
+          </span>
+          ?
         </span>
       );
     }
@@ -86,9 +92,9 @@ export function PromptForQuestion({ question }: { question: Question }) {
     case "evolution":
       return (
         <span>
-          About how many <span className="font-semibold">million years ago</span>{" "}
-          did this happen:{" "}
-          <span className="font-semibold">{question.event}</span>?
+          About how many{" "}
+          <span className="font-semibold">million years ago</span> did this
+          happen: <span className="font-semibold">{question.event}</span>?
         </span>
       );
     case "numeric":
@@ -96,7 +102,7 @@ export function PromptForQuestion({ question }: { question: Question }) {
         <span>
           {question.prompt}
           {question.unit && (
-            <span className="ml-1 text-slate-500">
+            <span className="ml-1 text-slate-500 dark:text-slate-400">
               Answer in {question.unit}.
             </span>
           )}

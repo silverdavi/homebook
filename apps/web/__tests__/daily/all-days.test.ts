@@ -104,7 +104,11 @@ describe("WEEK structure", () => {
   });
 
   it("week 7 covers Sep 29–Oct 1 with no peace questions", () => {
-    expect(WEEK7.map((d) => d.date)).toEqual(["2026-09-29", "2026-09-30", "2026-10-01"]);
+    expect(WEEK7.map((d) => d.date)).toEqual([
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+    ]);
     for (const day of WEEK7) {
       for (const q of [...day.versionA, ...day.versionB]) {
         expect(q.kind).not.toBe("peace");
@@ -156,7 +160,29 @@ describe("WEEK structure", () => {
         const kinds = version.map((q) => q.kind);
         expect(kinds.filter((kind) => kind === "geography")).toHaveLength(2);
         expect(kinds.filter((kind) => kind === "history")).toHaveLength(2);
-        expect(kinds.filter((kind) => kind === "generalKnowledge")).toHaveLength(2);
+        expect(
+          kinds.filter((kind) => kind === "generalKnowledge"),
+        ).toHaveLength(2);
+      }
+    }
+  });
+
+  it("Wednesday reteaches only rectangle perimeter and area before testing", () => {
+    const wednesday = WEEK10.find((day) => day.date === "2026-10-21");
+    expect(wednesday).toBeDefined();
+    for (const version of [
+      wednesday?.versionA ?? [],
+      wednesday?.versionB ?? [],
+    ]) {
+      const mathQuestions = version.filter(
+        (question) => question.kind === "numeric",
+      );
+      expect(mathQuestions).toHaveLength(12);
+      for (const question of mathQuestions) {
+        if (question.kind !== "numeric") continue;
+        expect(question.prompt).toMatch(/rectangle/i);
+        expect(question.prompt).toMatch(/area|perimeter/i);
+        expect(question.prompt).not.toMatch(/triangle|volume|density/i);
       }
     }
   });

@@ -4,13 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/lib/games/profile-context";
-import type {
-  ClientAnswer,
-  ExamVersion,
-  Question,
-} from "@/lib/daily/types";
+import type { ClientAnswer, ExamVersion, Question } from "@/lib/daily/types";
 import { QuestionCard } from "./QuestionCard";
-import { ArrowLeft, AlertTriangle, Send, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  AlertTriangle,
+  Send,
+  Loader2,
+  Moon,
+  Sun,
+} from "lucide-react";
 
 interface Props {
   date: string;
@@ -65,10 +68,32 @@ export function ExamRunner({ date, version, questions }: Props) {
   const [answers, setAnswers] = useState<ClientAnswer[]>(initial);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(true);
+  const [themeReady, setThemeReady] = useState(false);
   const [conflict, setConflict] = useState<{
     score: number;
     total: number;
   } | null>(null);
+
+  useEffect(() => {
+    try {
+      setDarkMode(localStorage.getItem("daily-exam-theme") !== "light");
+    } catch {
+      setDarkMode(true);
+    }
+    setThemeReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!themeReady) return;
+    document.documentElement.classList.toggle("dark", darkMode);
+    try {
+      localStorage.setItem("daily-exam-theme", darkMode ? "dark" : "light");
+    } catch {
+      // ignore
+    }
+    return () => document.documentElement.classList.remove("dark");
+  }, [darkMode, themeReady]);
 
   // Restore draft from localStorage if present.
   useEffect(() => {
@@ -176,14 +201,18 @@ export function ExamRunner({ date, version, questions }: Props) {
 
   if (isLoading) {
     return (
-      <div className="text-slate-500">Loading your profile…</div>
+      <div className="text-slate-500 dark:text-slate-400">
+        Loading your profile…
+      </div>
     );
   }
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
-        <p className="font-semibold mb-2">You need to be signed in to take the exam.</p>
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+        <p className="font-semibold mb-2">
+          You need to be signed in to take the exam.
+        </p>
         <p className="text-sm">
           Go to{" "}
           <Link href="/games/progress" className="underline">
@@ -201,29 +230,46 @@ export function ExamRunner({ date, version, questions }: Props) {
       <div className="flex items-center justify-between gap-3">
         <Link
           href={`/daily/${date}`}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to today&apos;s brief
         </Link>
-        <div className="text-xs text-slate-500">
-          Version{" "}
-          <span className="font-bold uppercase text-slate-700">{version}</span>
-          {" · "}
-          <span className="font-mono">
-            {filledCount} / {questions.length}
-          </span>{" "}
-          answered
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setDarkMode((current) => !current)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            aria-label={darkMode ? "Use light mode" : "Use dark mode"}
+          >
+            {darkMode ? (
+              <Sun className="h-3.5 w-3.5" />
+            ) : (
+              <Moon className="h-3.5 w-3.5" />
+            )}
+            {darkMode ? "Light mode" : "Dark mode"}
+          </button>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Version{" "}
+            <span className="font-bold uppercase text-slate-700 dark:text-slate-200">
+              {version}
+            </span>
+            {" · "}
+            <span className="font-mono">
+              {filledCount} / {questions.length}
+            </span>{" "}
+            answered
+          </div>
         </div>
       </div>
 
-      <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+      <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
         <div className="flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <div>
-            One attempt only. You may go back to the brief, but once you
-            submit you can&apos;t retake today. Use the <em>Note</em> field
-            on any question that&apos;s confusing.
+            One attempt only. You may go back to the brief, but once you submit
+            you can&apos;t retake today. Use the <em>Note</em> field on any
+            question that&apos;s confusing.
           </div>
         </div>
       </div>
@@ -242,10 +288,10 @@ export function ExamRunner({ date, version, questions }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
           {error}
           {conflict && (
-            <div className="mt-1 text-red-700">
+            <div className="mt-1 text-red-700 dark:text-red-300">
               Existing score:{" "}
               <span className="font-mono">
                 {conflict.score} / {conflict.total}
@@ -263,8 +309,8 @@ export function ExamRunner({ date, version, questions }: Props) {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-200 pt-5">
-        <div className="text-sm text-slate-500">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-800">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
           Answered{" "}
           <span className="font-mono font-semibold">
             {filledCount} / {questions.length}

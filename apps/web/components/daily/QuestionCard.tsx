@@ -24,21 +24,27 @@ interface Props {
   onChange: (patch: Partial<ClientAnswer>) => void;
 }
 
-export function QuestionCard({ index, total, question, state, onChange }: Props) {
+export function QuestionCard({
+  index,
+  total,
+  question,
+  state,
+  onChange,
+}: Props) {
   const setRaw = (raw: RawAnswer) => onChange({ raw });
   const setNote = (note: string) => onChange({ note });
   const markUsedHelp = () => onChange({ usedHelp: true });
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 shadow-paper">
+    <div className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 shadow-paper transition-colors dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+        <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold dark:text-slate-400">
           Question {index + 1} of {total}
         </div>
         <HelpLink href={question.helpHref} onUsed={markUsedHelp} />
       </div>
 
-      <div className="text-lg text-slate-900 mb-5 leading-relaxed">
+      <div className="text-lg text-slate-900 mb-5 leading-relaxed dark:text-slate-100">
         <PromptForQuestion question={question} />
       </div>
 
@@ -49,9 +55,9 @@ export function QuestionCard({ index, total, question, state, onChange }: Props)
       <NoteField value={state.note} onChange={setNote} />
 
       {state.usedHelp && (
-        <div className="mt-2 text-[11px] text-slate-400 italic">
-          You opened the lesson while working on this question. That&apos;s
-          fine — we just track it for the records.
+        <div className="mt-2 text-[11px] text-slate-400 italic dark:text-slate-500">
+          You opened the lesson while working on this question. That&apos;s fine
+          — we just track it for the records.
         </div>
       )}
     </div>

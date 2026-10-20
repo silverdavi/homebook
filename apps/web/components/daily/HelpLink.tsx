@@ -14,7 +14,7 @@ export function HelpLink({ href, onUsed }: Props) {
       href={href}
       target="_blank"
       onClick={onUsed}
-      className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
     >
       <LifeBuoy className="w-3.5 h-3.5" />
       Need help? Open the lesson in a new tab.

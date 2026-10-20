@@ -62,11 +62,13 @@ function IntegerInput({
         value={value === null ? "" : `${value}`}
         placeholder={placeholder}
         onChange={(e) => onChange(parseSignedInt(e.target.value))}
-        className="w-32 rounded-md border border-slate-300 px-3 py-2 text-lg font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+        className="w-32 rounded-md border border-slate-300 bg-white px-3 py-2 text-lg font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
       />
     );
   }
-  return <DecimalInput value={value} onChange={onChange} placeholder={placeholder} />;
+  return (
+    <DecimalInput value={value} onChange={onChange} placeholder={placeholder} />
+  );
 }
 
 /**
@@ -120,7 +122,7 @@ function DecimalInput({
         setText(cleaned);
         onChange(parseSignedDecimal(cleaned));
       }}
-      className="w-32 rounded-md border border-slate-300 px-3 py-2 text-lg font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+      className="w-32 rounded-md border border-slate-300 bg-white px-3 py-2 text-lg font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
     />
   );
 }
@@ -147,9 +149,9 @@ function FractionInput({
         placeholder="num"
         aria-label="Numerator"
         onChange={(e) => onChange({ num: parse(e.target.value), den })}
-        className="w-24 rounded-md border border-slate-300 px-3 py-2 text-center font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+        className="w-24 rounded-md border border-slate-300 bg-white px-3 py-2 text-center font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
       />
-      <div className="my-1 h-[2px] w-20 bg-slate-400" />
+      <div className="my-1 h-[2px] w-20 bg-slate-400 dark:bg-slate-500" />
       <input
         type="text"
         inputMode="numeric"
@@ -159,7 +161,7 @@ function FractionInput({
         placeholder="den"
         aria-label="Denominator"
         onChange={(e) => onChange({ num, den: parse(e.target.value) })}
-        className="w-24 rounded-md border border-slate-300 px-3 py-2 text-center font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+        className="w-24 rounded-md border border-slate-300 bg-white px-3 py-2 text-center font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
       />
     </div>
   );
@@ -187,11 +189,11 @@ function ChoiceInput({
             onClick={() => onChange(index)}
             className={`rounded-lg border px-4 py-3 text-left text-sm transition ${
               selected
-                ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-900"
-                : "border-slate-300 bg-white text-slate-800 hover:border-indigo-300"
+                ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-900 dark:border-indigo-400 dark:bg-indigo-950 dark:text-indigo-100"
+                : "border-slate-300 bg-white text-slate-800 hover:border-indigo-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-indigo-500"
             }`}
           >
-            <span className="mr-2 font-mono text-slate-500">
+            <span className="mr-2 font-mono text-slate-500 dark:text-slate-400">
               {String.fromCharCode(65 + index)}.
             </span>
             {option}
@@ -229,7 +231,9 @@ export function AnswerInput({ question, answer, onChange }: Props) {
         <IntegerInput
           value={v}
           placeholder={placeholder}
-          allowDecimal={question.kind === "evolution" || question.kind === "numeric"}
+          allowDecimal={
+            question.kind === "evolution" || question.kind === "numeric"
+          }
           onChange={(value) => onChange({ kind: "integer", value })}
         />
       );
