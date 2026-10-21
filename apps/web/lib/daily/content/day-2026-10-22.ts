@@ -2,7 +2,7 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ } from "./banks/choice";
+import { choiceQ, shuffleChoices } from "./banks/choice";
 
 const DATE = "2026-10-22";
 const HELP = `/daily/${DATE}`;
@@ -229,6 +229,6 @@ export const day20261022: Day = {
   title: "Day 35 — Density, one rule at a time",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Density", "Flags and borders", "Migration"],
-  versionA,
-  versionB,
+  versionA: shuffleChoices(versionA, DATE),
+  versionB: shuffleChoices(versionB, DATE),
 };

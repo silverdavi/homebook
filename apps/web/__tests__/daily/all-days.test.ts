@@ -186,6 +186,17 @@ describe("WEEK structure", () => {
       }
     }
   });
+
+  it("Wednesday–Friday spread correct choices across positions", () => {
+    for (const day of WEEK10.filter((d) => d.date >= "2026-10-21")) {
+      for (const version of [day.versionA, day.versionB]) {
+        const positions = new Set(
+          version.flatMap((q) => ("options" in q ? [q.answerIndex] : [])),
+        );
+        expect(positions.size).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
 });
 
 describe("All 8 days × 2 versions × all questions are valid + gradeable", () => {

@@ -2,7 +2,7 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ } from "./banks/choice";
+import { choiceQ, shuffleChoices } from "./banks/choice";
 
 const DATE = "2026-10-21";
 const HELP = `/daily/${DATE}`;
@@ -214,6 +214,6 @@ export const day20261021: Day = {
   title: "Day 34 — Perimeter and area: around vs. inside",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Perimeter and area", "Biomes", "Climate justice"],
-  versionA,
-  versionB,
+  versionA: shuffleChoices(versionA, DATE),
+  versionB: shuffleChoices(versionB, DATE),
 };

@@ -2,7 +2,7 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ } from "./banks/choice";
+import { choiceQ, shuffleChoices } from "./banks/choice";
 
 const DATE = "2026-10-23";
 const HELP = `/daily/${DATE}`;
@@ -209,6 +209,6 @@ export const day20261023: Day = {
   title: "Day 36 — Integers on a number line",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Integers", "Current crises", "Reading power and sources"],
-  versionA,
-  versionB,
+  versionA: shuffleChoices(versionA, DATE),
+  versionB: shuffleChoices(versionB, DATE),
 };
