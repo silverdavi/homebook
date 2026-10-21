@@ -189,9 +189,7 @@ export interface DayPlanExamBlock {
 }
 
 export type DayPlanBlock =
-  | DayPlanWorkBlock
-  | DayPlanBreakBlock
-  | DayPlanExamBlock;
+  DayPlanWorkBlock | DayPlanBreakBlock | DayPlanExamBlock;
 
 /** The complete, canonical schedule shown above a day's lesson. */
 export interface DayPlan {
@@ -200,6 +198,8 @@ export interface DayPlan {
   phoneUntil: string;
   deviceRule: string;
   materials: string[];
+  /** Same words as the morning email, so the page is complete on its own. */
+  fromDad?: string;
   introduction?: {
     newToday: string;
     buildsOn: string;

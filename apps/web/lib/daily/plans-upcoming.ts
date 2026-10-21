@@ -3,6 +3,7 @@ import type { DayPlan } from "./types";
 interface Copy {
   material: string;
   extraMaterials?: string[];
+  fromDad?: string;
   introduction: {
     newToday: string;
     buildsOn: string;
@@ -45,6 +46,7 @@ function fullDay(copy: Copy): DayPlan {
     deviceRule:
       "Phone away. Computer only for teacher.ninja and the lesson links on this page.",
     materials: [copy.material, ...(copy.extraMaterials ?? []), "Pencil"],
+    fromDad: copy.fromDad,
     introduction: copy.introduction,
     blocks: [
       {
@@ -291,6 +293,8 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
   "2026-10-22": fullDay({
     material: "Thursday • Day 35 double-sided density sheet",
     extraMaterials: ["World • Thursday flags, borders, and migration sheet"],
+    fromDad:
+      "Today there are no questions or negotiations: not about the schedule, not about the end time, not about the work. Everything is written on this page. Read it and do exactly what it says, in order. School ends at 1:00, after the exam. The phone stays away until 1:30. If something is truly broken (the page won't load, or a question makes no sense), write it in the exam's note box. Do not message me about it.",
     introduction: {
       newToday:
         "Density measures the amount of mass packed into each unit of volume.",
