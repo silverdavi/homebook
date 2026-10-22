@@ -11,6 +11,7 @@ import {
   WEEK8,
   WEEK9,
   WEEK10,
+  WEEK11,
 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
@@ -42,7 +43,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 36 days total across ten weeks", () => {
+  it("has 36 days total across eleven weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -52,7 +53,8 @@ describe("WEEK structure", () => {
     expect(WEEK7).toHaveLength(3);
     expect(WEEK8).toHaveLength(4);
     expect(WEEK9).toHaveLength(2);
-    expect(WEEK10).toHaveLength(5);
+    expect(WEEK10).toHaveLength(4);
+    expect(WEEK11).toHaveLength(1);
     expect(WEEK).toHaveLength(36);
   });
 
@@ -139,13 +141,12 @@ describe("WEEK structure", () => {
     }
   });
 
-  it("week 10 covers Oct 19–23 with no peace questions", () => {
+  it("week 10 covers Oct 19–22 (Friday off) with no peace questions", () => {
     expect(WEEK10.map((d) => d.date)).toEqual([
       "2026-10-19",
       "2026-10-20",
       "2026-10-21",
       "2026-10-22",
-      "2026-10-23",
     ]);
     for (const day of WEEK10) {
       for (const q of [...day.versionA, ...day.versionB]) {
@@ -154,8 +155,8 @@ describe("WEEK structure", () => {
     }
   });
 
-  it("Tuesday–Friday restore tracked geography, history, and general knowledge", () => {
-    for (const day of WEEK10.slice(1)) {
+  it("Tuesday onward restores tracked geography, history, and general knowledge", () => {
+    for (const day of [...WEEK10.slice(1), ...WEEK11]) {
       for (const version of [day.versionA, day.versionB]) {
         const kinds = version.map((q) => q.kind);
         expect(kinds.filter((kind) => kind === "geography")).toHaveLength(2);
@@ -187,13 +188,29 @@ describe("WEEK structure", () => {
     }
   });
 
-  it("Wednesday–Friday spread correct choices across positions", () => {
-    for (const day of WEEK10.filter((d) => d.date >= "2026-10-21")) {
+  it("Wednesday onward spreads correct choices across positions", () => {
+    for (const day of [...WEEK10, ...WEEK11].filter(
+      (d) => d.date >= "2026-10-21",
+    )) {
       for (const version of [day.versionA, day.versionB]) {
         const positions = new Set(
           version.flatMap((q) => ("options" in q ? [q.answerIndex] : [])),
         );
         expect(positions.size).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it("Monday teaches units before testing them, with the unit named", () => {
+    const monday = WEEK11.find((day) => day.date === "2026-10-26");
+    for (const version of [monday?.versionA ?? [], monday?.versionB ?? []]) {
+      const math = version.filter((q) => q.kind === "numeric");
+      expect(math).toHaveLength(12);
+      for (const q of math) {
+        if (q.kind !== "numeric") continue;
+        expect(q.unit).toBeTruthy();
+        expect(q.prompt).toContain(`Answer in ${q.unit}.`);
+        expect(Number.isInteger(q.answer)).toBe(true);
       }
     }
   });

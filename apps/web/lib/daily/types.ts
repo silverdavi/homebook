@@ -200,6 +200,11 @@ export interface DayPlan {
   materials: string[];
   /** Same words as the morning email, so the page is complete on its own. */
   fromDad?: string;
+  /** Optional, never examined: shown after the exam block. */
+  finishedEarly?: {
+    deeper?: string;
+    life: string[];
+  };
   introduction?: {
     newToday: string;
     buildsOn: string;

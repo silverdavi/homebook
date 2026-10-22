@@ -6,6 +6,7 @@ import {
   ListChecks,
   Printer,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import type { DayPlan as DayPlanData } from "@/lib/daily/types";
 
@@ -194,6 +195,31 @@ export function DayPlan({ plan }: Props) {
             </div>
           );
         })}
+
+        {plan.finishedEarly && (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
+            <div className="flex items-center gap-2">
+              <Sun className="h-5 w-5 text-sky-700" />
+              <h3 className="font-semibold text-slate-900">
+                Finished before {plan.scheduledEndTime}?
+              </h3>
+            </div>
+            <p className="mt-1 text-sm text-slate-600">
+              Optional. Nothing here is graded. Pick any.
+            </p>
+            {plan.finishedEarly.deeper && (
+              <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm leading-5 text-slate-800">
+                <strong className="text-sky-800">Go deeper: </strong>
+                {plan.finishedEarly.deeper}
+              </p>
+            )}
+            <ul className="mt-3 grid gap-1.5 text-sm leading-5 text-slate-700 sm:grid-cols-2">
+              {plan.finishedEarly.life.map((item) => (
+                <li key={item}>• {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );

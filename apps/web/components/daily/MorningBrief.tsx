@@ -3,6 +3,7 @@ import { Markdown } from "./Markdown";
 import { ExamStartButtons } from "./ExamStartButtons";
 import { DayPlan } from "./DayPlan";
 import { GeometryLesson } from "./GeometryLesson";
+import { UnitsLesson } from "./UnitsLesson";
 import { getDayPlan } from "@/lib/daily/plans";
 import type { Day } from "@/lib/daily/types";
 
@@ -27,6 +28,7 @@ export function MorningBrief({ day }: Props) {
       {plan && <DayPlan plan={plan} />}
 
       {day.date === "2026-10-21" && <GeometryLesson />}
+      {day.date === "2026-10-26" && <UnitsLesson />}
 
       <Markdown content={day.brief} />
 

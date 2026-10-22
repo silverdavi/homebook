@@ -4,6 +4,7 @@ interface Copy {
   material: string;
   extraMaterials?: string[];
   fromDad?: string;
+  deeper?: string;
   introduction: {
     newToday: string;
     buildsOn: string;
@@ -47,6 +48,16 @@ function fullDay(copy: Copy): DayPlan {
       "Phone away. Computer only for teacher.ninja and the lesson links on this page.",
     materials: [copy.material, ...(copy.extraMaterials ?? []), "Pencil"],
     fromDad: copy.fromDad,
+    finishedEarly: {
+      deeper: copy.deeper,
+      life: [
+        "Shower and get dressed for the afternoon.",
+        "Go outside for 20 minutes: walk, bike, or shoot hoops.",
+        "Tidy your desk and put today's sheets in the folder.",
+        "Make yourself lunch and clean up after.",
+        "Read a paper book you choose.",
+      ],
+    },
     introduction: copy.introduction,
     blocks: [
       {
@@ -291,6 +302,8 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
   }),
   "2026-10-22": fullDay({
+    deeper:
+      "Read “Extra — if you finished early” at the bottom of the lesson: why the unit is g/cm³, and why ice floats.",
     material: "Thursday • Day 35 double-sided density sheet",
     extraMaterials: ["World • Thursday flags, borders, and migration sheet"],
     fromDad:
@@ -337,45 +350,54 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       explainDone: "One complete sentence mentions lived experience.",
     },
   }),
-  "2026-10-23": fullDay({
-    material: "Friday • Day 36 double-sided integers sheet",
-    extraMaterials: ["World • Friday current-crises sheet"],
+  "2026-10-26": fullDay({
+    material: "Monday • Day 36 double-sided units sheet",
+    extraMaterials: ["World • Monday current-crises sheet"],
+    deeper:
+      "Read “Extra — only if you finished early” at the bottom of the lesson: converting units, why m² is 10,000 cm², and the NASA units mistake.",
     introduction: {
-      newToday: "Integers extend the number line below zero.",
+      newToday:
+        "Units decide the math: when to multiply, when to divide, and when to flip. Start with the “Let the units decide” animation just below this schedule.",
       buildsOn:
-        "Addition, subtraction, temperature, and moving left or right on a line.",
+        "Area in cm², density in g/cm³, and multiplying and dividing whole numbers.",
       whyItMatters:
-        "Temperatures, debts, elevations, and score changes can all cross zero.",
+        "Speed, prices, recipes, medicine doses, and science all depend on choosing the right operation.",
     },
     learn: {
-      title: "Move through zero",
-      read: "Read the number-line and temperature examples below.",
-      readDone: "You can explain positive as right and negative as left.",
-      example: "Draw a number line from −15 to 15 and copy the 2 worked moves.",
-      exampleDone: "Both starts, directions, and ending numbers are shown.",
-      practice: "Do integer questions 1–5 on the practice side.",
-      practiceDone: "5 signed answers are shown on the number line.",
+      title: "See what units do",
+      read: "Play all 3 steps of the “Let the units decide” animation, then read sections 1–4 below it.",
+      readDone:
+        "You can say: per means divide; multiply to use a per; divide by the rate to get the bottom unit.",
+      example:
+        "On the sheet, draw the 4 × 3 × 2 box as 2 layers of 12 cubes and write its volume.",
+      exampleDone: "The drawing shows 24 cm³ with the units.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 3, 6, 9).",
+      practiceDone:
+        "Each answer has its unit, and you wrote which units cancelled.",
     },
     practice: {
-      title: "Keep the minus sign",
-      finish: "Finish questions 6–12, then complete the temperature section.",
-      finishDone: "All integer and temperature answers are written.",
-      check: "Check each answer by replaying its movement on the number line.",
-      checkDone: "Every answer is marked right or circled.",
-      correct: "Redo each miss by drawing its start, direction, and endpoint.",
-      correctDone: "Every miss has a corrected number-line move.",
+      title: "Let the units choose",
+      finish:
+        "Finish the other 8 problems. For each one, write the unit you want BEFORE you calculate.",
+      finishDone:
+        "All 12 problems show the wanted unit, the operation, and the answer.",
+      check: "Check with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct:
+        "Redo each miss by writing the units out and crossing off the ones that cancel.",
+      correctDone: "Every miss has crossed-off units and a corrected answer.",
     },
     apply: {
       title: "World: current crises",
       review:
-        "Read the dated World block and locate Ukraine, Sudan, Gaza, and Myanmar.",
-      reviewDone: "All 4 places are labeled on Friday's World sheet.",
-      task: "Complete Friday's current-crises questions, separating place, cause, and civilian impact.",
-      taskDone: "Every Friday World question has an answer.",
+        "Read the World block and find Ukraine, Sudan, Gaza, and Myanmar on a map.",
+      reviewDone: "You can name the region of all 4 places without looking.",
+      task: "Complete Monday's current-crises questions, separating place, cause, and civilian impact.",
+      taskDone: "Every World question has an answer.",
       explain:
-        "Write the 4 principles used on this page to evaluate a conflict.",
-      explainDone:
-        "Civilian protection, human rights, self-determination, and aid are present.",
+        "Write one way colonial rule shaped one of these conflicts today.",
+      explainDone: "One complete sentence names a place and a colonial cause.",
     },
   }),
 };
