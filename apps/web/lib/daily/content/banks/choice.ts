@@ -15,10 +15,15 @@ function seededRandom(seed: string): () => number {
 }
 
 // Stored answers are option indices, so only apply this to exams nobody has submitted yet.
+// `balanced` rotates the correct answer through every position; it changes
+// option order too, so never switch it on for a day that has submissions.
 export function shuffleChoices(
   questions: Question[],
   seed: string,
+  { balanced = false }: { balanced?: boolean } = {},
 ): Question[] {
+  const offset = Math.floor(seededRandom(seed)() * 4);
+  let choiceIndex = 0;
   return questions.map((q) => {
     if (!("options" in q)) return q;
     const rand = seededRandom(`${seed}:${q.id}`);
@@ -27,6 +32,12 @@ export function shuffleChoices(
       const j = Math.floor(rand() * (i + 1));
       [order[i], order[j]] = [order[j], order[i]];
     }
+    if (balanced) {
+      const target = (offset + choiceIndex) % order.length;
+      const current = order.indexOf(q.answerIndex);
+      [order[current], order[target]] = [order[target], order[current]];
+    }
+    choiceIndex++;
     return {
       ...q,
       options: order.map((i) => q.options[i]),

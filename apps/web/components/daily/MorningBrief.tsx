@@ -4,6 +4,10 @@ import { ExamStartButtons } from "./ExamStartButtons";
 import { DayPlan } from "./DayPlan";
 import { GeometryLesson } from "./GeometryLesson";
 import { UnitsLesson } from "./UnitsLesson";
+import { NumberLineLesson } from "./NumberLineLesson";
+import { MapScaleLesson } from "./MapScaleLesson";
+import { AverageLesson } from "./AverageLesson";
+import { CoordinateLesson } from "./CoordinateLesson";
 import { getDayPlan } from "@/lib/daily/plans";
 import type { Day } from "@/lib/daily/types";
 
@@ -29,6 +33,10 @@ export function MorningBrief({ day }: Props) {
 
       {day.date === "2026-10-21" && <GeometryLesson />}
       {day.date === "2026-10-26" && <UnitsLesson />}
+      {day.date === "2026-10-27" && <NumberLineLesson />}
+      {day.date === "2026-10-28" && <MapScaleLesson />}
+      {day.date === "2026-10-29" && <AverageLesson />}
+      {day.date === "2026-10-30" && <CoordinateLesson />}
 
       <Markdown content={day.brief} />
 

@@ -400,4 +400,188 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       explainDone: "One complete sentence names a place and a colonial cause.",
     },
   }),
+  "2026-10-27": fullDay({
+    material: "Tuesday • Day 37 double-sided integers sheet",
+    extraMaterials: ["World • Tuesday water sheet"],
+    deeper:
+      "Read “Extra” at the bottom of the lesson: why 5 − (−3) = 8, the coldest temperature on Earth, and negative money.",
+    introduction: {
+      newToday:
+        "Integers: numbers below zero. Start with the “Through zero” animation just below this schedule.",
+      buildsOn:
+        "Monday's units, temperature, and moving left or right on a line.",
+      whyItMatters:
+        "Temperatures, debts, elevations below sea level, and score changes all cross zero.",
+    },
+    learn: {
+      title: "See the number line",
+      read: "Play all 3 steps of the “Through zero” animation, then read the lesson below it.",
+      readDone:
+        "You can explain: right is bigger, left is smaller, and adding a negative moves left.",
+      example:
+        "Draw a number line from −15 to 15 and copy the 2 worked hops from the lesson.",
+      exampleDone: "Both starts, directions, and landing numbers are shown.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 2, 10, 11).",
+      practiceDone: "Each GUIDED answer is drawn as hops on your number line.",
+    },
+    practice: {
+      title: "Keep the minus sign",
+      finish:
+        "Finish the other 8 problems. Draw the hops for any you are not sure about.",
+      finishDone: "All 12 answers are written with their signs.",
+      check: "Check with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct:
+        "Redo each miss by drawing its start, direction, and landing point.",
+      correctDone: "Every miss has a corrected answer with work.",
+    },
+    apply: {
+      title: "World: water",
+      review:
+        "Read the World block and find the Nile, the Amazon, the Mekong, and the Aral Sea on a map.",
+      reviewDone: "You can name the region of each without looking.",
+      task: "Complete Tuesday's World sheet.",
+      taskDone: "Every World question has an answer.",
+      explain:
+        "Write one sentence on why being upstream gives a country power.",
+      explainDone: "One complete sentence names a river and two countries.",
+    },
+  }),
+  "2026-10-28": fullDay({
+    material: "Wednesday • Day 38 double-sided map-scale sheet and ruler",
+    extraMaterials: ["World • Wednesday maps sheet"],
+    deeper:
+      "Read “Extra” at the bottom of the lesson: scale as a ratio, measuring a real map, and model cars.",
+    introduction: {
+      newToday:
+        "Map scale: one number that shrinks the world. Start with the “Map scale” animation just below this schedule.",
+      buildsOn:
+        "Monday's rule: multiply to use a rate, divide by the rate to get the bottom unit.",
+      whyItMatters: "Maps, blueprints, models, and GPS all depend on scale.",
+    },
+    learn: {
+      title: "See the scale",
+      read: "Play all 3 steps of the “Map scale” animation, then read the lesson below it.",
+      readDone:
+        "You can say: map to real, multiply; real to map, divide by the scale.",
+      example:
+        "With your ruler, draw a 6 cm line and label each cm “10 km.” Write the real distance.",
+      exampleDone: "The line shows 60 km.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+      practiceDone: "Each GUIDED answer has its unit.",
+    },
+    practice: {
+      title: "Multiply or divide?",
+      finish:
+        "Finish the other 8 problems. Write the unit you want before you calculate.",
+      finishDone: "All 12 problems show the wanted unit and the answer.",
+      check: "Check with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct:
+        "Redo each miss by writing the units and crossing off the ones that cancel.",
+      correctDone: "Every miss has a corrected answer with work.",
+    },
+    apply: {
+      title: "World: how maps distort",
+      review:
+        "Read the World block. On any world map, find Greenland and Africa and compare how big they look.",
+      reviewDone: "You can explain why Greenland looks too big.",
+      task: "Complete Wednesday's World sheet.",
+      taskDone: "Every World question has an answer.",
+      explain: "Write one sentence on why a map is never neutral.",
+      explainDone: "One complete sentence mentions a choice a mapmaker made.",
+    },
+  }),
+  "2026-10-29": fullDay({
+    material: "Thursday • Day 39 double-sided mean-and-median sheet",
+    extraMaterials: ["World • Thursday cities sheet"],
+    deeper:
+      "Read “Extra” at the bottom of the lesson: medians with an even count, the mode, and a running experiment.",
+    introduction: {
+      newToday:
+        "Mean and median: two kinds of average. Start with the “Two kinds of average” animation just below this schedule.",
+      buildsOn: "Adding, dividing, and putting numbers in order.",
+      whyItMatters:
+        "News about pay, prices, grades, and sports all use averages, and choosing the wrong one can mislead.",
+    },
+    learn: {
+      title: "See both averages",
+      read: "Play all 3 steps of the animation, including the CEO button, then read the lesson below it.",
+      readDone:
+        "You can say: mean = add then divide; median = put in order, take the middle.",
+      example:
+        "Find the mean and median of your own 5 numbers (any 5 between 1 and 20).",
+      exampleDone: "Both answers are shown with work.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 2, 7, 8).",
+      practiceDone: "Each GUIDED answer shows the sum or the ordered list.",
+    },
+    practice: {
+      title: "One rule at a time",
+      finish: "Finish the mean section first, then the median section.",
+      finishDone: "All 12 problems show the sum or the ordered list.",
+      check: "Check with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct:
+        "Redo each miss: for a mean, re-add; for a median, rewrite the list in order.",
+      correctDone: "Every miss has a corrected answer with work.",
+    },
+    apply: {
+      title: "World: cities and fair work",
+      review:
+        "Read the World block and find India, China, Nigeria, and the Democratic Republic of the Congo on a map.",
+      reviewDone: "You can name one big city in each.",
+      task: "Complete Thursday's World sheet.",
+      taskDone: "Every World question has an answer.",
+      explain:
+        "Write one sentence on something unions won that you benefit from.",
+      explainDone: "One complete sentence names the win.",
+    },
+  }),
+  "2026-10-30": fullDay({
+    material: "Friday • Day 40 double-sided coordinates sheet",
+    extraMaterials: ["World • Friday latitude-and-longitude sheet"],
+    deeper:
+      "Read “Extra” at the bottom of the lesson: a connect-the-dots picture, coordinate Battleship, and your home's latitude.",
+    introduction: {
+      newToday:
+        "Coordinates: two numbers that find any point. Start with the “Find any point” animation just below this schedule.",
+      buildsOn:
+        "Tuesday's number line, now used twice: once across and once up.",
+      whyItMatters: "Maps, video games, GPS, and graphs all use coordinates.",
+    },
+    learn: {
+      title: "Walk to a point",
+      read: "Play all 3 steps of the “Find any point” animation, then read the lesson below it.",
+      readDone: "You can say: x first (across), y second (up or down).",
+      example:
+        "On the sheet's grid, plot (3, 2), (−4, −3), (−2, 5), and (5, −1) and label each.",
+      exampleDone: "All 4 points are in the right quadrant.",
+      practice:
+        "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+      practiceDone: "Each GUIDED answer is checked on the grid.",
+    },
+    practice: {
+      title: "Signs tell the story",
+      finish:
+        "Finish the other 8 problems, using the grid whenever you are unsure.",
+      finishDone: "All 12 answers are written with their signs.",
+      check: "Check with the answer side.",
+      checkDone: "Every answer is marked right or circled without copying.",
+      correct: "Redo each miss by plotting the point and counting.",
+      correctDone: "Every miss has a corrected answer with work.",
+    },
+    apply: {
+      title: "World: latitude, longitude, time",
+      review:
+        "Read the World block and find the equator, the Prime Meridian, and the International Date Line on a map or globe.",
+      reviewDone: "You can point to all 3 lines.",
+      task: "Complete Friday's World sheet.",
+      taskDone: "Every World question has an answer.",
+      explain: "Write one sentence on why Greenwich became 0°.",
+      explainDone: "One complete sentence mentions power or empire.",
+    },
+  }),
 };

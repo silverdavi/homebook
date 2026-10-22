@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+import { runKickoff } from "./kickoff-helper.mjs";
+
+await runKickoff({
+  date: "2026-10-28",
+  subject: "Day 38 — map scale.",
+  topic:
+    "A map shrinks the world by one number. Today uses Monday's units rule to go from map to real and back.",
+  material:
+    "The Wednesday Day 38 map-scale sheet, Wednesday World sheet, and ruler",
+  note: "Start with the “Map scale” animation at the top of the page. The World block shows why Greenland looks as big as Africa on many maps, when Africa is 14 times larger. If you finish early, the blue “Finished before 1:00?” box at the end of the schedule has optional extras. School ends at 1:00, after the exam.",
+});

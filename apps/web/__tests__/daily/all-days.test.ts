@@ -43,7 +43,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 36 days total across eleven weeks", () => {
+  it("has 40 days total across eleven weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -54,8 +54,8 @@ describe("WEEK structure", () => {
     expect(WEEK8).toHaveLength(4);
     expect(WEEK9).toHaveLength(2);
     expect(WEEK10).toHaveLength(4);
-    expect(WEEK11).toHaveLength(1);
-    expect(WEEK).toHaveLength(36);
+    expect(WEEK11).toHaveLength(5);
+    expect(WEEK).toHaveLength(40);
   });
 
   it("days are in chronological order with unique dates", () => {
@@ -203,6 +203,7 @@ describe("WEEK structure", () => {
 
   it("Monday teaches units before testing them, with the unit named", () => {
     const monday = WEEK11.find((day) => day.date === "2026-10-26");
+    expect(monday).toBeDefined();
     for (const version of [monday?.versionA ?? [], monday?.versionB ?? []]) {
       const math = version.filter((q) => q.kind === "numeric");
       expect(math).toHaveLength(12);
@@ -247,4 +248,20 @@ describe("All 8 days × 2 versions × all questions are valid + gradeable", () =
       });
     });
   }
+
+  it("week 11 has a daily lesson, 12 math questions, and 6 World questions", () => {
+    expect(WEEK11.map((d) => d.date)).toEqual([
+      "2026-10-26",
+      "2026-10-27",
+      "2026-10-28",
+      "2026-10-29",
+      "2026-10-30",
+    ]);
+    for (const day of WEEK11) {
+      for (const version of [day.versionA, day.versionB]) {
+        expect(version.filter((q) => q.kind === "numeric")).toHaveLength(12);
+        expect(version.filter((q) => "options" in q)).toHaveLength(6);
+      }
+    }
+  });
 });

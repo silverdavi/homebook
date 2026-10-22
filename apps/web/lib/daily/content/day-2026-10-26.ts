@@ -294,6 +294,6 @@ export const day20261026: Day = {
   title: "Day 36 — Units: when to multiply, divide, or flip",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Units and rates", "Volume", "Current crises"],
-  versionA: shuffleChoices(versionA, DATE),
-  versionB: shuffleChoices(versionB, DATE),
+  versionA: shuffleChoices(versionA, DATE, { balanced: true }),
+  versionB: shuffleChoices(versionB, DATE, { balanced: true }),
 };
