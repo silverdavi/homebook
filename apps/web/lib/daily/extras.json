@@ -830,5 +830,3616 @@
         ]
       ]
     }
+  },
+  {
+    "date": "2026-11-02",
+    "title": "How common medicines work",
+    "hook": "Most medicines in a home cabinet do one of a few jobs. Knowing which is which keeps you safe — and explains why some don't help at all.",
+    "groups": [
+      {
+        "heading": "Pain and fever",
+        "items": [
+          {
+            "name": "NSAIDs — ibuprofen (Advil), naproxen (Aleve), aspirin",
+            "note": "Block an enzyme (COX) that makes pain-and-swelling signals. Lower pain, fever, and swelling. Can upset the stomach."
+          },
+          {
+            "name": "Acetaminophen (Tylenol)",
+            "note": "Lowers pain and fever but not swelling. Too much damages the liver — it hides in many cold medicines, so doses add up."
+          }
+        ]
+      },
+      {
+        "heading": "Calming the immune system",
+        "items": [
+          {
+            "name": "Corticosteroids — prednisone, hydrocortisone cream, asthma inhalers",
+            "note": "Turn down inflammation: rashes, asthma, bad allergies. Not the same as the “steroids” some athletes misuse."
+          },
+          {
+            "name": "Antihistamines — cetirizine (Zyrtec), diphenhydramine (Benadryl)",
+            "note": "Block histamine, the chemical behind sneezing and itching. Older ones cause sleepiness."
+          }
+        ]
+      },
+      {
+        "heading": "Fighting germs",
+        "items": [
+          {
+            "name": "Antibiotics — penicillin, amoxicillin",
+            "note": "Kill bacteria. Useless against viruses like colds and flu."
+          },
+          {
+            "name": "Antivirals — Tamiflu, Paxlovid",
+            "note": "Slow a specific virus from copying itself."
+          },
+          {
+            "name": "Vaccines",
+            "note": "Show the body a harmless piece of a germ so it is ready next time."
+          }
+        ]
+      },
+      {
+        "heading": "Long-term conditions",
+        "items": [
+          {
+            "name": "Insulin",
+            "note": "Lets cells take in sugar. People with type 1 diabetes need it to live."
+          },
+          {
+            "name": "Albuterol inhaler",
+            "note": "Relaxes the muscles around the airways in an asthma attack."
+          },
+          {
+            "name": "Statins",
+            "note": "Lower cholesterol to protect the heart."
+          },
+          {
+            "name": "Antacids",
+            "note": "Neutralize stomach acid (a base cancels an acid)."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Never take any medicine without asking Dad. The right dose depends on your weight and age.",
+      "Generic drugs have the same active ingredient as the brand name, and usually cost far less.",
+      "Alexander Fleming noticed in 1928 that a mold killed bacteria — that became penicillin.",
+      "Using antibiotics when they aren't needed helps bacteria evolve resistance, so they stop working for everyone."
+    ],
+    "doIt": "With Dad, take out 2 medicine boxes from the house. On the sheet, copy the active ingredient, what it treats, the dose, and one warning. Then write which family above it belongs to.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Medicine",
+        "Active ingredient",
+        "Treats",
+        "Family",
+        "One warning"
+      ],
+      "rows": [
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "You have a cold (a virus). Will an antibiotic help?",
+        "options": [
+          "No",
+          "Yes",
+          "Only at night"
+        ],
+        "why": "Antibiotics only kill bacteria."
+      },
+      {
+        "q": "Which lowers swelling as well as pain?",
+        "options": [
+          "Ibuprofen",
+          "Acetaminophen",
+          "An antacid"
+        ],
+        "why": "Ibuprofen is an NSAID; acetaminophen doesn't reduce swelling."
+      },
+      {
+        "q": "What does an antihistamine treat?",
+        "options": [
+          "Allergies",
+          "Infections",
+          "High cholesterol"
+        ],
+        "why": "It blocks histamine, which causes sneezing and itching."
+      },
+      {
+        "q": "A generic drug compared to the brand name is…",
+        "options": [
+          "The same active ingredient, cheaper",
+          "Weaker",
+          "Illegal"
+        ],
+        "why": "Same medicine, different name and price."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-03",
+    "title": "Reading a nutrition label",
+    "hook": "The front of a box is advertising. The back is the truth. Two minutes with the label tells you what you're really eating.",
+    "groups": [
+      {
+        "heading": "Top of the label",
+        "items": [
+          {
+            "name": "Serving size",
+            "note": "Everything below is for ONE serving. A bag can hold 3 servings — eat it all and triple the numbers."
+          },
+          {
+            "name": "Calories",
+            "note": "Energy. A 12-year-old needs roughly 1,800–2,400 a day, depending on activity."
+          }
+        ]
+      },
+      {
+        "heading": "Get less of",
+        "items": [
+          {
+            "name": "Added sugars",
+            "note": "Sugar put in during making. Kids should stay under about 25 g a day."
+          },
+          {
+            "name": "Sodium (salt)",
+            "note": "Aim for under 2,300 mg a day. Chips, soups, and fast food are full of it."
+          },
+          {
+            "name": "Saturated fat",
+            "note": "Mostly from meat, butter, cheese. Too much is hard on the heart."
+          }
+        ]
+      },
+      {
+        "heading": "Get more of",
+        "items": [
+          {
+            "name": "Fiber",
+            "note": "Keeps you full and your gut healthy. Beans, whole grains, fruit."
+          },
+          {
+            "name": "Protein",
+            "note": "Builds muscle. Eggs, beans, yogurt, chicken, nuts."
+          },
+          {
+            "name": "Vitamins and minerals",
+            "note": "Iron, calcium, vitamin D, potassium."
+          }
+        ]
+      },
+      {
+        "heading": "Two shortcuts",
+        "items": [
+          {
+            "name": "% Daily Value",
+            "note": "5% or less = low. 20% or more = high."
+          },
+          {
+            "name": "Ingredients list",
+            "note": "Ordered by weight, biggest first. If sugar is first, it's mostly sugar."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "4 grams of sugar ≈ 1 teaspoon. A 12-oz soda has about 39 g — nearly 10 teaspoons.",
+      "Sugar hides under many names: corn syrup, dextrose, cane juice, maltose.",
+      "Food companies spend billions advertising sugary foods to kids — often in poorer neighborhoods where fresh food is harder to find.",
+      "“Natural” on the front means almost nothing legally. The label on the back is regulated."
+    ],
+    "doIt": "Pick 3 packaged foods from the kitchen. Fill in the table. Turn the added sugar into teaspoons (÷ 4). Which one surprised you?",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Food",
+        "Serving size",
+        "Calories",
+        "Added sugar (g)",
+        "Teaspoons",
+        "Protein (g)"
+      ],
+      "rows": [
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "A bag has 3 servings of 150 calories. You eat it all. How many calories?",
+        "options": [
+          "450",
+          "150",
+          "300"
+        ],
+        "why": "3 × 150."
+      },
+      {
+        "q": "20 g of added sugar is about how many teaspoons?",
+        "options": [
+          "5",
+          "20",
+          "2"
+        ],
+        "why": "20 ÷ 4 = 5."
+      },
+      {
+        "q": "A food shows 25% of the Daily Value for sodium. That is…",
+        "options": [
+          "High",
+          "Low",
+          "Zero"
+        ],
+        "why": "20% or more is high."
+      },
+      {
+        "q": "The first ingredient listed is the one with…",
+        "options": [
+          "The most weight",
+          "The least weight",
+          "The most vitamins"
+        ],
+        "why": "Ingredients go biggest first."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-04",
+    "title": "Compound interest",
+    "hook": "Money that earns interest, then earns interest on that interest, grows faster every year. Time matters more than the amount.",
+    "groups": [
+      {
+        "heading": "Words",
+        "items": [
+          {
+            "name": "Principal",
+            "note": "The money you start with."
+          },
+          {
+            "name": "Interest rate",
+            "note": "The percent added each year. 5% of $100 = $5."
+          },
+          {
+            "name": "Simple interest",
+            "note": "Interest only on the principal. $100 at 10% → $110, $120, $130…"
+          },
+          {
+            "name": "Compound interest",
+            "note": "Interest on the new total. $100 at 10% → $110, $121, $133.10…"
+          }
+        ]
+      },
+      {
+        "heading": "Tools",
+        "items": [
+          {
+            "name": "Rule of 72",
+            "note": "72 ÷ rate = years to double. At 8%, money doubles in about 9 years."
+          },
+          {
+            "name": "Savings account",
+            "note": "Safe; usually 0.5–4% a year."
+          },
+          {
+            "name": "Index fund",
+            "note": "Has averaged roughly 7% a year after inflation over long periods — with bad years."
+          },
+          {
+            "name": "Inflation",
+            "note": "Prices rising, about 2–3% in a normal year. Money under a mattress loses value."
+          }
+        ]
+      },
+      {
+        "heading": "The big lesson",
+        "items": [
+          {
+            "name": "Start at 15",
+            "note": "$100 a month at 7% until 65 → about $545,000. You put in $60,000."
+          },
+          {
+            "name": "Start at 25",
+            "note": "Same $100 a month → about $262,000. You put in $48,000."
+          },
+          {
+            "name": "Debt compounds too",
+            "note": "A loan or credit card grows the same way — against you."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "The 10 years from 15 to 25 add only $12,000 of savings but more than double the result.",
+      "Compound interest helps people who already have money most — one reason wealth gaps grow over time.",
+      "Many countries and some US states now start a small savings account for every child at birth.",
+      "Formula: total = principal × (1 + rate)^years."
+    ],
+    "doIt": "Fill in the table: $1,000 growing at 10% a year, compounded. Then use the Rule of 72 for 6%, 8%, and 12%.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Year",
+        "Start of year",
+        "Interest (10%)",
+        "End of year"
+      ],
+      "rows": [
+        [
+          "1",
+          "$1,000"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ],
+        [
+          "4"
+        ],
+        [
+          "5"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "$200 at 10% compounded. After 2 years?",
+        "options": [
+          "$242",
+          "$240",
+          "$220"
+        ],
+        "why": "200 → 220 → 242."
+      },
+      {
+        "q": "Rule of 72 at 6%: years to double?",
+        "options": [
+          "12",
+          "6",
+          "72"
+        ],
+        "why": "72 ÷ 6 = 12."
+      },
+      {
+        "q": "What makes the biggest difference?",
+        "options": [
+          "Starting early",
+          "Starting with a lot",
+          "Checking every day"
+        ],
+        "why": "Years of compounding beat size."
+      },
+      {
+        "q": "Inflation means…",
+        "options": [
+          "Prices rise over time",
+          "Interest rises",
+          "Stocks always go up"
+        ],
+        "why": "The same dollar buys a little less each year."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-05",
+    "title": "First aid basics",
+    "hook": "Most injuries at home are small — if you know the first two minutes. And knowing when to call 911 can save a life.",
+    "groups": [
+      {
+        "heading": "Call 911 when someone…",
+        "items": [
+          {
+            "name": "Isn't breathing or won't wake up",
+            "note": "Call first, then follow what the dispatcher says."
+          },
+          {
+            "name": "Has chest pain or a seizure",
+            "note": "Clear space around them. Don't hold them down."
+          },
+          {
+            "name": "Is bleeding a lot",
+            "note": "Blood soaking through cloth, or spurting."
+          },
+          {
+            "name": "Has a swollen face or lips after food or a sting",
+            "note": "Severe allergy. If they have an EpiPen, help them use it."
+          }
+        ]
+      },
+      {
+        "heading": "Fix it yourself",
+        "items": [
+          {
+            "name": "Burn",
+            "note": "Cool running water for 20 minutes. No ice, no butter."
+          },
+          {
+            "name": "Cut",
+            "note": "Press with a clean cloth for 10 minutes without peeking. Raise it."
+          },
+          {
+            "name": "Nosebleed",
+            "note": "Lean FORWARD, pinch the soft part for 10 minutes. Not back."
+          },
+          {
+            "name": "Sprain",
+            "note": "Rest, Ice (in a cloth, 20 min), Compress, Elevate."
+          },
+          {
+            "name": "Bee sting",
+            "note": "Scrape the stinger out sideways with a card. Ice."
+          }
+        ]
+      },
+      {
+        "heading": "Choking",
+        "items": [
+          {
+            "name": "Can cough or talk",
+            "note": "Let them keep coughing. Stay with them."
+          },
+          {
+            "name": "Can't breathe, speak, or cough",
+            "note": "Call 911. 5 firm back blows between the shoulder blades, then 5 abdominal thrusts. Repeat."
+          }
+        ]
+      },
+      {
+        "heading": "Numbers",
+        "items": [
+          {
+            "name": "911",
+            "note": "Emergency. Say your address first."
+          },
+          {
+            "name": "1-800-222-1222",
+            "note": "Poison Control, for swallowed chemicals or pills. Free, 24/7."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "The recovery position: on their side, top knee bent, head tilted back. Keeps the airway open for someone breathing but not awake.",
+      "After a hit to the head, watch for confusion, vomiting, or bad headache — those mean a doctor today.",
+      "In the US, 911 calls can be made from any phone, even one with no service plan.",
+      "Free CPR classes are offered by the Red Cross and many fire departments. Anyone 12+ can learn."
+    ],
+    "doIt": "Find the first-aid kit in the house. List what's inside. Then write the exact words you'd say to a 911 dispatcher, starting with our address.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "What is in our first-aid kit?",
+        "Where is it kept?",
+        "What I'd say to 911 (address first):",
+        "Two things I'd do for a burn:",
+        "Two things I'd do for a nosebleed:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Nosebleed: lean which way?",
+        "options": [
+          "Forward",
+          "Back",
+          "Lie flat"
+        ],
+        "why": "Leaning back sends blood down the throat."
+      },
+      {
+        "q": "A burn needs…",
+        "options": [
+          "Cool running water, 20 minutes",
+          "Ice",
+          "Butter"
+        ],
+        "why": "Ice and butter damage skin."
+      },
+      {
+        "q": "Someone choking can still cough. You…",
+        "options": [
+          "Let them keep coughing",
+          "Hit their back hard",
+          "Give them water"
+        ],
+        "why": "Coughing is the best way to clear it."
+      },
+      {
+        "q": "What do you tell 911 first?",
+        "options": [
+          "The address",
+          "Your age",
+          "What happened yesterday"
+        ],
+        "why": "They can send help while you talk."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-06",
+    "title": "15 cheeses",
+    "hook": "Every cheese starts the same way: milk, bacteria, and time. What changes is the milk, the moisture, and how long it ages.",
+    "groups": [
+      {
+        "heading": "Fresh (not aged)",
+        "items": [
+          {
+            "name": "Mozzarella",
+            "note": "Italy. Stretchy when melted — pizza."
+          },
+          {
+            "name": "Ricotta",
+            "note": "Italy. Soft and grainy, made from leftover whey. Lasagne."
+          },
+          {
+            "name": "Feta",
+            "note": "Greece. Salty, crumbly, kept in brine. Sheep or goat milk."
+          },
+          {
+            "name": "Cream cheese",
+            "note": "USA. Smooth and spreadable. Bagels, cheesecake."
+          },
+          {
+            "name": "Paneer",
+            "note": "India. Doesn't melt, so it can be fried in curry."
+          }
+        ]
+      },
+      {
+        "heading": "Soft and ripened",
+        "items": [
+          {
+            "name": "Brie",
+            "note": "France. White fuzzy rind you can eat, gooey inside."
+          },
+          {
+            "name": "Camembert",
+            "note": "France. Like brie, smaller and stronger."
+          }
+        ]
+      },
+      {
+        "heading": "Semi-hard",
+        "items": [
+          {
+            "name": "Cheddar",
+            "note": "England. Sharper the longer it ages."
+          },
+          {
+            "name": "Gouda",
+            "note": "Netherlands. Mild and creamy; aged gouda is crunchy."
+          },
+          {
+            "name": "Swiss (Emmental)",
+            "note": "Switzerland. Bacteria make gas bubbles — the holes."
+          },
+          {
+            "name": "Monterey Jack",
+            "note": "California. Mild, melts well."
+          }
+        ]
+      },
+      {
+        "heading": "Hard and blue",
+        "items": [
+          {
+            "name": "Parmesan",
+            "note": "Italy. Aged 12+ months. Grated on pasta."
+          },
+          {
+            "name": "Manchego",
+            "note": "Spain. Sheep milk, nutty."
+          },
+          {
+            "name": "Roquefort",
+            "note": "France. Sheep milk, blue mold veins."
+          },
+          {
+            "name": "Gorgonzola",
+            "note": "Italy. Creamy blue."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "How cheese is made: warm milk + bacteria + rennet → it splits into curds (solid) and whey (liquid). Press the curds, salt them, age them.",
+      "Kosher cheese uses rennet made by microbes instead of from animals.",
+      "Most adults in the world digest milk sugar (lactose) poorly. Aged cheeses have almost none left, so many people can still eat them.",
+      "The blue in blue cheese is a safe mold, Penicillium — a cousin of the one that gave us penicillin."
+    ],
+    "doIt": "Find 2 cheeses in the fridge. Taste a small piece of each. Fill in the table: type, milk, texture, taste in 3 words.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Cheese",
+        "Type (fresh / soft / semi-hard / hard / blue)",
+        "Milk (cow / sheep / goat)",
+        "Texture",
+        "Taste in 3 words"
+      ],
+      "rows": [
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Why does Swiss cheese have holes?",
+        "options": [
+          "Bacteria make gas bubbles",
+          "Mice",
+          "It's pressed with a fork"
+        ],
+        "why": "CO₂ gas from bacteria while it ages."
+      },
+      {
+        "q": "Which cheese is kept in salty brine?",
+        "options": [
+          "Feta",
+          "Cheddar",
+          "Brie"
+        ],
+        "why": "Brine keeps feta moist and salty."
+      },
+      {
+        "q": "Milk splits into curds and…",
+        "options": [
+          "Whey",
+          "Butter",
+          "Cream"
+        ],
+        "why": "Curds and whey, like the nursery rhyme."
+      },
+      {
+        "q": "Which cheese doesn't melt, so it can be fried?",
+        "options": [
+          "Paneer",
+          "Mozzarella",
+          "Monterey Jack"
+        ],
+        "why": "Paneer holds its shape in curry."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-09",
+    "title": "How a paycheck works",
+    "hook": "If a job pays $15 an hour, you don't take home $15 an hour. Here's where the rest goes — and what it pays for.",
+    "groups": [
+      {
+        "heading": "On the pay stub",
+        "items": [
+          {
+            "name": "Gross pay",
+            "note": "Hours × hourly wage. Before anything is taken out."
+          },
+          {
+            "name": "Net pay",
+            "note": "What actually lands in your bank. “Take-home pay.”"
+          },
+          {
+            "name": "Federal income tax",
+            "note": "Pays for the military, roads, research, and more. Higher earners pay a higher rate."
+          },
+          {
+            "name": "State tax",
+            "note": "Most states have one; a few (like Texas, Florida, Washington) don't."
+          },
+          {
+            "name": "Social Security — 6.2%",
+            "note": "Pays retirees and disabled workers. Your employer pays another 6.2%."
+          },
+          {
+            "name": "Medicare — 1.45%",
+            "note": "Health insurance for people 65+."
+          }
+        ]
+      },
+      {
+        "heading": "Rules that protect workers",
+        "items": [
+          {
+            "name": "Minimum wage",
+            "note": "Federal: $7.25 an hour, unchanged since 2009. Many states set it higher — over $16 in some."
+          },
+          {
+            "name": "Overtime",
+            "note": "Over 40 hours a week → 1.5× pay for most hourly jobs."
+          },
+          {
+            "name": "Union",
+            "note": "Workers bargaining together for pay, hours, and safety. Union workers earn more on average."
+          }
+        ]
+      },
+      {
+        "heading": "Forms",
+        "items": [
+          {
+            "name": "W-4",
+            "note": "You fill it in when you start a job, so the right tax is taken out."
+          },
+          {
+            "name": "W-2",
+            "note": "Your employer sends it each January: what you earned and paid in tax."
+          },
+          {
+            "name": "Tax refund",
+            "note": "If too much was taken out during the year, you get it back."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Social Security and Medicare together are called FICA: 7.65% from every paycheck.",
+      "Prices have risen more than 40% since 2009, so $7.25 buys much less today than when it was set.",
+      "The 40-hour week and the weekend were won by labor unions in the early 1900s.",
+      "Tipped workers can be paid as little as $2.13 an hour by federal law, if tips make up the rest."
+    ],
+    "doIt": "On the sheet: a job pays $15 an hour for 40 hours a week. Work out the gross pay, the FICA (7.65%), a federal tax of 8%, and the net pay. Then do it for 45 hours, with overtime.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Gross pay for 40 hours at $15:",
+        "FICA at 7.65%:",
+        "Federal tax at 8% of gross:",
+        "Net pay (take-home):",
+        "45 hours: 40 at $15 + 5 at $22.50 overtime = gross pay of:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Gross pay for 20 hours at $12?",
+        "options": [
+          "$240",
+          "$32",
+          "$200"
+        ],
+        "why": "20 × 12."
+      },
+      {
+        "q": "What is net pay?",
+        "options": [
+          "What you take home",
+          "What the boss earns",
+          "Pay before taxes"
+        ],
+        "why": "Net = after deductions."
+      },
+      {
+        "q": "Overtime pays how much more?",
+        "options": [
+          "1.5×",
+          "2×",
+          "Nothing extra"
+        ],
+        "why": "Time and a half, after 40 hours."
+      },
+      {
+        "q": "When was the federal minimum wage last raised?",
+        "options": [
+          "2009",
+          "2023",
+          "1990"
+        ],
+        "why": "$7.25 since July 2009."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-10",
+    "title": "16 famous paintings",
+    "hook": "These pictures show up on posters, memes, and in museums everywhere. Know who made them and why they matter.",
+    "groups": [
+      {
+        "heading": "Renaissance and after",
+        "items": [
+          {
+            "name": "The Birth of Venus — Botticelli (~1485)",
+            "note": "The goddess arriving on a shell."
+          },
+          {
+            "name": "Mona Lisa — Leonardo da Vinci (~1503–1519)",
+            "note": "The famous smile. In the Louvre, Paris."
+          },
+          {
+            "name": "The Creation of Adam — Michelangelo (1512)",
+            "note": "Two fingers almost touching, on the Sistine Chapel ceiling."
+          },
+          {
+            "name": "The Night Watch — Rembrandt (1642)",
+            "note": "A huge group portrait full of light and shadow."
+          },
+          {
+            "name": "Las Meninas — Velázquez (1656)",
+            "note": "A princess, her maids, and the painter himself looking at you."
+          },
+          {
+            "name": "Girl with a Pearl Earring — Vermeer (~1665)",
+            "note": "A girl turning over her shoulder."
+          }
+        ]
+      },
+      {
+        "heading": "1800s",
+        "items": [
+          {
+            "name": "Liberty Leading the People — Delacroix (1830)",
+            "note": "A woman with a flag leads a revolution in Paris."
+          },
+          {
+            "name": "The Great Wave — Hokusai (~1831)",
+            "note": "Japanese woodblock print; a wave towers over boats."
+          },
+          {
+            "name": "Water Lilies — Claude Monet (1890s–1920s)",
+            "note": "Impressionism: blurry light on his pond."
+          },
+          {
+            "name": "The Starry Night — Van Gogh (1889)",
+            "note": "Swirling sky, painted from his window at a hospital."
+          },
+          {
+            "name": "The Scream — Edvard Munch (1893)",
+            "note": "A figure holding its face under a red sky."
+          }
+        ]
+      },
+      {
+        "heading": "1900s",
+        "items": [
+          {
+            "name": "American Gothic — Grant Wood (1930)",
+            "note": "A farmer with a pitchfork and his daughter."
+          },
+          {
+            "name": "The Persistence of Memory — Dalí (1931)",
+            "note": "Melting clocks. Surrealism: dream images."
+          },
+          {
+            "name": "Guernica — Picasso (1937)",
+            "note": "Protest against the bombing of a Spanish town in the civil war."
+          },
+          {
+            "name": "The Two Fridas — Frida Kahlo (1939)",
+            "note": "Two versions of herself, Mexican and European, holding hands."
+          },
+          {
+            "name": "Nighthawks — Edward Hopper (1942)",
+            "note": "Lonely people in a late-night diner."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Van Gogh sold almost nothing while alive. Today his paintings sell for over $100 million.",
+      "Guernica is black, white, and gray, like newspaper photos of the bombing.",
+      "For centuries, women were mostly kept out of art schools. Artists like Artemisia Gentileschi and Frida Kahlo were overlooked for a long time.",
+      "Many museums are free or pay-what-you-wish one day a week, so art isn't only for those who can pay."
+    ],
+    "doIt": "On the sheet, match each painting to what it shows. Then pick one to hang in your room and write why in one sentence. Tonight, ask Dad to show you the real picture.",
+    "sheet": {
+      "kind": "match",
+      "pairs": [
+        [
+          "Mona Lisa",
+          "The famous smile"
+        ],
+        [
+          "The Starry Night",
+          "A swirling sky from a hospital window"
+        ],
+        [
+          "Guernica",
+          "A protest against a bombing"
+        ],
+        [
+          "The Great Wave",
+          "A Japanese wave over boats"
+        ],
+        [
+          "The Scream",
+          "A figure holding its face"
+        ],
+        [
+          "The Persistence of Memory",
+          "Melting clocks"
+        ],
+        [
+          "American Gothic",
+          "A farmer with a pitchfork"
+        ],
+        [
+          "The Two Fridas",
+          "Two versions of the painter holding hands"
+        ],
+        [
+          "Nighthawks",
+          "A late-night diner"
+        ],
+        [
+          "The Creation of Adam",
+          "Two fingers almost touching"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Who painted The Starry Night?",
+        "options": [
+          "Van Gogh",
+          "Monet",
+          "Picasso"
+        ],
+        "why": "1889, in France."
+      },
+      {
+        "q": "What is Guernica about?",
+        "options": [
+          "The bombing of a town",
+          "A party",
+          "A garden"
+        ],
+        "why": "Picasso painted it in protest in 1937."
+      },
+      {
+        "q": "Melting clocks are by…",
+        "options": [
+          "Salvador Dalí",
+          "Rembrandt",
+          "Vermeer"
+        ],
+        "why": "Dalí was a Surrealist."
+      },
+      {
+        "q": "Where is the Mona Lisa?",
+        "options": [
+          "The Louvre, Paris",
+          "New York",
+          "Rome"
+        ],
+        "why": "It has hung in the Louvre for over 200 years."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-11",
+    "title": "Knife skills",
+    "hook": "Cutting well is the first skill of cooking. Done right, it's fast and safe. Only with Dad or another adult in the kitchen today.",
+    "groups": [
+      {
+        "heading": "Safety",
+        "items": [
+          {
+            "name": "The claw",
+            "note": "Curl the fingertips of the holding hand under, knuckles against the blade."
+          },
+          {
+            "name": "A sharp knife is safer",
+            "note": "A dull knife slips. A sharp one goes where you aim."
+          },
+          {
+            "name": "Steady board",
+            "note": "Put a damp paper towel under the cutting board so it can't slide."
+          },
+          {
+            "name": "Never catch a falling knife",
+            "note": "Step back and let it fall."
+          },
+          {
+            "name": "Never in the sink",
+            "note": "Someone could reach into the water. Wash it, dry it, put it away."
+          }
+        ]
+      },
+      {
+        "heading": "Three knives",
+        "items": [
+          {
+            "name": "Chef's knife",
+            "note": "Big, for almost everything."
+          },
+          {
+            "name": "Paring knife",
+            "note": "Small, for peeling and little jobs."
+          },
+          {
+            "name": "Serrated (bread) knife",
+            "note": "Saw teeth, for bread and tomatoes."
+          }
+        ]
+      },
+      {
+        "heading": "Cuts",
+        "items": [
+          {
+            "name": "Rough chop",
+            "note": "Uneven pieces. Fine for soups."
+          },
+          {
+            "name": "Dice",
+            "note": "Even cubes, so everything cooks at the same speed."
+          },
+          {
+            "name": "Mince",
+            "note": "Very tiny pieces. Garlic, herbs."
+          },
+          {
+            "name": "Slice",
+            "note": "Even flat pieces."
+          },
+          {
+            "name": "Julienne",
+            "note": "Matchsticks. Carrots for stir-fry."
+          },
+          {
+            "name": "Chiffonade",
+            "note": "Roll leaves up like a cigar, slice into ribbons. Basil."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Dicing an onion: cut in half through the root, peel, make flat cuts toward the root, then down cuts, then across. The root holds it together.",
+      "Onions make you cry because cutting them releases a gas that turns into a mild acid in your eyes. A sharp knife crushes fewer cells.",
+      "Even pieces aren't about looks — small pieces burn while big ones stay raw.",
+      "Rock the chef's knife: tip stays on the board, the handle goes up and down."
+    ],
+    "doIt": "With Dad in the kitchen: dice half an onion and slice a carrot, then julienne the rest of it. Check each box on the sheet when done.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "☐ Board on a damp towel   ☐ Claw grip the whole time",
+        "☐ Diced half an onion — were the cubes even?",
+        "☐ Sliced a carrot   ☐ Julienned the rest",
+        "☐ Washed and put away the knife (not in the sink)",
+        "What was hardest?"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Which is safer?",
+        "options": [
+          "A sharp knife",
+          "A dull knife",
+          "They're the same"
+        ],
+        "why": "Dull knives slip."
+      },
+      {
+        "q": "A knife falls. You…",
+        "options": [
+          "Step back and let it fall",
+          "Catch it",
+          "Kick it"
+        ],
+        "why": "Never catch a falling knife."
+      },
+      {
+        "q": "Matchstick pieces are called…",
+        "options": [
+          "Julienne",
+          "Mince",
+          "Dice"
+        ],
+        "why": "Julienne carrots are thin sticks."
+      },
+      {
+        "q": "Why cut pieces the same size?",
+        "options": [
+          "They cook evenly",
+          "They look fancy",
+          "It's faster to eat"
+        ],
+        "why": "Small ones burn while big ones stay raw."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-12",
+    "title": "Credit cards and debt",
+    "hook": "A credit card is a loan with a very high interest rate. Used carefully it's handy. Used carelessly it's a trap built to make money from you.",
+    "groups": [
+      {
+        "heading": "Cards",
+        "items": [
+          {
+            "name": "Debit card",
+            "note": "Spends money already in your bank account."
+          },
+          {
+            "name": "Credit card",
+            "note": "Spends the bank's money. You owe it back."
+          },
+          {
+            "name": "Pay in full each month",
+            "note": "Then you pay zero interest. This is the safe way."
+          }
+        ]
+      },
+      {
+        "heading": "The trap",
+        "items": [
+          {
+            "name": "APR",
+            "note": "Annual interest rate. Credit cards average over 20% a year."
+          },
+          {
+            "name": "Minimum payment",
+            "note": "The tiny amount they let you pay. Most of it goes to interest."
+          },
+          {
+            "name": "Late fee",
+            "note": "Often $30 or more for one late payment."
+          },
+          {
+            "name": "Payday loan",
+            "note": "Short loans at rates near 400% a year, often in poorer neighborhoods. Avoid."
+          },
+          {
+            "name": "Buy now, pay later",
+            "note": "Splits a purchase into payments. Easy to stack up too many."
+          }
+        ]
+      },
+      {
+        "heading": "Credit score",
+        "items": [
+          {
+            "name": "What it is",
+            "note": "A number from 300 to 850 that says how risky lending to you seems."
+          },
+          {
+            "name": "What it affects",
+            "note": "Renting an apartment, a car loan, sometimes even a job."
+          },
+          {
+            "name": "How to keep it high",
+            "note": "Pay on time, owe little compared to your limit."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "$1,000 on a card at 24% APR, paying $25 a month: about 7 years to pay off, and about $2,000 paid in total.",
+      "24% a year is 2% a month. On $1,000 that's $20 of interest — so a $25 payment cuts only $5 off the debt.",
+      "Card companies earn the most from people who can only afford the minimum.",
+      "Store “0% for 12 months” offers often charge all the back-interest if you're one day late paying it off."
+    ],
+    "doIt": "On the sheet: $1,000 balance, 2% interest a month, $25 payment. Work out 3 months. How much did the balance actually drop?",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Month",
+        "Start balance",
+        "Interest (2%)",
+        "Payment",
+        "End balance"
+      ],
+      "rows": [
+        [
+          "1",
+          "$1,000.00",
+          "",
+          "$25"
+        ],
+        [
+          "2",
+          "",
+          "",
+          "$25"
+        ],
+        [
+          "3",
+          "",
+          "",
+          "$25"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "How do you pay zero interest on a credit card?",
+        "options": [
+          "Pay the full balance every month",
+          "Pay the minimum",
+          "Use it only online"
+        ],
+        "why": "Interest only starts on unpaid balance."
+      },
+      {
+        "q": "A debit card spends…",
+        "options": [
+          "Your own money",
+          "The bank's money",
+          "Borrowed money"
+        ],
+        "why": "It takes from your account."
+      },
+      {
+        "q": "Credit scores range from…",
+        "options": [
+          "300 to 850",
+          "0 to 100",
+          "1 to 10"
+        ],
+        "why": "Higher is better."
+      },
+      {
+        "q": "2% a month on $500 is…",
+        "options": [
+          "$10",
+          "$2",
+          "$100"
+        ],
+        "why": "0.02 × 500."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-13",
+    "title": "Spices of the world",
+    "hook": "Spices made food exciting — and made empires rich. Learn 16 by name, by smell, and by the food that uses them.",
+    "groups": [
+      {
+        "heading": "Warm and earthy",
+        "items": [
+          {
+            "name": "Cumin",
+            "note": "Mexico, India, Middle East. Smoky. In tacos and curry."
+          },
+          {
+            "name": "Turmeric",
+            "note": "India. Bright yellow, earthy. Colors curry."
+          },
+          {
+            "name": "Paprika",
+            "note": "Hungary, Spain. Ground red peppers, sweet or smoked."
+          },
+          {
+            "name": "Cinnamon",
+            "note": "Sri Lanka. The bark of a tree."
+          },
+          {
+            "name": "Nutmeg",
+            "note": "Indonesia. A seed. Pumpkin pie."
+          },
+          {
+            "name": "Cloves",
+            "note": "Indonesia. Dried flower buds. Very strong."
+          }
+        ]
+      },
+      {
+        "heading": "Bright and sharp",
+        "items": [
+          {
+            "name": "Black pepper",
+            "note": "India. Once so valuable it was called black gold."
+          },
+          {
+            "name": "Ginger",
+            "note": "Asia. A root, spicy-fresh. Stir-fries, cookies."
+          },
+          {
+            "name": "Chili / cayenne",
+            "note": "From the Americas. The heat is a chemical, capsaicin."
+          },
+          {
+            "name": "Sumac",
+            "note": "Middle East. Tangy red berries. On salads and meat."
+          }
+        ]
+      },
+      {
+        "heading": "Sweet-smelling",
+        "items": [
+          {
+            "name": "Cardamom",
+            "note": "India. In chai and Scandinavian buns."
+          },
+          {
+            "name": "Saffron",
+            "note": "Iran. Threads from crocus flowers. The most expensive spice by weight."
+          },
+          {
+            "name": "Star anise",
+            "note": "China. Licorice smell. In five-spice powder."
+          }
+        ]
+      },
+      {
+        "heading": "Blends",
+        "items": [
+          {
+            "name": "Za'atar",
+            "note": "Thyme, sumac, sesame. Middle East, on bread with oil."
+          },
+          {
+            "name": "Garam masala",
+            "note": "India. A warm mix added at the end of cooking."
+          },
+          {
+            "name": "Chili powder",
+            "note": "USA. Chili, cumin, garlic, oregano. Chili con carne."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Columbus sailed west in 1492 looking for a faster route to Asia's spices.",
+      "In 1621 the Dutch East India Company killed or enslaved most people on the Banda Islands to control the nutmeg trade.",
+      "Chili peppers came from the Americas. Before 1492, there was no chili in Indian or Thai food.",
+      "Spices lose smell over time. A jar older than about 2 years is mostly dust."
+    ],
+    "doIt": "Ask Dad to pick 5 spice jars and hide the labels. Smell each one and guess. Fill in the table.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Jar",
+        "My guess",
+        "Real answer",
+        "A food that uses it"
+      ],
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ],
+        [
+          "4"
+        ],
+        [
+          "5"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Which spice is the bark of a tree?",
+        "options": [
+          "Cinnamon",
+          "Cumin",
+          "Saffron"
+        ],
+        "why": "Rolled-up bark — the sticks."
+      },
+      {
+        "q": "Where did chili peppers come from?",
+        "options": [
+          "The Americas",
+          "India",
+          "China"
+        ],
+        "why": "They spread around the world after 1492."
+      },
+      {
+        "q": "Which spice makes curry yellow?",
+        "options": [
+          "Turmeric",
+          "Paprika",
+          "Black pepper"
+        ],
+        "why": "Turmeric is bright yellow."
+      },
+      {
+        "q": "The most expensive spice by weight?",
+        "options": [
+          "Saffron",
+          "Black pepper",
+          "Ginger"
+        ],
+        "why": "Each thread is picked by hand from a flower."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-16",
+    "title": "How your body fights germs",
+    "hook": "Every day your immune system fights off invaders you never notice. When you do feel sick, much of what you feel is the fight itself.",
+    "groups": [
+      {
+        "heading": "The walls",
+        "items": [
+          {
+            "name": "Skin",
+            "note": "The first barrier. A cut is an open door."
+          },
+          {
+            "name": "Mucus and tiny hairs",
+            "note": "In your nose and lungs, trap germs so you sneeze or cough them out."
+          },
+          {
+            "name": "Stomach acid",
+            "note": "Kills most germs you swallow."
+          }
+        ]
+      },
+      {
+        "heading": "The soldiers (white blood cells)",
+        "items": [
+          {
+            "name": "Neutrophils",
+            "note": "First to arrive. Swallow bacteria. Pus is mostly dead neutrophils."
+          },
+          {
+            "name": "Macrophages",
+            "note": "“Big eaters.” Eat germs and show pieces to other cells."
+          },
+          {
+            "name": "B cells",
+            "note": "Make antibodies: Y-shaped proteins that stick to one exact germ."
+          },
+          {
+            "name": "T cells",
+            "note": "Kill infected cells and direct the fight."
+          },
+          {
+            "name": "Memory cells",
+            "note": "Remember a germ for years — why you rarely get chickenpox twice."
+          }
+        ]
+      },
+      {
+        "heading": "Signs of the fight",
+        "items": [
+          {
+            "name": "Fever",
+            "note": "Heat slows germs and speeds up immune cells."
+          },
+          {
+            "name": "Swelling and redness",
+            "note": "More blood brings more soldiers to the spot."
+          },
+          {
+            "name": "Swollen lymph nodes",
+            "note": "The “glands” in your neck, where immune cells gather."
+          }
+        ]
+      },
+      {
+        "heading": "When it goes wrong",
+        "items": [
+          {
+            "name": "Allergy",
+            "note": "Overreacting to something harmless, like pollen or peanuts."
+          },
+          {
+            "name": "Autoimmune disease",
+            "note": "Attacking your own body, like type 1 diabetes."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "In 1721, an enslaved African man in Boston named Onesimus taught the town about inoculation, a practice from West Africa. It saved many lives in a smallpox outbreak.",
+      "Edward Jenner made the first vaccine in 1796, using cowpox to protect against smallpox.",
+      "Vaccines wiped out smallpox completely by 1980 — the only human disease ever eradicated.",
+      "Herd immunity: when most people are immune, a germ can't spread, which protects babies and sick people who can't be vaccinated."
+    ],
+    "doIt": "On the sheet, draw a germ entering through a cut. Label the 4 steps of the fight in order: barrier, first responders, antibodies, memory.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Draw it here (cut, germ, white blood cells):",
+        "Step 1 — barrier:",
+        "Step 2 — first responders:",
+        "Step 3 — antibodies:",
+        "Step 4 — memory:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "What makes antibodies?",
+        "options": [
+          "B cells",
+          "Skin",
+          "Red blood cells"
+        ],
+        "why": "B cells build antibodies for one exact germ."
+      },
+      {
+        "q": "Why do you rarely get chickenpox twice?",
+        "options": [
+          "Memory cells",
+          "Fever",
+          "Mucus"
+        ],
+        "why": "They remember it for years."
+      },
+      {
+        "q": "An allergy is…",
+        "options": [
+          "Overreacting to something harmless",
+          "A bacteria infection",
+          "A virus"
+        ],
+        "why": "Pollen isn't dangerous; the reaction is."
+      },
+      {
+        "q": "The only human disease wiped out by vaccines?",
+        "options": [
+          "Smallpox",
+          "The flu",
+          "Measles"
+        ],
+        "why": "Eradicated in 1980."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-17",
+    "title": "A family tree of music",
+    "hook": "Most popular music today grew from a few roots — many of them created by Black Americans. Learn how one style led to the next.",
+    "groups": [
+      {
+        "heading": "Roots",
+        "items": [
+          {
+            "name": "Classical",
+            "note": "Europe, 1600s–1800s. Bach, Mozart, Beethoven. Orchestras, written scores."
+          },
+          {
+            "name": "Blues",
+            "note": "Mississippi Delta, ~1900. Black Americans after slavery. Sad songs, 12-bar pattern."
+          },
+          {
+            "name": "Gospel",
+            "note": "Black churches. Big voices, call and response."
+          },
+          {
+            "name": "Jazz",
+            "note": "New Orleans, 1910s. Improvising — making it up live. Louis Armstrong."
+          },
+          {
+            "name": "Country",
+            "note": "Appalachia and the South, 1920s. Fiddle, guitar — and the banjo, which came from West Africa."
+          }
+        ]
+      },
+      {
+        "heading": "Branches",
+        "items": [
+          {
+            "name": "Rock and roll",
+            "note": "1950s, from rhythm and blues. Sister Rosetta Tharpe, Chuck Berry, Little Richard."
+          },
+          {
+            "name": "Soul / Motown",
+            "note": "Detroit, 1960s. Aretha Franklin, Stevie Wonder."
+          },
+          {
+            "name": "Reggae",
+            "note": "Jamaica, late 1960s. Off-beat rhythm, songs about freedom. Bob Marley."
+          },
+          {
+            "name": "Salsa",
+            "note": "New York's Puerto Rican and Cuban communities, 1960s–70s. Celia Cruz."
+          },
+          {
+            "name": "Afrobeat",
+            "note": "Nigeria, 1970s. Fela Kuti, songs against the military government."
+          }
+        ]
+      },
+      {
+        "heading": "Newer",
+        "items": [
+          {
+            "name": "Hip-hop",
+            "note": "The Bronx, New York, 1973. DJ Kool Herc looped drum breaks; rappers rhymed over them."
+          },
+          {
+            "name": "House / electronic",
+            "note": "Chicago, 1980s, in Black and gay dance clubs."
+          },
+          {
+            "name": "K-pop",
+            "note": "South Korea, 1990s on. Mixes pop, hip-hop, and dance."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Sister Rosetta Tharpe, a Black woman playing electric guitar in the 1930s–40s, is called the godmother of rock and roll.",
+      "Early rock and roll by Black artists was often re-recorded by white singers who got the radio play and money.",
+      "Hip-hop started at block parties in one of the poorest parts of New York and became the most-streamed genre in the US.",
+      "Many genres began as music of protest: blues, reggae, Afrobeat, punk, hip-hop."
+    ],
+    "doIt": "On the sheet, match each genre to where it was born. Tonight after school, play 30 seconds of 5 genres with Dad and pick a favorite.",
+    "sheet": {
+      "kind": "match",
+      "pairs": [
+        [
+          "Blues",
+          "Mississippi Delta"
+        ],
+        [
+          "Jazz",
+          "New Orleans"
+        ],
+        [
+          "Motown",
+          "Detroit"
+        ],
+        [
+          "Reggae",
+          "Jamaica"
+        ],
+        [
+          "Hip-hop",
+          "The Bronx, New York"
+        ],
+        [
+          "House",
+          "Chicago"
+        ],
+        [
+          "Afrobeat",
+          "Nigeria"
+        ],
+        [
+          "Salsa",
+          "Puerto Rican and Cuban New York"
+        ],
+        [
+          "K-pop",
+          "South Korea"
+        ],
+        [
+          "Classical",
+          "Europe, 1600s–1800s"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Where did hip-hop start?",
+        "options": [
+          "The Bronx",
+          "Los Angeles",
+          "London"
+        ],
+        "why": "Block parties in 1973."
+      },
+      {
+        "q": "Jazz is known for…",
+        "options": [
+          "Improvising",
+          "Being written down exactly",
+          "No drums"
+        ],
+        "why": "Musicians make it up as they play."
+      },
+      {
+        "q": "The banjo came from…",
+        "options": [
+          "West Africa",
+          "Ireland",
+          "Spain"
+        ],
+        "why": "Enslaved Africans brought it to America."
+      },
+      {
+        "q": "Rock and roll grew mostly from…",
+        "options": [
+          "Rhythm and blues",
+          "Opera",
+          "K-pop"
+        ],
+        "why": "R&B by Black artists in the 1940s–50s."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-18",
+    "title": "Basic tools and home repair",
+    "hook": "Most small fixes need just a few tools and the right word for them. Learn them now and you'll never feel stuck when something wobbles or leaks.",
+    "groups": [
+      {
+        "heading": "The toolbox",
+        "items": [
+          {
+            "name": "Phillips screwdriver",
+            "note": "Cross-shaped tip, for + screws. The most common."
+          },
+          {
+            "name": "Flathead screwdriver",
+            "note": "Flat tip, for — screws. Also opens paint cans."
+          },
+          {
+            "name": "Claw hammer",
+            "note": "Drives nails; the claw pulls them out."
+          },
+          {
+            "name": "Tape measure",
+            "note": "Locks in place. The hook at the end slides a little on purpose."
+          },
+          {
+            "name": "Level",
+            "note": "The bubble in the middle means perfectly flat."
+          },
+          {
+            "name": "Pliers",
+            "note": "Grip, bend, and hold. Needle-nose for small spaces."
+          },
+          {
+            "name": "Adjustable wrench",
+            "note": "Turns nuts and bolts of any size."
+          },
+          {
+            "name": "Allen key (hex key)",
+            "note": "Little L-shaped tool for furniture you assemble yourself."
+          },
+          {
+            "name": "Utility knife",
+            "note": "Opens boxes, cuts carpet. Blade retracts — always close it."
+          }
+        ]
+      },
+      {
+        "heading": "Know your house",
+        "items": [
+          {
+            "name": "Water shut-off valve",
+            "note": "Turns off all the water if a pipe bursts."
+          },
+          {
+            "name": "Breaker panel",
+            "note": "Switches that cut power to parts of the house. A “tripped” breaker is flipped to the middle."
+          },
+          {
+            "name": "Plunger",
+            "note": "Unclogs a toilet: seal it over the hole, push and pull."
+          }
+        ]
+      },
+      {
+        "heading": "Handy stuff",
+        "items": [
+          {
+            "name": "WD-40",
+            "note": "Pushes out water and loosens stuck metal. Stops squeaks."
+          },
+          {
+            "name": "Duct tape",
+            "note": "Temporary fix for almost anything."
+          },
+          {
+            "name": "Painter's tape",
+            "note": "Peels off clean. For marking and painting edges."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Righty-tighty, lefty-loosey: turn clockwise to tighten, counter-clockwise to loosen.",
+      "Never work on anything electrical unless the breaker is off — and ask an adult first.",
+      "Many cities have free “tool libraries” where you can borrow tools instead of buying them.",
+      "The “right to repair” movement fights for people to be able to fix their own phones, cars, and tractors instead of being forced to pay the company."
+    ],
+    "doIt": "Find 5 tools in the house and fill in the table. Then ask Dad to show you the water shut-off and the breaker panel. Tighten one loose thing — a cabinet handle, a chair screw.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Tool",
+        "Where it is in the house",
+        "What it's for"
+      ],
+      "rows": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "To loosen a screw you turn…",
+        "options": [
+          "Counter-clockwise (left)",
+          "Clockwise (right)",
+          "Either way"
+        ],
+        "why": "Lefty-loosey."
+      },
+      {
+        "q": "A cross-shaped screw needs a…",
+        "options": [
+          "Phillips screwdriver",
+          "Flathead",
+          "Hammer"
+        ],
+        "why": "Phillips has the + tip."
+      },
+      {
+        "q": "A pipe bursts. First you…",
+        "options": [
+          "Turn off the main water valve",
+          "Call a friend",
+          "Use duct tape"
+        ],
+        "why": "Stop the water, then fix."
+      },
+      {
+        "q": "What does a level show?",
+        "options": [
+          "If something is flat",
+          "How long it is",
+          "How heavy it is"
+        ],
+        "why": "Bubble in the middle = level."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-19",
+    "title": "Making a budget",
+    "hook": "A budget is a plan for your money before you spend it. Without one, money disappears and you don't know where.",
+    "groups": [
+      {
+        "heading": "Words",
+        "items": [
+          {
+            "name": "Income",
+            "note": "Money coming in: take-home pay."
+          },
+          {
+            "name": "Fixed expenses",
+            "note": "Same every month: rent, phone, insurance."
+          },
+          {
+            "name": "Variable expenses",
+            "note": "Change each month: food, gas, fun."
+          },
+          {
+            "name": "Needs vs. wants",
+            "note": "Need: rent, food, transport. Want: new sneakers, streaming."
+          },
+          {
+            "name": "Emergency fund",
+            "note": "3–6 months of expenses saved, for a lost job or a big bill."
+          }
+        ]
+      },
+      {
+        "heading": "A simple rule: 50 / 30 / 20",
+        "items": [
+          {
+            "name": "50% needs",
+            "note": "Housing, groceries, bills, transport."
+          },
+          {
+            "name": "30% wants",
+            "note": "Eating out, hobbies, gifts."
+          },
+          {
+            "name": "20% savings",
+            "note": "Emergency fund, retirement, paying off debt."
+          }
+        ]
+      },
+      {
+        "heading": "Housing",
+        "items": [
+          {
+            "name": "The 30% guideline",
+            "note": "Rent should be no more than 30% of income."
+          },
+          {
+            "name": "Rent-burdened",
+            "note": "Paying more than 30%. About half of US renters are."
+          },
+          {
+            "name": "Roommates",
+            "note": "The most common way young people make rent work."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Write the budget before the month starts, then check it at the end. Where did you go over?",
+      "Small daily costs add up: $6 a day on snacks is about $180 a month.",
+      "In many cities, a full-time minimum-wage job can't cover a one-bedroom apartment at 30% of income.",
+      "Pay yourself first: move savings out the day you're paid, before you can spend it."
+    ],
+    "doIt": "You take home $3,000 a month. Fill in the budget so the total is exactly $3,000. Rent is $1,100. Mark each line N (need) or W (want).",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Category",
+        "Amount",
+        "N or W"
+      ],
+      "rows": [
+        [
+          "Rent",
+          "$1,100"
+        ],
+        [
+          "Groceries"
+        ],
+        [
+          "Transport"
+        ],
+        [
+          "Phone and internet"
+        ],
+        [
+          "Electricity and heat"
+        ],
+        [
+          "Savings"
+        ],
+        [
+          "Eating out and fun"
+        ],
+        [
+          "Other"
+        ],
+        [
+          "TOTAL",
+          "$3,000"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Income $2,000. 30% for rent is…",
+        "options": [
+          "$600",
+          "$300",
+          "$1,000"
+        ],
+        "why": "0.3 × 2,000."
+      },
+      {
+        "q": "Which is a want?",
+        "options": [
+          "Concert tickets",
+          "Rent",
+          "Groceries"
+        ],
+        "why": "Nice, not necessary."
+      },
+      {
+        "q": "In 50/30/20, the 20% goes to…",
+        "options": [
+          "Savings",
+          "Fun",
+          "Rent"
+        ],
+        "why": "Save first."
+      },
+      {
+        "q": "An emergency fund should cover about…",
+        "options": [
+          "3–6 months of expenses",
+          "1 day",
+          "10 years"
+        ],
+        "why": "Enough to get through a lost job."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-20",
+    "title": "Coffee, tea, and chocolate",
+    "hook": "Three things billions of people enjoy every day. Each started in one place, spread with trade and empire, and is still grown mostly by poor farmers far away.",
+    "groups": [
+      {
+        "heading": "Coffee",
+        "items": [
+          {
+            "name": "Origin",
+            "note": "Ethiopia. Traded through Yemen by the 1400s."
+          },
+          {
+            "name": "Arabica vs. robusta",
+            "note": "Arabica: smoother, grown high up. Robusta: stronger, more caffeine."
+          },
+          {
+            "name": "Biggest grower today",
+            "note": "Brazil, about a third of the world's coffee."
+          }
+        ]
+      },
+      {
+        "heading": "Tea",
+        "items": [
+          {
+            "name": "One plant",
+            "note": "Green, black, white, and oolong all come from Camellia sinensis. The difference is how long the leaves oxidize (darken)."
+          },
+          {
+            "name": "Origin",
+            "note": "China, thousands of years ago."
+          },
+          {
+            "name": "Herbal “tea”",
+            "note": "Mint or chamomile isn't really tea — no tea leaves."
+          },
+          {
+            "name": "Boston Tea Party, 1773",
+            "note": "Colonists dumped British tea into the harbor to protest taxes."
+          }
+        ]
+      },
+      {
+        "heading": "Chocolate",
+        "items": [
+          {
+            "name": "Origin",
+            "note": "Mesoamerica. The Maya and Aztecs drank it bitter; cacao beans were used as money."
+          },
+          {
+            "name": "Where it grows now",
+            "note": "About 60% comes from Ivory Coast and Ghana in West Africa."
+          },
+          {
+            "name": "Cocoa → chocolate",
+            "note": "Beans ferment, dry, roast, grind. Add sugar and milk for milk chocolate."
+          }
+        ]
+      },
+      {
+        "heading": "Fairness",
+        "items": [
+          {
+            "name": "Fair trade",
+            "note": "A label promising farmers a minimum price and no child labor."
+          },
+          {
+            "name": "Child labor",
+            "note": "About 1.5 million children work on cocoa farms in Ivory Coast and Ghana."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Britain sold opium in China partly to pay for tea, which led to the Opium Wars in the 1840s.",
+      "Cocoa farmers often receive only a few cents of each dollar spent on a chocolate bar.",
+      "Caffeine is a drug. Doctors advise kids and teens to have little or none.",
+      "Tea is the most-drunk drink in the world after water."
+    ],
+    "doIt": "On the sheet, answer the questions. Then look at any chocolate or coffee in the house: does it have a fair trade label? Where was it grown?",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Where did coffee, tea, and chocolate each start?",
+        "Green tea and black tea — what's the difference?",
+        "Who grows most of the world's cocoa, and what problem does fair trade try to fix?",
+        "Something in our kitchen: name, where grown, fair trade label yes/no:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Where did coffee start?",
+        "options": [
+          "Ethiopia",
+          "Brazil",
+          "Italy"
+        ],
+        "why": "Brazil grows the most today; Ethiopia is the origin."
+      },
+      {
+        "q": "Green and black tea come from…",
+        "options": [
+          "The same plant",
+          "Different plants",
+          "Mint"
+        ],
+        "why": "Camellia sinensis, processed differently."
+      },
+      {
+        "q": "Most cocoa today comes from…",
+        "options": [
+          "West Africa",
+          "Switzerland",
+          "Mexico"
+        ],
+        "why": "Ivory Coast and Ghana."
+      },
+      {
+        "q": "The Aztecs used cacao beans as…",
+        "options": [
+          "Money",
+          "Medicine only",
+          "Building blocks"
+        ],
+        "why": "Beans were currency."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-23",
+    "title": "A map of careers",
+    "hook": "There are thousands of jobs. Here are 20 — what they do, how long the training takes, and roughly what they pay in the US.",
+    "groups": [
+      {
+        "heading": "Months to 2 years of training",
+        "items": [
+          {
+            "name": "Electrician",
+            "note": "Wires buildings. 4–5 year paid apprenticeship. ~$61k."
+          },
+          {
+            "name": "Plumber",
+            "note": "Water and gas pipes. Paid apprenticeship. ~$61k."
+          },
+          {
+            "name": "Wind turbine technician",
+            "note": "Fixes turbines. Certificate. One of the fastest-growing jobs. ~$61k."
+          },
+          {
+            "name": "Firefighter",
+            "note": "Fire and medical calls. Academy of a few months. ~$57k."
+          },
+          {
+            "name": "Home health aide",
+            "note": "Cares for elderly and disabled people at home. Weeks of training. ~$33k."
+          },
+          {
+            "name": "Truck driver",
+            "note": "Moves goods. A few weeks for a license. ~$54k."
+          }
+        ]
+      },
+      {
+        "heading": "2–4 years (college)",
+        "items": [
+          {
+            "name": "Registered nurse",
+            "note": "Cares for patients. 2–4 years. ~$86k."
+          },
+          {
+            "name": "Dental hygienist",
+            "note": "Cleans teeth. 2–3 years. ~$87k."
+          },
+          {
+            "name": "Teacher",
+            "note": "4–5 years. ~$65k."
+          },
+          {
+            "name": "Accountant",
+            "note": "Tracks money for companies. 4 years. ~$79k."
+          },
+          {
+            "name": "Software developer",
+            "note": "Builds apps. 4 years or self-taught. ~$130k."
+          },
+          {
+            "name": "Civil engineer",
+            "note": "Designs bridges, roads, water systems. 4 years. ~$95k."
+          },
+          {
+            "name": "Social worker",
+            "note": "Helps families in crisis. 4–6 years. ~$58k."
+          },
+          {
+            "name": "Graphic designer",
+            "note": "Logos, ads, websites. 4 years. ~$58k."
+          }
+        ]
+      },
+      {
+        "heading": "5+ years",
+        "items": [
+          {
+            "name": "Architect",
+            "note": "Designs buildings. 5–7 years + license. ~$93k."
+          },
+          {
+            "name": "Physical therapist",
+            "note": "Helps people move after injury. ~7 years. ~$99k."
+          },
+          {
+            "name": "Pharmacist",
+            "note": "Medicines expert. 6–8 years. ~$135k."
+          },
+          {
+            "name": "Lawyer",
+            "note": "7 years (college + law school). ~$145k."
+          },
+          {
+            "name": "Airline pilot",
+            "note": "Years of training and 1,500 flight hours. ~$220k."
+          },
+          {
+            "name": "Doctor",
+            "note": "11–15 years after high school. $230k and up."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "These are middle (median) pays — half earn more, half less, and it varies a lot by city.",
+      "Home health aides do some of the most essential work and are among the lowest paid. Many are immigrant women.",
+      "Trade apprenticeships pay you while you learn, with no college debt.",
+      "Most people change careers more than once. What you study isn't a life sentence."
+    ],
+    "doIt": "On the sheet, list your top 3 jobs from the list (or others). For each: what draws you, and how many years of training it takes.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Job",
+        "What draws me",
+        "Years of training",
+        "Approx. pay"
+      ],
+      "rows": [
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Which job has a paid apprenticeship?",
+        "options": [
+          "Electrician",
+          "Lawyer",
+          "Doctor"
+        ],
+        "why": "Apprentices earn while they train."
+      },
+      {
+        "q": "Roughly how long to become a doctor after high school?",
+        "options": [
+          "11–15 years",
+          "2 years",
+          "4 years"
+        ],
+        "why": "College, medical school, then residency."
+      },
+      {
+        "q": "Median pay means…",
+        "options": [
+          "Half earn more, half less",
+          "The highest pay",
+          "The starting pay"
+        ],
+        "why": "It's the middle value — like Day 39!"
+      },
+      {
+        "q": "Who designs bridges?",
+        "options": [
+          "Civil engineers",
+          "Accountants",
+          "Pharmacists"
+        ],
+        "why": "Civil = public works."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-24",
+    "title": "Sleep and your brain",
+    "hook": "Sleep isn't wasted time. It's when your brain files what you learned and your body grows. Teens need more than adults — and their clocks run later.",
+    "groups": [
+      {
+        "heading": "How much",
+        "items": [
+          {
+            "name": "Ages 6–12",
+            "note": "9–12 hours a night."
+          },
+          {
+            "name": "Ages 13–18",
+            "note": "8–10 hours a night."
+          },
+          {
+            "name": "Adults",
+            "note": "7+ hours."
+          }
+        ]
+      },
+      {
+        "heading": "A night of sleep",
+        "items": [
+          {
+            "name": "Cycles",
+            "note": "About 90 minutes each, 4–6 a night."
+          },
+          {
+            "name": "Light sleep",
+            "note": "Easy to wake. Heart and breathing slow."
+          },
+          {
+            "name": "Deep sleep",
+            "note": "Body repairs and grows; growth hormone is released."
+          },
+          {
+            "name": "REM sleep",
+            "note": "Eyes move, dreams happen. Brain stores memories and skills."
+          }
+        ]
+      },
+      {
+        "heading": "What controls it",
+        "items": [
+          {
+            "name": "Circadian rhythm",
+            "note": "Your 24-hour body clock, set mostly by daylight."
+          },
+          {
+            "name": "Melatonin",
+            "note": "Hormone that rises at night and makes you sleepy."
+          },
+          {
+            "name": "Teen shift",
+            "note": "At puberty the clock moves about 2 hours later. Not laziness — biology."
+          }
+        ]
+      },
+      {
+        "heading": "What hurts it",
+        "items": [
+          {
+            "name": "Screens at night",
+            "note": "Bright light and alerts delay melatonin and keep the brain busy."
+          },
+          {
+            "name": "Caffeine",
+            "note": "Half of it is still in your body 5 hours later."
+          },
+          {
+            "name": "Changing bedtime a lot",
+            "note": "Weekends that shift 3 hours feel like jet lag on Monday."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Students remember more of what they studied if they sleep on it.",
+      "Doctors recommend middle and high schools start no earlier than 8:30 AM because of the teen body clock.",
+      "Morning sunlight helps set your clock so you get sleepy at night.",
+      "Staying up 18+ hours slows reaction time about as much as being legally drunk, studies show."
+    ],
+    "doIt": "Fill in your last 3 nights: bedtime, wake time, total hours. Did you hit 8–10? What is one thing you could change?",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Night",
+        "Bedtime",
+        "Wake time",
+        "Hours slept",
+        "Screen in the last hour? (Y/N)"
+      ],
+      "rows": [
+        [
+          "1"
+        ],
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "How much sleep does a 13-year-old need?",
+        "options": [
+          "8–10 hours",
+          "5–6 hours",
+          "12–14 hours"
+        ],
+        "why": "Teens need more than adults."
+      },
+      {
+        "q": "Dreams happen mostly in…",
+        "options": [
+          "REM sleep",
+          "Deep sleep",
+          "Light sleep"
+        ],
+        "why": "Rapid Eye Movement."
+      },
+      {
+        "q": "Bed at 10:30 PM, up at 7:30 AM. Hours?",
+        "options": [
+          "9",
+          "8",
+          "10"
+        ],
+        "why": "10:30 → 7:30 = 9 hours."
+      },
+      {
+        "q": "Which hormone makes you sleepy?",
+        "options": [
+          "Melatonin",
+          "Adrenaline",
+          "Insulin"
+        ],
+        "why": "It rises when it's dark."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-25",
+    "title": "Inventions that changed the world",
+    "hook": "A handful of inventions reshaped how everyone lives. Many had more than one inventor, in more than one place.",
+    "groups": [
+      {
+        "heading": "Ancient",
+        "items": [
+          {
+            "name": "Writing — ~3200 BCE",
+            "note": "Cuneiform in Mesopotamia (Iraq). History begins."
+          },
+          {
+            "name": "The wheel — ~3500 BCE",
+            "note": "Mesopotamia. First for pottery, then carts."
+          },
+          {
+            "name": "Paper — ~105 CE",
+            "note": "China, credited to Cai Lun."
+          },
+          {
+            "name": "Compass — ~1000s",
+            "note": "China. Made long sea voyages possible."
+          }
+        ]
+      },
+      {
+        "heading": "1400s–1800s",
+        "items": [
+          {
+            "name": "Printing press — ~1440",
+            "note": "Gutenberg, Germany. Korea printed with metal type earlier, in 1377."
+          },
+          {
+            "name": "Telescope — 1608",
+            "note": "Netherlands. Galileo used it to see Jupiter's moons."
+          },
+          {
+            "name": "Steam engine — 1769",
+            "note": "James Watt's improved engine powered the Industrial Revolution."
+          },
+          {
+            "name": "Vaccine — 1796",
+            "note": "Edward Jenner, against smallpox."
+          },
+          {
+            "name": "Telephone — 1876",
+            "note": "Alexander Graham Bell (others were close behind)."
+          },
+          {
+            "name": "Light bulb — 1879",
+            "note": "Edison's lasted long enough to sell; many inventors worked on it."
+          }
+        ]
+      },
+      {
+        "heading": "1900s and after",
+        "items": [
+          {
+            "name": "Airplane — 1903",
+            "note": "The Wright brothers, 12 seconds in the air."
+          },
+          {
+            "name": "Penicillin — 1928",
+            "note": "Alexander Fleming. The first antibiotic."
+          },
+          {
+            "name": "Transistor — 1947",
+            "note": "Tiny switch inside every computer chip."
+          },
+          {
+            "name": "World Wide Web — 1989",
+            "note": "Tim Berners-Lee — who chose not to patent it, so it was free for all."
+          },
+          {
+            "name": "Smartphone — 2007",
+            "note": "The iPhone put a computer in every pocket."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "The printing press made books cheap, so ordinary people could read the Bible, science, and news for themselves.",
+      "Katherine Johnson and other Black women mathematicians did calculations that got NASA astronauts to orbit and back.",
+      "The jet engine, GPS, and the internet all started as government-funded research.",
+      "Most inventions build on earlier ones — the telephone needed the telegraph, which needed batteries."
+    ],
+    "doIt": "On the sheet, match each invention to its date. Then pick the one you think changed the most lives and write why.",
+    "sheet": {
+      "kind": "match",
+      "pairs": [
+        [
+          "Writing",
+          "~3200 BCE"
+        ],
+        [
+          "Paper",
+          "~105 CE"
+        ],
+        [
+          "Printing press",
+          "~1440"
+        ],
+        [
+          "Telescope",
+          "1608"
+        ],
+        [
+          "Steam engine",
+          "1769"
+        ],
+        [
+          "First vaccine",
+          "1796"
+        ],
+        [
+          "Telephone",
+          "1876"
+        ],
+        [
+          "Airplane",
+          "1903"
+        ],
+        [
+          "Penicillin",
+          "1928"
+        ],
+        [
+          "World Wide Web",
+          "1989"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Where was paper invented?",
+        "options": [
+          "China",
+          "Egypt",
+          "Germany"
+        ],
+        "why": "Around 105 CE."
+      },
+      {
+        "q": "Who invented the World Wide Web and made it free?",
+        "options": [
+          "Tim Berners-Lee",
+          "Thomas Edison",
+          "Steve Jobs"
+        ],
+        "why": "1989, at CERN."
+      },
+      {
+        "q": "Which came first?",
+        "options": [
+          "Steam engine",
+          "Airplane",
+          "Smartphone"
+        ],
+        "why": "1769, then 1903, then 2007."
+      },
+      {
+        "q": "The first antibiotic was…",
+        "options": [
+          "Penicillin",
+          "Aspirin",
+          "Insulin"
+        ],
+        "why": "Fleming, 1928."
+      }
+    ]
+  },
+  {
+    "date": "2026-11-30",
+    "title": "Doing laundry",
+    "hook": "Every adult needs to do this. Twenty minutes now saves shrunken sweaters and pink socks later.",
+    "groups": [
+      {
+        "heading": "Before",
+        "items": [
+          {
+            "name": "Empty pockets",
+            "note": "Tissues explode into lint; pens stain everything."
+          },
+          {
+            "name": "Sort",
+            "note": "Whites, darks, colors. Towels alone — they shed."
+          },
+          {
+            "name": "Zip zippers, unbutton buttons",
+            "note": "Zippers snag; buttons pop."
+          },
+          {
+            "name": "Read the care label",
+            "note": "Small symbols inside the collar or side seam."
+          }
+        ]
+      },
+      {
+        "heading": "The symbols",
+        "items": [
+          {
+            "name": "Tub",
+            "note": "Washing. A number or dots inside = max temperature."
+          },
+          {
+            "name": "Hand in the tub",
+            "note": "Hand wash only."
+          },
+          {
+            "name": "Triangle",
+            "note": "Bleach. Crossed out = no bleach."
+          },
+          {
+            "name": "Square with a circle",
+            "note": "Tumble dryer. One dot = low heat, three = high."
+          },
+          {
+            "name": "Iron",
+            "note": "Dots for heat level."
+          },
+          {
+            "name": "Circle alone",
+            "note": "Dry clean. Any symbol with an X = don't."
+          }
+        ]
+      },
+      {
+        "heading": "The machine",
+        "items": [
+          {
+            "name": "Cold water",
+            "note": "Fine for most loads. Saves energy and colors."
+          },
+          {
+            "name": "Detergent",
+            "note": "Follow the cap line. More soap doesn't mean cleaner."
+          },
+          {
+            "name": "Don't overfill",
+            "note": "Clothes need room to move."
+          },
+          {
+            "name": "Clean the lint filter",
+            "note": "Every dryer load. A clogged filter can start a fire."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "About 90% of a washer's energy goes to heating the water. Washing cold cuts that almost to zero.",
+      "Hang-drying makes clothes last longer and uses no electricity.",
+      "One red sock in a white load can turn everything pink — that's why you sort.",
+      "Many families without a machine spend hours a week at laundromats. A washer at home saves real time."
+    ],
+    "doIt": "Do one full load with Dad: sort, read 3 labels, choose the setting, add detergent, start it. Put it in the dryer or hang it after. Fill in the table.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Item",
+        "Symbols on the label",
+        "Which pile",
+        "Setting chosen"
+      ],
+      "rows": [
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "A triangle with an X means…",
+        "options": [
+          "No bleach",
+          "Bleach OK",
+          "Dry clean"
+        ],
+        "why": "Triangle = bleach; X = don't."
+      },
+      {
+        "q": "Why sort laundry?",
+        "options": [
+          "Colors can bleed onto whites",
+          "It's faster",
+          "Machines need it"
+        ],
+        "why": "Hello, pink socks."
+      },
+      {
+        "q": "What should you clean after every dryer load?",
+        "options": [
+          "The lint filter",
+          "The drum",
+          "The door"
+        ],
+        "why": "Lint is a fire risk."
+      },
+      {
+        "q": "Most of a washer's energy goes to…",
+        "options": [
+          "Heating water",
+          "Spinning",
+          "The lights"
+        ],
+        "why": "So cold water saves the most."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-01",
+    "title": "How insurance works",
+    "hook": "Insurance means many people pay a little so that no one person is crushed by a huge cost. Here are the words you'll see on every bill.",
+    "groups": [
+      {
+        "heading": "The idea",
+        "items": [
+          {
+            "name": "Risk pooling",
+            "note": "1,000 people each pay $500. One has a $100,000 accident — the pool covers it."
+          },
+          {
+            "name": "Premium",
+            "note": "What you pay every month to be covered."
+          }
+        ]
+      },
+      {
+        "heading": "Health insurance words",
+        "items": [
+          {
+            "name": "Deductible",
+            "note": "What you pay yourself each year before insurance starts paying."
+          },
+          {
+            "name": "Copay",
+            "note": "A fixed fee per visit, like $25 to see a doctor."
+          },
+          {
+            "name": "Coinsurance",
+            "note": "Your percent after the deductible, like 20%."
+          },
+          {
+            "name": "Out-of-pocket maximum",
+            "note": "The most you'll pay in a year. After that, insurance pays 100%."
+          },
+          {
+            "name": "In-network",
+            "note": "Doctors your plan has a deal with. Out-of-network costs much more."
+          }
+        ]
+      },
+      {
+        "heading": "Kinds",
+        "items": [
+          {
+            "name": "Health",
+            "note": "Doctors, hospitals, medicine."
+          },
+          {
+            "name": "Car",
+            "note": "Required in almost every state, to pay for damage you cause."
+          },
+          {
+            "name": "Renters / homeowners",
+            "note": "Fire, theft, flood (sometimes)."
+          },
+          {
+            "name": "Life",
+            "note": "Pays your family if you die."
+          }
+        ]
+      },
+      {
+        "heading": "Public programs",
+        "items": [
+          {
+            "name": "Medicare",
+            "note": "For people 65+. Paid for from every paycheck."
+          },
+          {
+            "name": "Medicaid / CHIP",
+            "note": "For people and children with low incomes."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "About 26 million people in the US have no health insurance.",
+      "Medical bills are one of the biggest causes of debt in the US.",
+      "Almost every other rich country covers everyone's health care, paid through taxes.",
+      "A higher deductible usually means a lower premium — you're taking more of the risk yourself."
+    ],
+    "doIt": "On the sheet: your plan has a $1,000 deductible and 20% coinsurance. A hospital bill is $5,000. Work out what you pay and what insurance pays.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "First, you pay the deductible: $",
+        "What's left of the bill after the deductible: $",
+        "Your 20% of what's left: $",
+        "Total you pay: $          Insurance pays: $",
+        "In one sentence: why do people pay for insurance even in years they don't get sick?"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "The monthly payment for insurance is the…",
+        "options": [
+          "Premium",
+          "Deductible",
+          "Copay"
+        ],
+        "why": "Paid whether or not you use it."
+      },
+      {
+        "q": "$500 deductible, $300 bill. Insurance pays…",
+        "options": [
+          "$0",
+          "$300",
+          "$200"
+        ],
+        "why": "You haven't reached the deductible yet."
+      },
+      {
+        "q": "Medicare is for…",
+        "options": [
+          "People 65 and older",
+          "Children only",
+          "Car accidents"
+        ],
+        "why": "Health insurance for seniors."
+      },
+      {
+        "q": "Insurance works because…",
+        "options": [
+          "Many people share the risk",
+          "Nobody ever gets sick",
+          "Banks pay for it"
+        ],
+        "why": "Risk pooling."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-02",
+    "title": "Rice and grains",
+    "hook": "Rice feeds more than half the people on Earth. Each grain — rice, wheat, corn, quinoa — has a home and dishes built around it.",
+    "groups": [
+      {
+        "heading": "Rice",
+        "items": [
+          {
+            "name": "Basmati",
+            "note": "India and Pakistan. Long, fluffy, separate grains. Biryani."
+          },
+          {
+            "name": "Jasmine",
+            "note": "Thailand. Long, fragrant, a little sticky."
+          },
+          {
+            "name": "Arborio",
+            "note": "Italy. Short and starchy — makes risotto creamy."
+          },
+          {
+            "name": "Sushi rice",
+            "note": "Japan. Short and sticky, so it holds together."
+          },
+          {
+            "name": "Brown rice",
+            "note": "Any rice with the bran left on. More fiber, cooks longer."
+          },
+          {
+            "name": "Wild rice",
+            "note": "Not really rice — a grass seed. Ojibwe people of the Great Lakes call it manoomin."
+          }
+        ]
+      },
+      {
+        "heading": "Wheat and others",
+        "items": [
+          {
+            "name": "Bulgur",
+            "note": "Cracked wheat. Tabbouleh salad."
+          },
+          {
+            "name": "Couscous",
+            "note": "North Africa. Tiny balls of semolina — really a pasta."
+          },
+          {
+            "name": "Farro",
+            "note": "Ancient Italian wheat. Chewy."
+          },
+          {
+            "name": "Barley",
+            "note": "Soups and beer."
+          },
+          {
+            "name": "Oats",
+            "note": "Oatmeal. Lots of fiber."
+          }
+        ]
+      },
+      {
+        "heading": "From the Americas and Africa",
+        "items": [
+          {
+            "name": "Corn (maize)",
+            "note": "Grown from a wild grass in Mexico about 9,000 years ago. Tortillas, polenta."
+          },
+          {
+            "name": "Quinoa",
+            "note": "Andes mountains. A seed with complete protein."
+          },
+          {
+            "name": "Teff",
+            "note": "Ethiopia. Tiny grain for injera (Extra 2!)."
+          },
+          {
+            "name": "Millet",
+            "note": "Africa and India. Grows in dry, hot places."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Basic rice: rinse, then about 1 cup rice to 1½–2 cups water. Boil, cover, lowest heat for 15–18 minutes. Don't lift the lid.",
+      "Whole grains keep the bran and germ: more fiber and vitamins than white versions.",
+      "Rice farming needs lots of water, so droughts from climate change threaten food for billions.",
+      "Corn, potatoes, and tomatoes all came from Indigenous farmers in the Americas."
+    ],
+    "doIt": "Check the kitchen for grains. Fill in the table. Then, with Dad, cook one cup of rice using the basic method.",
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Grain",
+        "Where it's from",
+        "A dish that uses it",
+        "In our kitchen? (Y/N)"
+      ],
+      "rows": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Which rice makes risotto?",
+        "options": [
+          "Arborio",
+          "Basmati",
+          "Wild rice"
+        ],
+        "why": "Its starch makes it creamy."
+      },
+      {
+        "q": "Couscous is really a…",
+        "options": [
+          "Tiny pasta",
+          "Rice",
+          "Seed"
+        ],
+        "why": "Made from semolina, like pasta."
+      },
+      {
+        "q": "Where was corn first grown?",
+        "options": [
+          "Mexico",
+          "Italy",
+          "China"
+        ],
+        "why": "About 9,000 years ago."
+      },
+      {
+        "q": "Brown rice has…",
+        "options": [
+          "The bran left on",
+          "Food coloring",
+          "Less fiber"
+        ],
+        "why": "More fiber, longer cooking."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-03",
+    "title": "How US elections work",
+    "hook": "In 6 years you can vote. Here's how it works — and how the right to vote was won, and still gets fought over.",
+    "groups": [
+      {
+        "heading": "Who and when",
+        "items": [
+          {
+            "name": "President",
+            "note": "4-year term, max 2 terms."
+          },
+          {
+            "name": "House of Representatives",
+            "note": "435 members. All elected every 2 years. Bigger states get more."
+          },
+          {
+            "name": "Senate",
+            "note": "100 members, 2 per state. 6-year terms."
+          },
+          {
+            "name": "Election Day",
+            "note": "The Tuesday after the first Monday in November."
+          }
+        ]
+      },
+      {
+        "heading": "Steps",
+        "items": [
+          {
+            "name": "Register",
+            "note": "Sign up to vote. Some states do it automatically or on Election Day."
+          },
+          {
+            "name": "Primary",
+            "note": "Each party picks its candidate."
+          },
+          {
+            "name": "General election",
+            "note": "Candidates from all parties face off."
+          },
+          {
+            "name": "Mail / absentee ballot",
+            "note": "Vote from home. About 4 in 10 voters did in 2020."
+          }
+        ]
+      },
+      {
+        "heading": "The Electoral College",
+        "items": [
+          {
+            "name": "538 electors",
+            "note": "Each state gets as many as its House + Senate seats. DC gets 3."
+          },
+          {
+            "name": "270 to win",
+            "note": "Most states give all their electors to whoever wins the state."
+          },
+          {
+            "name": "Popular vote",
+            "note": "Total votes nationwide. A candidate can win it and still lose — it happened in 2000 and 2016."
+          }
+        ]
+      },
+      {
+        "heading": "Winning the vote",
+        "items": [
+          {
+            "name": "15th Amendment, 1870",
+            "note": "Black men can vote — on paper. Southern states blocked them for 90 years."
+          },
+          {
+            "name": "19th Amendment, 1920",
+            "note": "Women win the vote."
+          },
+          {
+            "name": "Voting Rights Act, 1965",
+            "note": "After the Selma marches. Banned literacy tests and racist rules."
+          },
+          {
+            "name": "26th Amendment, 1971",
+            "note": "Voting age lowered from 21 to 18."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "In 2013 the Supreme Court (Shelby County v. Holder) struck down a key part of the Voting Rights Act; several states then passed stricter voting rules.",
+      "Gerrymandering: drawing district lines to give one party an unfair advantage.",
+      "Turnout in 2020 was about 66% of eligible voters — the highest in over 100 years.",
+      "Local elections — mayor, school board — decide a lot about daily life, and often only 1 in 5 people vote in them."
+    ],
+    "doIt": "On the sheet, put the steps of an election in order, then answer the 3 questions.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Put in order: general election · register · primary · inauguration · counting:",
+        "How many electoral votes to win the presidency?",
+        "Which amendment let women vote, and when?",
+        "What did the Voting Rights Act of 1965 ban?",
+        "In what year will you be able to vote?"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Electoral votes needed to win?",
+        "options": [
+          "270",
+          "538",
+          "100"
+        ],
+        "why": "More than half of 538."
+      },
+      {
+        "q": "How long is a senator's term?",
+        "options": [
+          "6 years",
+          "2 years",
+          "4 years"
+        ],
+        "why": "House is 2, President 4, Senate 6."
+      },
+      {
+        "q": "Which made 18-year-olds able to vote?",
+        "options": [
+          "26th Amendment",
+          "19th Amendment",
+          "15th Amendment"
+        ],
+        "why": "1971, during the Vietnam War."
+      },
+      {
+        "q": "A primary election picks…",
+        "options": [
+          "Each party's candidate",
+          "The president",
+          "The Supreme Court"
+        ],
+        "why": "Then the winners meet in November."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-04",
+    "title": "Mental health basics",
+    "hook": "Your mind can get sick or hurt just like your body — and it can get better with help. Knowing the words makes it easier to ask.",
+    "groups": [
+      {
+        "heading": "Normal feelings",
+        "items": [
+          {
+            "name": "Stress",
+            "note": "Pressure before a test or game. Short, and can help you focus."
+          },
+          {
+            "name": "Sadness",
+            "note": "After a loss or disappointment. Fades with time and support."
+          },
+          {
+            "name": "Anger",
+            "note": "A signal something feels unfair. What you do with it matters."
+          }
+        ]
+      },
+      {
+        "heading": "When to get help",
+        "items": [
+          {
+            "name": "Anxiety",
+            "note": "Worry that won't switch off, racing heart, avoiding things."
+          },
+          {
+            "name": "Depression",
+            "note": "Sad, empty, or numb most days for 2+ weeks; losing interest in things you liked."
+          },
+          {
+            "name": "Panic attack",
+            "note": "Sudden fear with pounding heart and fast breathing. Scary, not dangerous, passes in minutes."
+          },
+          {
+            "name": "ADHD",
+            "note": "A brain difference with focus and restlessness. Common and treatable."
+          }
+        ]
+      },
+      {
+        "heading": "Who helps",
+        "items": [
+          {
+            "name": "A trusted adult",
+            "note": "Dad, a relative, a teacher. Always the first step."
+          },
+          {
+            "name": "Counselor / therapist",
+            "note": "Trained to talk through problems and teach skills."
+          },
+          {
+            "name": "Psychologist",
+            "note": "Therapy and testing. Has a PhD or PsyD."
+          },
+          {
+            "name": "Psychiatrist",
+            "note": "A medical doctor who can also prescribe medicine."
+          },
+          {
+            "name": "988",
+            "note": "Call or text, any time, free — the Suicide & Crisis Lifeline."
+          }
+        ]
+      },
+      {
+        "heading": "Things that help everyone",
+        "items": [
+          {
+            "name": "Sleep, food, movement",
+            "note": "The basics change mood more than people expect."
+          },
+          {
+            "name": "Time outside and with people",
+            "note": "Even 20 minutes."
+          },
+          {
+            "name": "Box breathing",
+            "note": "In 4 seconds, hold 4, out 4, hold 4. Repeat 4 times."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "About 1 in 5 young people has a mental health condition in a given year. It's common, not a weakness.",
+      "Asking for help is a skill, like first aid — for yourself and for friends.",
+      "In many places there aren't enough counselors, especially in poorer and rural areas.",
+      "If a friend says they want to hurt themselves, tell an adult right away, even if they asked you not to."
+    ],
+    "doIt": "Do box breathing for 2 minutes. Then on the sheet write 3 things that help you calm down and 2 adults you could talk to. This sheet is private — you choose whether to show it.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Box breathing — how did you feel before and after?",
+        "Three things that help me calm down:",
+        "Two adults I could talk to:",
+        "One thing I could say to a friend who seems down:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Sad most days for over 2 weeks may be…",
+        "options": [
+          "Depression — time to tell someone",
+          "Normal, ignore it",
+          "A cold"
+        ],
+        "why": "That's the sign to get help."
+      },
+      {
+        "q": "Which can prescribe medicine?",
+        "options": [
+          "Psychiatrist",
+          "Counselor",
+          "Friend"
+        ],
+        "why": "Psychiatrists are medical doctors."
+      },
+      {
+        "q": "Box breathing is…",
+        "options": [
+          "In 4, hold 4, out 4, hold 4",
+          "Holding your breath 1 minute",
+          "Breathing into a box"
+        ],
+        "why": "It slows the heart."
+      },
+      {
+        "q": "The crisis line number is…",
+        "options": [
+          "988",
+          "411",
+          "311"
+        ],
+        "why": "Call or text 988."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-07",
+    "title": "15 classic films",
+    "hook": "These movies shaped how stories are told on screen. Knowing them makes references click — and gives you a list for family movie nights.",
+    "groups": [
+      {
+        "heading": "Older classics",
+        "items": [
+          {
+            "name": "Modern Times (1936)",
+            "note": "Charlie Chaplin, a factory worker swallowed by machines. Silent comedy about workers."
+          },
+          {
+            "name": "The Wizard of Oz (1939)",
+            "note": "A girl swept to a magical land. Early color."
+          },
+          {
+            "name": "Casablanca (1942)",
+            "note": "Love and sacrifice during World War II."
+          },
+          {
+            "name": "It's a Wonderful Life (1946)",
+            "note": "A man sees what his town would be without him."
+          },
+          {
+            "name": "Singin' in the Rain (1952)",
+            "note": "Musical about Hollywood switching to sound."
+          },
+          {
+            "name": "Seven Samurai (1954)",
+            "note": "Japan, Akira Kurosawa. Villagers hire warriors to protect them."
+          }
+        ]
+      },
+      {
+        "heading": "Adventure",
+        "items": [
+          {
+            "name": "Star Wars (1977)",
+            "note": "A farm boy joins a rebellion against an empire."
+          },
+          {
+            "name": "E.T. (1982)",
+            "note": "A boy hides a stranded alien."
+          },
+          {
+            "name": "Back to the Future (1985)",
+            "note": "A teen time-travels to when his parents were teens."
+          },
+          {
+            "name": "Spirited Away (2001)",
+            "note": "Japan, Miyazaki. A girl works in a spirit bathhouse to save her parents."
+          }
+        ]
+      },
+      {
+        "heading": "Animation and newer",
+        "items": [
+          {
+            "name": "Toy Story (1995)",
+            "note": "The first feature film made fully by computer."
+          },
+          {
+            "name": "WALL-E (2008)",
+            "note": "A robot cleaning up an Earth buried in trash."
+          },
+          {
+            "name": "Hidden Figures (2016)",
+            "note": "The Black women mathematicians behind NASA's space race."
+          },
+          {
+            "name": "Coco (2017)",
+            "note": "A Mexican boy and the Day of the Dead."
+          },
+          {
+            "name": "Spider-Man: Into the Spider-Verse (2018)",
+            "note": "Miles Morales becomes Spider-Man; comic-book animation."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Movies were silent until 1927; then sound changed everything (that's Singin' in the Rain).",
+      "Star Wars borrowed ideas from Seven Samurai and other Kurosawa films.",
+      "For decades, Hollywood rarely put Black, Latino, or Asian characters at the center. Films like Hidden Figures, Coco, and Spider-Verse helped change that.",
+      "Modern Times was a comedy — and also a protest against bosses speeding up factory lines."
+    ],
+    "doIt": "On the sheet, match each film to its story. Circle one for family movie night this weekend and give the sheet to Dad.",
+    "sheet": {
+      "kind": "match",
+      "pairs": [
+        [
+          "Modern Times",
+          "A worker swallowed by machines"
+        ],
+        [
+          "The Wizard of Oz",
+          "A girl swept to a magical land"
+        ],
+        [
+          "Seven Samurai",
+          "Villagers hire warriors"
+        ],
+        [
+          "Star Wars",
+          "A farm boy joins a rebellion"
+        ],
+        [
+          "Back to the Future",
+          "A teen meets his parents as teens"
+        ],
+        [
+          "Spirited Away",
+          "A girl in a spirit bathhouse"
+        ],
+        [
+          "Toy Story",
+          "First fully computer-made film"
+        ],
+        [
+          "WALL-E",
+          "A robot cleaning up Earth"
+        ],
+        [
+          "Hidden Figures",
+          "Black women mathematicians at NASA"
+        ],
+        [
+          "Coco",
+          "A boy and the Day of the Dead"
+        ]
+      ]
+    },
+    "quiz": [
+      {
+        "q": "The first fully computer-animated film?",
+        "options": [
+          "Toy Story",
+          "E.T.",
+          "The Wizard of Oz"
+        ],
+        "why": "1995, Pixar."
+      },
+      {
+        "q": "Hidden Figures is about…",
+        "options": [
+          "Mathematicians at NASA",
+          "A haunted house",
+          "Robots"
+        ],
+        "why": "Katherine Johnson and colleagues."
+      },
+      {
+        "q": "Who made Spirited Away?",
+        "options": [
+          "Hayao Miyazaki",
+          "Charlie Chaplin",
+          "Steven Spielberg"
+        ],
+        "why": "Studio Ghibli, Japan."
+      },
+      {
+        "q": "Modern Times pokes fun at…",
+        "options": [
+          "Factory work and machines",
+          "Space travel",
+          "Pirates"
+        ],
+        "why": "Chaplin's 1936 comedy."
+      }
+    ]
+  },
+  {
+    "date": "2026-12-08",
+    "title": "Cook a full meal",
+    "hook": "Final extra: put it all together. Pasta (Extra 1), knife skills (Extra 13), spices (Extra 15), and a label check (Extra 7) — lunch for the family.",
+    "groups": [
+      {
+        "heading": "The menu",
+        "items": [
+          {
+            "name": "Pasta with tomato sauce",
+            "note": "Penne or spaghetti. The sauce: olive oil, garlic, a can of tomatoes, salt, basil."
+          },
+          {
+            "name": "Chopped salad",
+            "note": "Cucumber, tomato, pepper — diced even. Olive oil, lemon, salt."
+          }
+        ]
+      },
+      {
+        "heading": "Timeline (about 35 minutes)",
+        "items": [
+          {
+            "name": "0 min",
+            "note": "Big pot of salted water on to boil. Wash vegetables."
+          },
+          {
+            "name": "5 min",
+            "note": "Mince 2 garlic cloves. Warm oil in a pan on medium; cook garlic 1 minute — don't let it brown."
+          },
+          {
+            "name": "7 min",
+            "note": "Add tomatoes and a pinch of salt. Simmer low 15 minutes, stirring now and then."
+          },
+          {
+            "name": "10 min",
+            "note": "Pasta into the boiling water. Set a timer for the box time minus 1 minute."
+          },
+          {
+            "name": "12 min",
+            "note": "Dice the salad. Dress it just before serving."
+          },
+          {
+            "name": "~22 min",
+            "note": "Taste the pasta — al dente? Save a cup of pasta water, then drain."
+          },
+          {
+            "name": "24 min",
+            "note": "Toss pasta in the sauce with a splash of pasta water. Tear basil on top."
+          }
+        ]
+      },
+      {
+        "heading": "Kitchen rules",
+        "items": [
+          {
+            "name": "Dad nearby",
+            "note": "Stove and knives only with an adult home."
+          },
+          {
+            "name": "Pot handles turned in",
+            "note": "So nobody knocks them."
+          },
+          {
+            "name": "Clean as you go",
+            "note": "Wash the board and knife while the sauce simmers."
+          },
+          {
+            "name": "Serve and clear",
+            "note": "The cook decides the plate. Everyone helps clean up."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Salt the pasta water well — it's the only chance to season the pasta itself.",
+      "Starchy pasta water makes the sauce cling. That's the cup you saved.",
+      "Cooking at home is usually far cheaper and healthier than takeout.",
+      "Being able to feed yourself and others is one of the most useful life skills there is."
+    ],
+    "doIt": "Plan it on the sheet first: shopping check, timeline, who you'll serve. Then cook it with Dad home. Write what you'd change next time.",
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Check the kitchen — do we have: pasta ☐  canned tomatoes ☐  garlic ☐  olive oil ☐  basil ☐  salad vegetables ☐  lemon ☐",
+        "What's missing? (Dad buys it)",
+        "Who I'm cooking for, and when:",
+        "How it went:",
+        "What I'd change next time:"
+      ]
+    },
+    "quiz": [
+      {
+        "q": "Why save pasta water?",
+        "options": [
+          "Its starch helps sauce cling",
+          "To drink",
+          "To clean the pot"
+        ],
+        "why": "Starchy water makes it silky."
+      },
+      {
+        "q": "Garlic in the pan should…",
+        "options": [
+          "Turn soft, not brown",
+          "Burn black",
+          "Stay raw"
+        ],
+        "why": "Brown garlic tastes bitter."
+      },
+      {
+        "q": "When is pasta done?",
+        "options": [
+          "Al dente — a little firm",
+          "Very soft",
+          "When it floats"
+        ],
+        "why": "Remember Extra 1."
+      },
+      {
+        "q": "Which grip keeps fingers safe?",
+        "options": [
+          "The claw",
+          "The pinch",
+          "Flat hand"
+        ],
+        "why": "Remember Extra 13."
+      }
+    ]
   }
 ]
