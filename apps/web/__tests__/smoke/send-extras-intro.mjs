@@ -51,7 +51,7 @@ Try to beat your quiz score.
 
 — Dad
 
-(CC: Mom, Enny)
+(CC: Mom)
 `;
 
 const li = days
@@ -77,7 +77,7 @@ const html = `<!doctype html>
 <p style="margin:18px 0;"><a href="${url}" style="color:#e11d48;font-weight:600;font-size:16px;text-decoration:none;">Today&apos;s extra: pasta &rarr;</a></p>
 <p style="margin:0 0 14px 0;">Try to beat your quiz score.</p>
 <p style="margin:0 0 6px 0;">— Dad</p>
-<p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
+<p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom</p>
 </div></body></html>`;
 
 const body = {

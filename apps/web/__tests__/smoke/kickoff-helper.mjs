@@ -50,7 +50,7 @@ ${url}
 
 — Dad
 
-(CC: Mom, Enny)
+(CC: Mom)
 `;
 
   const html = `<!doctype html>
@@ -65,7 +65,7 @@ ${note ? `<p style="margin:0 0 14px 0;">${note}</p>` : ""}
 <p style="margin:0 0 14px 0;">Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.</p>
 <p style="margin:18px 0;"><a href="${url}" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">${url.replace("https://", "")} →</a></p>
 <p style="margin:0 0 6px 0;">— Dad</p>
-<p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom, Enny</p>
+<p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom</p>
 </div></body></html>`;
 
   const body = {
