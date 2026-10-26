@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Lightbulb, Printer, Timer } from "lucide-react";
 import {
   correctPosition,
@@ -47,21 +48,50 @@ export function ExtraTwenty({ extra, number }: Props) {
             <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-rose-700">
               {group.heading}
             </h3>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {group.items.map((item) => (
-                <li
-                  key={item.name}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2"
-                >
-                  <p className="text-sm font-semibold text-slate-900">
-                    {item.name}
-                  </p>
-                  <p className="mt-0.5 text-sm leading-5 text-slate-600">
-                    {item.note}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            {group.items.some((item) => item.image) ? (
+              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {group.items.map((item) => (
+                  <li
+                    key={item.name}
+                    className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+                  >
+                    {item.image && (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        width={400}
+                        height={400}
+                        className="aspect-square w-full object-cover"
+                      />
+                    )}
+                    <div className="px-2.5 py-2">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {item.name}
+                      </p>
+                      <p className="mt-0.5 text-xs leading-4 text-slate-600">
+                        {item.note}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {group.items.map((item) => (
+                  <li
+                    key={item.name}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  >
+                    <p className="text-sm font-semibold text-slate-900">
+                      {item.name}
+                    </p>
+                    <p className="mt-0.5 text-sm leading-5 text-slate-600">
+                      {item.note}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
 
@@ -76,6 +106,10 @@ export function ExtraTwenty({ extra, number }: Props) {
             ))}
           </ul>
         </div>
+
+        {extra.credit && (
+          <p className="text-xs text-slate-400">{extra.credit}</p>
+        )}
 
         <div className="rounded-xl border border-rose-200 bg-white p-4">
           <h3 className="font-semibold text-slate-900">Do it</h3>

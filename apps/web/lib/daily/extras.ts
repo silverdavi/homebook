@@ -11,7 +11,11 @@ export interface Extra {
   date: string;
   title: string;
   hook: string;
-  groups: { heading: string; items: { name: string; note: string }[] }[];
+  groups: {
+    heading: string;
+    items: { name: string; note: string; image?: string }[];
+  }[];
+  credit?: string;
   facts: string[];
   doIt: string;
   quiz: ExtraQuiz[];

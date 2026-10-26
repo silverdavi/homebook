@@ -16,6 +16,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
+    Image,
     KeepTogether,
     PageBreak,
     Paragraph,
@@ -72,6 +73,23 @@ def box(rows, widths, pad=4, grid=True):
     return t
 
 
+def has_photos(extra):
+    return any(i.get("image") for g in extra["groups"] for i in g["items"])
+
+
+def photo_grid(group, width, cols=6):
+    side = width / cols - 6
+    tile = ParagraphStyle("tn", parent=note, fontSize=7, leading=8.5)
+    cells = []
+    for i in group["items"]:
+        img = Image(str(ROOT / "apps/web/public" / i["image"].lstrip("/")), side, side)
+        cells.append([img, Spacer(1, 2), Paragraph(i["name"], name), Paragraph(i["note"], tile)])
+    while len(cells) % cols:
+        cells.append([Spacer(1, 1)])
+    rows = [cells[k : k + cols] for k in range(0, len(cells), cols)]
+    return box(rows, [width / cols] * cols, pad=3, grid=False)
+
+
 def front(extra, number):
     out = [
         Paragraph(f"EXTRA 20 MINUTES · {number} OF 30 · OPTIONAL · {extra['date']}", kicker),
@@ -79,6 +97,12 @@ def front(extra, number):
         Paragraph(extra["hook"], hook),
     ]
     width = 7.5 * inch
+    if has_photos(extra):
+        for group in extra["groups"]:
+            out.append(KeepTogether([Paragraph(group["heading"].upper(), head), photo_grid(group, width)]))
+        if extra.get("credit"):
+            out.append(Paragraph(extra["credit"], ParagraphStyle("cr", parent=note, fontSize=6.5)))
+        return out
     for group in extra["groups"]:
         items = [[Paragraph(i["name"], name), Paragraph(i["note"], note)] for i in group["items"]]
         cells = [[a, b] for a, b in (([x[0], x[1]]) for x in items)]
@@ -133,7 +157,10 @@ def sheet(extra):
 
 
 def back(extra, number):
-    out = [Paragraph("DO IT", head), Paragraph(extra["doIt"], body), Spacer(1, 8)]
+    out = []
+    if has_photos(extra):
+        out += [Paragraph("WORTH REMEMBERING", head), box([[Paragraph("• " + f, small)] for f in extra["facts"]], [7.5 * inch], pad=2, grid=False)]
+    out += [Paragraph("DO IT", head), Paragraph(extra["doIt"], body), Spacer(1, 8)]
     out += sheet(extra)
     out += [Spacer(1, 10), Paragraph("CHECK YOURSELF — CIRCLE ONE", head)]
     for i, q in enumerate(extra["quiz"]):

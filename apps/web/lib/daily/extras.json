@@ -9,27 +9,33 @@
         "items": [
           {
             "name": "Spaghetti",
-            "note": "“little strings.” Tomato or olive-oil sauces."
+            "note": "“little strings.” Tomato or olive-oil sauces.",
+            "image": "/extras/pasta/spaghetti.jpg"
           },
           {
             "name": "Capellini",
-            "note": "“angel hair,” the thinnest. Very light sauces or soup."
+            "note": "“angel hair,” the thinnest. Very light sauces or soup.",
+            "image": "/extras/pasta/capellini.jpg"
           },
           {
             "name": "Linguine",
-            "note": "“little tongues,” flat spaghetti. Seafood and pesto."
+            "note": "“little tongues,” flat spaghetti. Seafood and pesto.",
+            "image": "/extras/pasta/linguine.jpg"
           },
           {
             "name": "Bucatini",
-            "note": "Thick spaghetti with a hole down the middle."
+            "note": "Thick spaghetti with a hole down the middle.",
+            "image": "/extras/pasta/bucatini.jpg"
           },
           {
             "name": "Fettuccine",
-            "note": "Flat ribbons. Heavy cream sauces like Alfredo."
+            "note": "Flat ribbons. Heavy cream sauces like Alfredo.",
+            "image": "/extras/pasta/fettuccine.jpg"
           },
           {
             "name": "Pappardelle",
-            "note": "Very wide ribbons. Thick meat sauce (ragù)."
+            "note": "Very wide ribbons. Thick meat sauce (ragù).",
+            "image": "/extras/pasta/pappardelle.jpg"
           }
         ]
       },
@@ -38,23 +44,28 @@
         "items": [
           {
             "name": "Penne",
-            "note": "“quills,” cut on a slant. Sauce gets inside."
+            "note": "“quills,” cut on a slant. Sauce gets inside.",
+            "image": "/extras/pasta/penne.jpg"
           },
           {
             "name": "Rigatoni",
-            "note": "Big ridged tubes. Chunky sauces and baking."
+            "note": "Big ridged tubes. Chunky sauces and baking.",
+            "image": "/extras/pasta/rigatoni.jpg"
           },
           {
             "name": "Ziti",
-            "note": "Smooth tubes, cut straight. Baked ziti."
+            "note": "Smooth tubes, cut straight. Baked ziti.",
+            "image": "/extras/pasta/ziti.jpg"
           },
           {
             "name": "Macaroni",
-            "note": "Small bent tubes. Mac and cheese."
+            "note": "Small bent tubes. Mac and cheese.",
+            "image": "/extras/pasta/macaroni.jpg"
           },
           {
             "name": "Cannelloni",
-            "note": "Large tubes you stuff, then bake."
+            "note": "Large tubes you stuff, then bake.",
+            "image": "/extras/pasta/cannelloni.jpg"
           }
         ]
       },
@@ -63,27 +74,33 @@
         "items": [
           {
             "name": "Farfalle",
-            "note": "“butterflies” (bow ties). Pasta salad."
+            "note": "“butterflies” (bow ties). Pasta salad.",
+            "image": "/extras/pasta/farfalle.jpg"
           },
           {
             "name": "Fusilli",
-            "note": "Spirals that trap sauce in the grooves."
+            "note": "Spirals that trap sauce in the grooves.",
+            "image": "/extras/pasta/fusilli.jpg"
           },
           {
             "name": "Orecchiette",
-            "note": "“little ears.” Cups that hold vegetables."
+            "note": "“little ears.” Cups that hold vegetables.",
+            "image": "/extras/pasta/orecchiette.jpg"
           },
           {
             "name": "Conchiglie",
-            "note": "“shells.” Hold peas, cheese, sauce."
+            "note": "“shells.” Hold peas, cheese, sauce.",
+            "image": "/extras/pasta/conchiglie.jpg"
           },
           {
             "name": "Radiatori",
-            "note": "Shaped like old radiators. Thick sauces."
+            "note": "Shaped like old radiators. Thick sauces.",
+            "image": "/extras/pasta/radiatori.jpg"
           },
           {
             "name": "Orzo",
-            "note": "Means “barley” — looks like rice. Soup."
+            "note": "Means “barley” — looks like rice. Soup.",
+            "image": "/extras/pasta/orzo.jpg"
           }
         ]
       },
@@ -92,15 +109,18 @@
         "items": [
           {
             "name": "Ravioli",
-            "note": "Square pillows filled with cheese or meat."
+            "note": "Square pillows filled with cheese or meat.",
+            "image": "/extras/pasta/ravioli.jpg"
           },
           {
             "name": "Tortellini",
-            "note": "Rings, filled. Often served in broth."
+            "note": "Rings, filled. Often served in broth.",
+            "image": "/extras/pasta/tortellini.jpg"
           },
           {
             "name": "Lasagne",
-            "note": "Wide sheets layered with sauce and cheese, baked."
+            "note": "Wide sheets layered with sauce and cheese, baked.",
+            "image": "/extras/pasta/lasagne.jpg"
           }
         ]
       }
@@ -111,7 +131,7 @@
       "“Al dente” means “to the tooth”: cooked, but still a little firm in the middle.",
       "The story that Marco Polo brought pasta from China is a myth. Pasta was in Italy before his trip, and China had its own noodles for thousands of years."
     ],
-    "doIt": "Go to the kitchen. Find every pasta box or bag. For each one, write its name and its cooking time from the package. Then write which sauce you would put on it, using the rule.",
+    "doIt": "Look at the photos and cover the names: how many can you name? Then go to the kitchen, find every pasta box or bag, and fill in the table — name, cooking time, and which sauce you would use, using the rule.",
     "quiz": [
       {
         "q": "Which pasta is best for a thick meat sauce?",
@@ -164,11 +184,10 @@
         [],
         [],
         [],
-        [],
-        [],
         []
       ]
-    }
+    },
+    "credit": "Photos: Wikimedia Commons contributors (CC BY-SA)."
   },
   {
     "date": "2026-10-27",
