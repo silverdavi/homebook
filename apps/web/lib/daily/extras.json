@@ -1,0 +1,834 @@
+[
+  {
+    "date": "2026-10-26",
+    "title": "20 shapes of pasta",
+    "hook": "Every pasta shape is built for a sauce. Once you know the rule, you can order or cook in any Italian place without guessing.",
+    "groups": [
+      {
+        "heading": "Long",
+        "items": [
+          {
+            "name": "Spaghetti",
+            "note": "“little strings.” Tomato or olive-oil sauces."
+          },
+          {
+            "name": "Capellini",
+            "note": "“angel hair,” the thinnest. Very light sauces or soup."
+          },
+          {
+            "name": "Linguine",
+            "note": "“little tongues,” flat spaghetti. Seafood and pesto."
+          },
+          {
+            "name": "Bucatini",
+            "note": "Thick spaghetti with a hole down the middle."
+          },
+          {
+            "name": "Fettuccine",
+            "note": "Flat ribbons. Heavy cream sauces like Alfredo."
+          },
+          {
+            "name": "Pappardelle",
+            "note": "Very wide ribbons. Thick meat sauce (ragù)."
+          }
+        ]
+      },
+      {
+        "heading": "Tubes",
+        "items": [
+          {
+            "name": "Penne",
+            "note": "“quills,” cut on a slant. Sauce gets inside."
+          },
+          {
+            "name": "Rigatoni",
+            "note": "Big ridged tubes. Chunky sauces and baking."
+          },
+          {
+            "name": "Ziti",
+            "note": "Smooth tubes, cut straight. Baked ziti."
+          },
+          {
+            "name": "Macaroni",
+            "note": "Small bent tubes. Mac and cheese."
+          },
+          {
+            "name": "Cannelloni",
+            "note": "Large tubes you stuff, then bake."
+          }
+        ]
+      },
+      {
+        "heading": "Shapes",
+        "items": [
+          {
+            "name": "Farfalle",
+            "note": "“butterflies” (bow ties). Pasta salad."
+          },
+          {
+            "name": "Fusilli",
+            "note": "Spirals that trap sauce in the grooves."
+          },
+          {
+            "name": "Orecchiette",
+            "note": "“little ears.” Cups that hold vegetables."
+          },
+          {
+            "name": "Conchiglie",
+            "note": "“shells.” Hold peas, cheese, sauce."
+          },
+          {
+            "name": "Radiatori",
+            "note": "Shaped like old radiators. Thick sauces."
+          },
+          {
+            "name": "Orzo",
+            "note": "Means “barley” — looks like rice. Soup."
+          }
+        ]
+      },
+      {
+        "heading": "Filled and layered",
+        "items": [
+          {
+            "name": "Ravioli",
+            "note": "Square pillows filled with cheese or meat."
+          },
+          {
+            "name": "Tortellini",
+            "note": "Rings, filled. Often served in broth."
+          },
+          {
+            "name": "Lasagne",
+            "note": "Wide sheets layered with sauce and cheese, baked."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "The rule: thin and smooth → light sauce. Wide or ridged → heavy sauce. Tiny → soup.",
+      "Dry pasta is just durum wheat (semolina) and water. Fresh pasta usually adds egg.",
+      "“Al dente” means “to the tooth”: cooked, but still a little firm in the middle.",
+      "The story that Marco Polo brought pasta from China is a myth. Pasta was in Italy before his trip, and China had its own noodles for thousands of years."
+    ],
+    "doIt": "Go to the kitchen. Find every pasta box or bag. For each one, write its name and its cooking time from the package. Then write which sauce you would put on it, using the rule.",
+    "quiz": [
+      {
+        "q": "Which pasta is best for a thick meat sauce?",
+        "options": [
+          "Pappardelle",
+          "Capellini",
+          "Orzo"
+        ],
+        "why": "Wide ribbons are strong enough to carry a heavy sauce."
+      },
+      {
+        "q": "What does “farfalle” mean?",
+        "options": [
+          "Butterflies",
+          "Little ears",
+          "Little strings"
+        ],
+        "why": "Orecchiette are little ears; spaghetti are little strings."
+      },
+      {
+        "q": "Which shape would you put in soup?",
+        "options": [
+          "Orzo",
+          "Lasagne",
+          "Rigatoni"
+        ],
+        "why": "Tiny shapes fit on a spoon."
+      },
+      {
+        "q": "What does “al dente” mean?",
+        "options": [
+          "Cooked but still a little firm",
+          "Very soft",
+          "Raw"
+        ],
+        "why": "Literally “to the tooth.”"
+      }
+    ],
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Pasta name",
+        "Cooking time",
+        "Sauce you'd use (and why)"
+      ],
+      "rows": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    }
+  },
+  {
+    "date": "2026-10-27",
+    "title": "Breads of the world",
+    "hook": "Almost every culture has a bread. The big difference is what makes it rise — or whether it rises at all.",
+    "groups": [
+      {
+        "heading": "Yeast breads",
+        "items": [
+          {
+            "name": "Baguette",
+            "note": "France. Long, crisp crust, only flour, water, salt, yeast."
+          },
+          {
+            "name": "Challah",
+            "note": "Jewish braided bread with egg, for Shabbat."
+          },
+          {
+            "name": "Bagel",
+            "note": "Boiled first, then baked — that's the chewy skin."
+          },
+          {
+            "name": "Brioche",
+            "note": "France. Rich with butter and eggs, almost a cake."
+          },
+          {
+            "name": "Focaccia",
+            "note": "Italy. Flat, oily, dimpled with fingers."
+          },
+          {
+            "name": "Pita",
+            "note": "Middle East. Steam puffs it into a pocket."
+          },
+          {
+            "name": "Naan",
+            "note": "South Asia. Baked on the wall of a hot tandoor oven."
+          }
+        ]
+      },
+      {
+        "heading": "Sourdough (wild yeast)",
+        "items": [
+          {
+            "name": "Sourdough",
+            "note": "A “starter” of flour and water full of wild yeast and bacteria. The bacteria make it sour."
+          },
+          {
+            "name": "Rye / pumpernickel",
+            "note": "Germany and Eastern Europe. Dark, dense, sour."
+          },
+          {
+            "name": "Injera",
+            "note": "Ethiopia. Spongy, fermented teff flatbread. Also your plate and spoon."
+          }
+        ]
+      },
+      {
+        "heading": "Unleavened (no rise)",
+        "items": [
+          {
+            "name": "Matzah",
+            "note": "Flour and water baked fast, for Passover."
+          },
+          {
+            "name": "Tortilla",
+            "note": "Mexico. Corn or wheat, cooked on a griddle."
+          },
+          {
+            "name": "Chapati / roti",
+            "note": "India. Whole-wheat, cooked on a flat pan."
+          }
+        ]
+      },
+      {
+        "heading": "Quick breads (baking soda or powder)",
+        "items": [
+          {
+            "name": "Irish soda bread",
+            "note": "Baking soda + buttermilk make the bubbles."
+          },
+          {
+            "name": "Cornbread",
+            "note": "American South. Cornmeal and baking powder."
+          },
+          {
+            "name": "Banana bread",
+            "note": "Really a cake in a loaf pan."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Yeast is a tiny living fungus. It eats sugar in the flour and breathes out carbon dioxide gas — the bubbles.",
+      "Kneading builds gluten: stretchy protein strands that trap the gas like a balloon.",
+      "Quick breads skip the yeast: acid + baking soda make the gas in minutes, not hours.",
+      "Bakers write recipes as percentages of the flour. 500 g flour + 350 g water = 70% water."
+    ],
+    "doIt": "A basic loaf is 500 g flour, 350 g water, 10 g salt, 5 g yeast. Write each as a percentage of the flour. Then scale the recipe for 2 loaves and for half a loaf.",
+    "quiz": [
+      {
+        "q": "What makes yeast bread rise?",
+        "options": [
+          "Carbon dioxide from yeast",
+          "Steam from the oven",
+          "Air from kneading"
+        ],
+        "why": "Yeast eats sugar and makes CO₂ gas."
+      },
+      {
+        "q": "Why is a bagel chewy?",
+        "options": [
+          "It is boiled before baking",
+          "It has no salt",
+          "It is fried"
+        ],
+        "why": "Boiling sets the outside before the oven."
+      },
+      {
+        "q": "Which bread is unleavened?",
+        "options": [
+          "Matzah",
+          "Challah",
+          "Sourdough"
+        ],
+        "why": "Unleavened means nothing makes it rise."
+      },
+      {
+        "q": "500 g flour and 350 g water. What % water?",
+        "options": [
+          "70%",
+          "35%",
+          "50%"
+        ],
+        "why": "350 ÷ 500 = 0.7."
+      }
+    ],
+    "sheet": {
+      "kind": "table",
+      "columns": [
+        "Ingredient",
+        "Grams",
+        "% of flour",
+        "2 loaves",
+        "Half loaf"
+      ],
+      "rows": [
+        [
+          "Flour",
+          "500"
+        ],
+        [
+          "Water",
+          "350"
+        ],
+        [
+          "Salt",
+          "10"
+        ],
+        [
+          "Yeast",
+          "5"
+        ]
+      ]
+    }
+  },
+  {
+    "date": "2026-10-28",
+    "title": "Shares, stocks, and options",
+    "hook": "Companies sell small pieces of themselves to raise money. Knowing how that works helps you save — and understand the news.",
+    "groups": [
+      {
+        "heading": "The basics",
+        "items": [
+          {
+            "name": "Share (stock)",
+            "note": "A tiny piece of a company. Own 1 of 1,000 shares → you own 0.1%."
+          },
+          {
+            "name": "Stock exchange",
+            "note": "The market where shares are bought and sold. NYSE and Nasdaq are in New York."
+          },
+          {
+            "name": "IPO",
+            "note": "Initial public offering: the first day a company sells shares to the public."
+          },
+          {
+            "name": "Market cap",
+            "note": "Share price × number of shares = what the market says the company is worth."
+          },
+          {
+            "name": "Dividend",
+            "note": "Part of the profit paid to shareholders, often every 3 months."
+          }
+        ]
+      },
+      {
+        "heading": "Watching the market",
+        "items": [
+          {
+            "name": "Index",
+            "note": "An average of many stocks. The S&P 500 tracks 500 large US companies."
+          },
+          {
+            "name": "Bull market",
+            "note": "Prices rising for a long time. (A bull attacks upward.)"
+          },
+          {
+            "name": "Bear market",
+            "note": "Prices down 20% or more. (A bear swipes down.)"
+          },
+          {
+            "name": "Bond",
+            "note": "A loan you give a company or government. Safer, lower return."
+          }
+        ]
+      },
+      {
+        "heading": "Ways to invest",
+        "items": [
+          {
+            "name": "Index fund",
+            "note": "Buys every stock in an index. Cheap and spread out."
+          },
+          {
+            "name": "Diversification",
+            "note": "Don't put all your eggs in one basket. One company can fail; 500 rarely all do."
+          },
+          {
+            "name": "Call option",
+            "note": "The right to BUY a share at a set price later. You bet the price goes up."
+          },
+          {
+            "name": "Put option",
+            "note": "The right to SELL at a set price later. You bet it goes down — or insure against it."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Over long periods the S&P 500 has grown about 10% a year on average — but some years it fell 30% or more.",
+      "Options are risky: if the price doesn't move your way by the date, the option can become worth $0.",
+      "The richest 10% of US households own about 90% of all stocks. That's one reason stock-market news often matters more to the wealthy than to workers.",
+      "Prices move because of supply and demand: more buyers than sellers pushes the price up."
+    ],
+    "doIt": "On the sheet: you buy 10 shares at $50. Work out your gain if the price goes to $60, and your loss if it drops to $35. Then pick 3 companies whose products you use every day. Tonight, ask Dad to look up their prices with you. Check them again in one month.",
+    "quiz": [
+      {
+        "q": "You own 50 of a company's 1,000 shares. What do you own?",
+        "options": [
+          "5%",
+          "50%",
+          "0.5%"
+        ],
+        "why": "50 ÷ 1,000 = 0.05."
+      },
+      {
+        "q": "What is an index fund?",
+        "options": [
+          "A fund that buys every stock in an index",
+          "One company's stock",
+          "A bank account"
+        ],
+        "why": "It spreads money across many companies."
+      },
+      {
+        "q": "A call option pays off when the price…",
+        "options": [
+          "Goes up",
+          "Goes down",
+          "Stays the same"
+        ],
+        "why": "It's the right to buy at a fixed price."
+      },
+      {
+        "q": "Which is usually safer, with lower return?",
+        "options": [
+          "A bond",
+          "A single stock",
+          "A call option"
+        ],
+        "why": "A bond is a loan that is paid back with interest."
+      }
+    ],
+    "sheet": {
+      "kind": "prompts",
+      "items": [
+        "Buy 10 shares at $50. How much did you pay?",
+        "Price goes to $60. What are your 10 shares worth? What is your gain?",
+        "Price drops to $35 instead. What is your loss?",
+        "A company has 2,000,000 shares at $40. What is its market cap?",
+        "Three companies whose products I use every day (Dad will look up the prices tonight):"
+      ]
+    }
+  },
+  {
+    "date": "2026-10-29",
+    "title": "What you can study at university",
+    "hook": "Universities sort knowledge into faculties (also called schools or colleges). Knowing the map helps you see where your interests could lead.",
+    "groups": [
+      {
+        "heading": "Ideas and people",
+        "items": [
+          {
+            "name": "Humanities",
+            "note": "History, philosophy, literature, languages, religion. How people think and have lived."
+          },
+          {
+            "name": "Social sciences",
+            "note": "Economics, psychology, sociology, political science, anthropology. How societies work, using data."
+          },
+          {
+            "name": "Fine arts",
+            "note": "Music, painting, theater, film, architecture."
+          },
+          {
+            "name": "Education",
+            "note": "How people learn; training to be a teacher."
+          }
+        ]
+      },
+      {
+        "heading": "Nature and numbers",
+        "items": [
+          {
+            "name": "Natural sciences",
+            "note": "Physics, chemistry, biology, earth science. Experiments about nature."
+          },
+          {
+            "name": "Formal sciences",
+            "note": "Mathematics, statistics, computer science. Proofs and logic."
+          },
+          {
+            "name": "Engineering",
+            "note": "Civil (bridges), mechanical (machines), electrical, chemical, software. Using science to build."
+          }
+        ]
+      },
+      {
+        "heading": "Professional schools",
+        "items": [
+          {
+            "name": "Medicine and health",
+            "note": "Medicine, nursing, pharmacy, dentistry, public health."
+          },
+          {
+            "name": "Law",
+            "note": "How laws are made, used, and challenged in court."
+          },
+          {
+            "name": "Business",
+            "note": "Accounting, finance, marketing, management."
+          }
+        ]
+      },
+      {
+        "heading": "Degrees (US)",
+        "items": [
+          {
+            "name": "Associate",
+            "note": "2 years, often at a community college."
+          },
+          {
+            "name": "Bachelor's (BA / BS)",
+            "note": "4 years. The usual first degree."
+          },
+          {
+            "name": "Master's (MA / MS)",
+            "note": "1–2 more years, more specialized."
+          },
+          {
+            "name": "PhD",
+            "note": "4–6+ years of original research. Makes you “Dr.”"
+          },
+          {
+            "name": "MD / JD",
+            "note": "Doctor: 4 years after college + 3–7 of residency. Lawyer: 3 years after college."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Your “major” is your main subject. Most students also take classes far outside it.",
+      "Many fields cross faculties: neuroscience mixes biology and psychology; economics uses a lot of math.",
+      "Community college costs much less, and many students start there, then transfer for the last 2 years.",
+      "Public universities are funded partly by taxes so more people can attend, not just those who can pay."
+    ],
+    "doIt": "On the sheet, sort the 25 subjects into their faculties. Then circle the 2 you would most want to try, and write one sentence on why.",
+    "quiz": [
+      {
+        "q": "Where does psychology usually sit?",
+        "options": [
+          "Social sciences",
+          "Fine arts",
+          "Engineering"
+        ],
+        "why": "It studies people using experiments and data."
+      },
+      {
+        "q": "Which is a formal science?",
+        "options": [
+          "Statistics",
+          "Chemistry",
+          "History"
+        ],
+        "why": "Formal sciences use logic and proofs, not lab experiments."
+      },
+      {
+        "q": "How long is a bachelor's degree, usually?",
+        "options": [
+          "4 years",
+          "2 years",
+          "8 years"
+        ],
+        "why": "An associate degree is the 2-year one."
+      },
+      {
+        "q": "Building bridges is which kind of engineering?",
+        "options": [
+          "Civil",
+          "Electrical",
+          "Chemical"
+        ],
+        "why": "Civil engineers design roads, bridges, and water systems."
+      }
+    ],
+    "sheet": {
+      "kind": "sort",
+      "bins": [
+        "Humanities",
+        "Social sciences",
+        "Natural sciences",
+        "Formal sciences",
+        "Engineering",
+        "Health",
+        "Professional / Arts"
+      ],
+      "words": [
+        "History",
+        "Economics",
+        "Physics",
+        "Mathematics",
+        "Civil engineering",
+        "Nursing",
+        "Law",
+        "Philosophy",
+        "Psychology",
+        "Chemistry",
+        "Statistics",
+        "Mechanical eng.",
+        "Pharmacy",
+        "Business",
+        "Literature",
+        "Sociology",
+        "Biology",
+        "Computer science",
+        "Electrical eng.",
+        "Public health",
+        "Music",
+        "Languages",
+        "Political science",
+        "Geology",
+        "Architecture"
+      ]
+    }
+  },
+  {
+    "date": "2026-10-30",
+    "title": "20 famous books",
+    "hook": "These books come up again and again — in school, in movies, in conversation. Knowing one line about each lets you join in, and helps you pick your next read.",
+    "groups": [
+      {
+        "heading": "Older classics",
+        "items": [
+          {
+            "name": "The Odyssey — Homer (Greece, ~700 BCE)",
+            "note": "A soldier's 10-year trip home from war."
+          },
+          {
+            "name": "Don Quixote — Cervantes (Spain, 1605)",
+            "note": "A man reads too many hero stories and attacks windmills."
+          },
+          {
+            "name": "Pride and Prejudice — Jane Austen (1813)",
+            "note": "Love, money, and first impressions in England."
+          },
+          {
+            "name": "Frankenstein — Mary Shelley (1818)",
+            "note": "A scientist builds a creature, then abandons it."
+          },
+          {
+            "name": "Les Misérables — Victor Hugo (1862)",
+            "note": "A poor man jailed for stealing bread tries to start over."
+          },
+          {
+            "name": "Crime and Punishment — Dostoevsky (1866)",
+            "note": "A student commits a murder and is eaten by guilt."
+          },
+          {
+            "name": "Huckleberry Finn — Mark Twain (1884)",
+            "note": "A boy and an escaped enslaved man, Jim, on the Mississippi."
+          }
+        ]
+      },
+      {
+        "heading": "Warnings about power",
+        "items": [
+          {
+            "name": "Brave New World — Aldous Huxley (1932)",
+            "note": "A future where people are kept happy and controlled."
+          },
+          {
+            "name": "Animal Farm — George Orwell (1945)",
+            "note": "Farm animals overthrow the farmer — then the pigs take over."
+          },
+          {
+            "name": "1984 — George Orwell (1949)",
+            "note": "A government that watches everyone. “Big Brother.”"
+          },
+          {
+            "name": "Fahrenheit 451 — Ray Bradbury (1953)",
+            "note": "Firemen whose job is to burn books."
+          },
+          {
+            "name": "Lord of the Flies — William Golding (1954)",
+            "note": "Stranded boys build — and wreck — their own society."
+          }
+        ]
+      },
+      {
+        "heading": "Justice and history",
+        "items": [
+          {
+            "name": "The Grapes of Wrath — John Steinbeck (1939)",
+            "note": "A farm family flees the Dust Bowl and meets exploitation in California."
+          },
+          {
+            "name": "The Diary of Anne Frank (1947)",
+            "note": "A Jewish girl hiding from the Nazis in Amsterdam."
+          },
+          {
+            "name": "Things Fall Apart — Chinua Achebe (1958)",
+            "note": "A Nigerian village before and after colonial rule."
+          },
+          {
+            "name": "To Kill a Mockingbird — Harper Lee (1960)",
+            "note": "A girl watches her father defend a Black man in the racist South."
+          },
+          {
+            "name": "One Hundred Years of Solitude — García Márquez (1967)",
+            "note": "Seven generations of one family in a magical Colombian town."
+          },
+          {
+            "name": "Beloved — Toni Morrison (1987)",
+            "note": "The haunting cost of slavery after escape."
+          }
+        ]
+      },
+      {
+        "heading": "Adventure and wonder",
+        "items": [
+          {
+            "name": "The Hobbit — J.R.R. Tolkien (1937)",
+            "note": "A quiet hobbit joins dwarves to face a dragon."
+          },
+          {
+            "name": "The Little Prince — Saint-Exupéry (1943)",
+            "note": "A pilot meets a boy from a tiny planet. Short, deep."
+          }
+        ]
+      }
+    ],
+    "facts": [
+      "Good starters at 12: The Hobbit, Animal Farm, The Little Prince, The Diary of Anne Frank, Fahrenheit 451.",
+      "Orwell wrote both Animal Farm and 1984. Both warn about leaders who lie to keep power.",
+      "Several of these were banned in some US schools at times — usually because they made powerful people uncomfortable.",
+      "Things Fall Apart is one of the most-read African novels; Achebe wrote it partly to answer how European books pictured Africa."
+    ],
+    "doIt": "On the sheet, match each book to its one-line story. Then choose ONE book you want to read next and write why. Give the sheet to Dad — he'll get the book.",
+    "quiz": [
+      {
+        "q": "Who wrote both Animal Farm and 1984?",
+        "options": [
+          "George Orwell",
+          "Aldous Huxley",
+          "Ray Bradbury"
+        ],
+        "why": "Orwell, in 1945 and 1949."
+      },
+      {
+        "q": "In Fahrenheit 451, what do firemen do?",
+        "options": [
+          "Burn books",
+          "Put out forest fires",
+          "Build rockets"
+        ],
+        "why": "451°F is said to be the temperature paper burns."
+      },
+      {
+        "q": "Which book is set in a Nigerian village?",
+        "options": [
+          "Things Fall Apart",
+          "Les Misérables",
+          "Beloved"
+        ],
+        "why": "Chinua Achebe, 1958."
+      },
+      {
+        "q": "Who wrote Frankenstein?",
+        "options": [
+          "Mary Shelley",
+          "Jane Austen",
+          "Homer"
+        ],
+        "why": "She started it at 18."
+      }
+    ],
+    "sheet": {
+      "kind": "match",
+      "pairs": [
+        [
+          "Frankenstein",
+          "A scientist builds a creature, then abandons it"
+        ],
+        [
+          "Animal Farm",
+          "The pigs take over after the revolution"
+        ],
+        [
+          "Fahrenheit 451",
+          "Firemen burn books"
+        ],
+        [
+          "To Kill a Mockingbird",
+          "A lawyer defends a Black man in the South"
+        ],
+        [
+          "The Hobbit",
+          "A hobbit, dwarves, and a dragon"
+        ],
+        [
+          "Things Fall Apart",
+          "A Nigerian village meets colonial rule"
+        ],
+        [
+          "The Odyssey",
+          "A 10-year trip home from war"
+        ],
+        [
+          "Don Quixote",
+          "He attacks windmills"
+        ],
+        [
+          "The Grapes of Wrath",
+          "A family flees the Dust Bowl"
+        ],
+        [
+          "The Diary of Anne Frank",
+          "Hiding from the Nazis in Amsterdam"
+        ]
+      ]
+    }
+  }
+]

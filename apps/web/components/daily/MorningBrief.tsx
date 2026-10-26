@@ -8,7 +8,9 @@ import { NumberLineLesson } from "./NumberLineLesson";
 import { MapScaleLesson } from "./MapScaleLesson";
 import { AverageLesson } from "./AverageLesson";
 import { CoordinateLesson } from "./CoordinateLesson";
+import { ExtraTwenty } from "./ExtraTwenty";
 import { getDayPlan } from "@/lib/daily/plans";
+import { getExtra } from "@/lib/daily/extras";
 import type { Day } from "@/lib/daily/types";
 
 interface Props {
@@ -17,6 +19,7 @@ interface Props {
 
 export function MorningBrief({ day }: Props) {
   const plan = getDayPlan(day.date);
+  const extra = getExtra(day.date);
 
   return (
     <div>
@@ -29,7 +32,7 @@ export function MorningBrief({ day }: Props) {
         </Link>
       </div>
 
-      {plan && <DayPlan plan={plan} />}
+      {plan && <DayPlan plan={plan} extraTitle={extra?.extra.title} />}
 
       {day.date === "2026-10-21" && <GeometryLesson />}
       {day.date === "2026-10-26" && <UnitsLesson />}
@@ -43,6 +46,8 @@ export function MorningBrief({ day }: Props) {
       <div className="mt-10 mb-2 border-t border-slate-200 pt-8">
         <ExamStartButtons date={day.date} />
       </div>
+
+      {extra && <ExtraTwenty extra={extra.extra} number={extra.number} />}
     </div>
   );
 }

@@ -12,9 +12,10 @@ import type { DayPlan as DayPlanData } from "@/lib/daily/types";
 
 interface Props {
   plan: DayPlanData;
+  extraTitle?: string;
 }
 
-export function DayPlan({ plan }: Props) {
+export function DayPlan({ plan, extraTitle }: Props) {
   const workMinutes = plan.blocks.reduce((total, block) => {
     if (block.kind !== "work") return total;
     return total + block.steps.reduce((sum, step) => sum + step.minutes, 0);
@@ -207,6 +208,15 @@ export function DayPlan({ plan }: Props) {
             <p className="mt-1 text-sm text-slate-600">
               Optional. Nothing here is graded. Pick any.
             </p>
+            {extraTitle && (
+              <a
+                href="#extra"
+                className="mt-3 block rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm leading-5 text-slate-800 hover:border-rose-400"
+              >
+                <strong className="text-rose-700">Extra 20 minutes: </strong>
+                {extraTitle} — at the bottom of this page ↓
+              </a>
+            )}
             {plan.finishedEarly.deeper && (
               <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm leading-5 text-slate-800">
                 <strong className="text-sky-800">Go deeper: </strong>
