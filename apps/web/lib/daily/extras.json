@@ -199,31 +199,38 @@
         "items": [
           {
             "name": "Baguette",
-            "note": "France. Long, crisp crust, only flour, water, salt, yeast."
+            "note": "France. Long, crisp crust, only flour, water, salt, yeast.",
+            "image": "/extras/bread/baguette.jpg"
           },
           {
             "name": "Challah",
-            "note": "Jewish braided bread with egg, for Shabbat."
+            "note": "Jewish braided bread with egg, for Shabbat.",
+            "image": "/extras/bread/challah.jpg"
           },
           {
             "name": "Bagel",
-            "note": "Boiled first, then baked — that's the chewy skin."
+            "note": "Boiled first, then baked — that's the chewy skin.",
+            "image": "/extras/bread/bagel.jpg"
           },
           {
             "name": "Brioche",
-            "note": "France. Rich with butter and eggs, almost a cake."
+            "note": "France. Rich with butter and eggs, almost a cake.",
+            "image": "/extras/bread/brioche.jpg"
           },
           {
             "name": "Focaccia",
-            "note": "Italy. Flat, oily, dimpled with fingers."
+            "note": "Italy. Flat, oily, dimpled with fingers.",
+            "image": "/extras/bread/focaccia.jpg"
           },
           {
             "name": "Pita",
-            "note": "Middle East. Steam puffs it into a pocket."
+            "note": "Middle East. Steam puffs it into a pocket.",
+            "image": "/extras/bread/pita.jpg"
           },
           {
             "name": "Naan",
-            "note": "South Asia. Baked on the wall of a hot tandoor oven."
+            "note": "South Asia. Baked on the wall of a hot tandoor oven.",
+            "image": "/extras/bread/naan.jpg"
           }
         ]
       },
@@ -232,15 +239,18 @@
         "items": [
           {
             "name": "Sourdough",
-            "note": "A “starter” of flour and water full of wild yeast and bacteria. The bacteria make it sour."
+            "note": "A “starter” of flour and water full of wild yeast and bacteria. The bacteria make it sour.",
+            "image": "/extras/bread/sourdough.jpg"
           },
           {
             "name": "Rye / pumpernickel",
-            "note": "Germany and Eastern Europe. Dark, dense, sour."
+            "note": "Germany and Eastern Europe. Dark, dense, sour.",
+            "image": "/extras/bread/rye.jpg"
           },
           {
             "name": "Injera",
-            "note": "Ethiopia. Spongy, fermented teff flatbread. Also your plate and spoon."
+            "note": "Ethiopia. Spongy, fermented teff flatbread. Also your plate and spoon.",
+            "image": "/extras/bread/injera.jpg"
           }
         ]
       },
@@ -249,15 +259,18 @@
         "items": [
           {
             "name": "Matzah",
-            "note": "Flour and water baked fast, for Passover."
+            "note": "Flour and water baked fast, for Passover.",
+            "image": "/extras/bread/matzah.jpg"
           },
           {
             "name": "Tortilla",
-            "note": "Mexico. Corn or wheat, cooked on a griddle."
+            "note": "Mexico. Corn or wheat, cooked on a griddle.",
+            "image": "/extras/bread/tortilla.jpg"
           },
           {
             "name": "Chapati / roti",
-            "note": "India. Whole-wheat, cooked on a flat pan."
+            "note": "India. Whole-wheat, cooked on a flat pan.",
+            "image": "/extras/bread/chapati.jpg"
           }
         ]
       },
@@ -266,15 +279,18 @@
         "items": [
           {
             "name": "Irish soda bread",
-            "note": "Baking soda + buttermilk make the bubbles."
+            "note": "Baking soda + buttermilk make the bubbles.",
+            "image": "/extras/bread/soda.jpg"
           },
           {
             "name": "Cornbread",
-            "note": "American South. Cornmeal and baking powder."
+            "note": "American South. Cornmeal and baking powder.",
+            "image": "/extras/bread/cornbread.jpg"
           },
           {
             "name": "Banana bread",
-            "note": "Really a cake in a loaf pan."
+            "note": "Really a cake in a loaf pan.",
+            "image": "/extras/bread/banana.jpg"
           }
         ]
       }
@@ -351,7 +367,8 @@
           "5"
         ]
       ]
-    }
+    },
+    "credit": "Photos: Wikimedia Commons contributors (CC BY-SA)."
   },
   {
     "date": "2026-10-28",

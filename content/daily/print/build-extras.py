@@ -77,13 +77,15 @@ def has_photos(extra):
     return any(i.get("image") for g in extra["groups"] for i in g["items"])
 
 
-def photo_grid(group, width, cols=6):
+def photo_grid(groups, width, cols=5):
     side = width / cols - 6
-    tile = ParagraphStyle("tn", parent=note, fontSize=7, leading=8.5)
+    tile = ParagraphStyle("tn", parent=note, fontSize=7.5, leading=9)
+    tag = ParagraphStyle("tg", parent=kicker, fontSize=6.5, leading=8)
     cells = []
-    for i in group["items"]:
-        img = Image(str(ROOT / "apps/web/public" / i["image"].lstrip("/")), side, side)
-        cells.append([img, Spacer(1, 2), Paragraph(i["name"], name), Paragraph(i["note"], tile)])
+    for group in groups:
+        for i in group["items"]:
+            img = Image(str(ROOT / "apps/web/public" / i["image"].lstrip("/")), side, side)
+            cells.append([img, Spacer(1, 2), Paragraph(group["heading"].upper(), tag), Paragraph(i["name"], name), Paragraph(i["note"], tile)])
     while len(cells) % cols:
         cells.append([Spacer(1, 1)])
     rows = [cells[k : k + cols] for k in range(0, len(cells), cols)]
@@ -98,8 +100,8 @@ def front(extra, number):
     ]
     width = 7.5 * inch
     if has_photos(extra):
-        for group in extra["groups"]:
-            out.append(KeepTogether([Paragraph(group["heading"].upper(), head), photo_grid(group, width)]))
+        count = sum(len(g["items"]) for g in extra["groups"])
+        out.append(photo_grid(extra["groups"], width, cols=5 if count <= 15 else 6))
         if extra.get("credit"):
             out.append(Paragraph(extra["credit"], ParagraphStyle("cr", parent=note, fontSize=6.5)))
         return out
