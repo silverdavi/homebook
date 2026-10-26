@@ -1,14 +1,7 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import { Lightbulb, Printer, Timer } from "lucide-react";
-import {
-  correctPosition,
-  displayOptions,
-  type Extra,
-  type ExtraQuiz,
-} from "@/lib/daily/extras";
+import type { Extra } from "@/lib/daily/extras";
+import { ExtraQuizGame } from "./ExtraQuizGame";
 
 interface Props {
   extra: Extra;
@@ -20,7 +13,7 @@ export function ExtraTwenty({ extra, number }: Props) {
     <section
       id="extra"
       aria-labelledby="extra-title"
-      className="mt-10 overflow-hidden rounded-2xl border-2 border-rose-200 bg-rose-50/40"
+      className="mt-10 mb-24 overflow-hidden rounded-2xl border-2 border-rose-200 bg-rose-50/40"
     >
       <div className="border-b border-rose-200 bg-white px-5 py-5 sm:px-6">
         <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-600">
@@ -116,77 +109,8 @@ export function ExtraTwenty({ extra, number }: Props) {
           <p className="mt-1 text-sm leading-5 text-slate-700">{extra.doIt}</p>
         </div>
 
-        <div>
-          <h3 className="mb-2 font-semibold text-slate-900">
-            Check yourself — tap an answer
-          </h3>
-          <div className="space-y-3">
-            {extra.quiz.map((question, index) => (
-              <QuizItem
-                key={question.q}
-                question={question}
-                position={correctPosition(
-                  number,
-                  index,
-                  question.options.length,
-                )}
-              />
-            ))}
-          </div>
-        </div>
+        <ExtraQuizGame extra={extra} />
       </div>
     </section>
-  );
-}
-
-function QuizItem({
-  question,
-  position,
-}: {
-  question: ExtraQuiz;
-  position: number;
-}) {
-  const [picked, setPicked] = useState<number | null>(null);
-  const options = displayOptions(question.options, position);
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-sm font-medium text-slate-900">{question.q}</p>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {options.map((option, index) => {
-          const isPicked = picked === index;
-          const tone =
-            picked === null
-              ? "border-slate-200 hover:border-rose-300"
-              : index === position
-                ? "border-emerald-400 bg-emerald-50 text-emerald-900"
-                : isPicked
-                  ? "border-rose-400 bg-rose-50 text-rose-900"
-                  : "border-slate-200 text-slate-400";
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setPicked(index)}
-              className={`rounded-lg border px-3 py-1.5 text-left text-sm ${tone}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-      {picked !== null && (
-        <p className="mt-2 text-sm text-slate-600">
-          <strong
-            className={
-              picked === position ? "text-emerald-700" : "text-rose-700"
-            }
-          >
-            {picked === position ? "Right. " : "Not quite. "}
-          </strong>
-          {question.why}
-        </p>
-      )}
-    </div>
   );
 }
