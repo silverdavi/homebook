@@ -36,10 +36,10 @@ export function MorningBrief({ day }: Props) {
 
       {day.date === "2026-10-21" && <GeometryLesson />}
       {day.date === "2026-10-26" && <UnitsLesson />}
-      {day.date === "2026-10-27" && <NumberLineLesson />}
-      {day.date === "2026-10-28" && <MapScaleLesson />}
-      {day.date === "2026-10-29" && <AverageLesson />}
-      {day.date === "2026-10-30" && <CoordinateLesson />}
+      {day.date === "2026-10-28" && <NumberLineLesson />}
+      {day.date === "2026-10-29" && <MapScaleLesson />}
+      {day.date === "2026-10-30" && <AverageLesson />}
+      {day.date === "2026-11-02" && <CoordinateLesson />}
 
       <Markdown content={day.brief} />
 

@@ -18,7 +18,7 @@ describe("20-minute extras", () => {
       expect(weekday, date).toBeLessThan(6);
     }
     expect(getExtra("2026-10-26")?.number).toBe(1);
-    expect(getExtra("2026-12-08")?.number).toBe(30);
+    expect(getExtra("2026-12-09")?.number).toBe(30);
   });
 
   it("skips Thanksgiving", () => {

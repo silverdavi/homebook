@@ -400,9 +400,9 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       explainDone: "One complete sentence names a place and a colonial cause.",
     },
   }),
-  "2026-10-27": fullDay({
-    material: "Tuesday • Day 37 double-sided integers sheet",
-    extraMaterials: ["World • Tuesday water sheet"],
+  "2026-10-28": fullDay({
+    material: "Wednesday • Day 37 double-sided integers sheet",
+    extraMaterials: ["World • Wednesday water sheet"],
     deeper:
       "Read “Extra” at the bottom of the lesson: why 5 − (−3) = 8, the coldest temperature on Earth, and negative money.",
     introduction: {
@@ -441,16 +441,16 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block and find the Nile, the Amazon, the Mekong, and the Aral Sea on a map.",
       reviewDone: "You can name the region of each without looking.",
-      task: "Complete Tuesday's World sheet.",
+      task: "Complete Wednesday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain:
         "Write one sentence on why being upstream gives a country power.",
       explainDone: "One complete sentence names a river and two countries.",
     },
   }),
-  "2026-10-28": fullDay({
-    material: "Wednesday • Day 38 double-sided map-scale sheet and ruler",
-    extraMaterials: ["World • Wednesday maps sheet"],
+  "2026-10-29": fullDay({
+    material: "Thursday • Day 38 double-sided map-scale sheet and ruler",
+    extraMaterials: ["World • Thursday maps sheet"],
     deeper:
       "Read “Extra” at the bottom of the lesson: scale as a ratio, measuring a real map, and model cars.",
     introduction: {
@@ -488,15 +488,15 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block. On any world map, find Greenland and Africa and compare how big they look.",
       reviewDone: "You can explain why Greenland looks too big.",
-      task: "Complete Wednesday's World sheet.",
+      task: "Complete Thursday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain: "Write one sentence on why a map is never neutral.",
       explainDone: "One complete sentence mentions a choice a mapmaker made.",
     },
   }),
-  "2026-10-29": fullDay({
-    material: "Thursday • Day 39 double-sided mean-and-median sheet",
-    extraMaterials: ["World • Thursday cities sheet"],
+  "2026-10-30": fullDay({
+    material: "Friday • Day 39 double-sided mean-and-median sheet",
+    extraMaterials: ["World • Friday cities sheet"],
     deeper:
       "Read “Extra” at the bottom of the lesson: medians with an even count, the mode, and a running experiment.",
     introduction: {
@@ -533,23 +533,23 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block and find India, China, Nigeria, and the Democratic Republic of the Congo on a map.",
       reviewDone: "You can name one big city in each.",
-      task: "Complete Thursday's World sheet.",
+      task: "Complete Friday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain:
         "Write one sentence on something unions won that you benefit from.",
       explainDone: "One complete sentence names the win.",
     },
   }),
-  "2026-10-30": fullDay({
-    material: "Friday • Day 40 double-sided coordinates sheet",
-    extraMaterials: ["World • Friday latitude-and-longitude sheet"],
+  "2026-11-02": fullDay({
+    material: "Monday • Day 40 double-sided coordinates sheet",
+    extraMaterials: ["World • Monday latitude-and-longitude sheet"],
     deeper:
       "Read “Extra” at the bottom of the lesson: a connect-the-dots picture, coordinate Battleship, and your home's latitude.",
     introduction: {
       newToday:
         "Coordinates: two numbers that find any point. Start with the “Find any point” animation just below this schedule.",
       buildsOn:
-        "Tuesday's number line, now used twice: once across and once up.",
+        "Wednesday's number line, now used twice: once across and once up.",
       whyItMatters: "Maps, video games, GPS, and graphs all use coordinates.",
     },
     learn: {
@@ -578,7 +578,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block and find the equator, the Prime Meridian, and the International Date Line on a map or globe.",
       reviewDone: "You can point to all 3 lines.",
-      task: "Complete Friday's World sheet.",
+      task: "Complete Monday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain: "Write one sentence on why Greenwich became 0°.",
       explainDone: "One complete sentence mentions power or empire.",

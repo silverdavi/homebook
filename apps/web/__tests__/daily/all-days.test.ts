@@ -252,10 +252,10 @@ describe("All 8 days × 2 versions × all questions are valid + gradeable", () =
   it("week 11 has a daily lesson, 12 math questions, and 6 World questions", () => {
     expect(WEEK11.map((d) => d.date)).toEqual([
       "2026-10-26",
-      "2026-10-27",
       "2026-10-28",
       "2026-10-29",
       "2026-10-30",
+      "2026-11-02",
     ]);
     for (const day of WEEK11) {
       for (const version of [day.versionA, day.versionB]) {
