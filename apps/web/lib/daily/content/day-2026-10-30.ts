@@ -2,7 +2,8 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ, shuffleChoices } from "./banks/choice";
+import { applyOrder, choiceQ } from "./banks/choice";
+import generated from "./generated/2026-10-30.json";
 
 const DATE = "2026-10-30";
 const HELP = `/daily/${DATE}`;
@@ -30,18 +31,8 @@ function medianQ(id: string, nums: number[]): Question {
 }
 
 const versionA: Question[] = [
-  meanQ("a-a1", [4, 6, 8]),
-  meanQ("a-a2", [10, 20, 30]),
-  meanQ("a-a3", [3, 7, 8, 10, 12]),
-  meanQ("a-a4", [12, 15, 18, 11]),
-  meanQ("a-a5", [2, 9, 4, 8, 7]),
-  meanQ("a-a6", [20, 25, 30, 45]),
-  medianQ("a-d1", [3, 9, 5]),
-  medianQ("a-d2", [8, 2, 6, 4, 10]),
-  medianQ("a-d3", [15, 11, 13]),
-  medianQ("a-d4", [7, 1, 9, 3, 5]),
-  medianQ("a-d5", [21, 14, 30, 18, 25]),
-  medianQ("a-d6", [6, 40, 9, 12, 7]),
+  ...generated.a.mean.map((nums, i) => meanQ(`a-a${i + 1}`, nums)),
+  ...generated.a.median.map((nums, i) => medianQ(`a-d${i + 1}`, nums)),
   choiceQ(
     "a-g1",
     "geography",
@@ -109,18 +100,8 @@ const versionA: Question[] = [
 ];
 
 const versionB: Question[] = [
-  meanQ("b-a1", [3, 5, 7]),
-  meanQ("b-a2", [20, 30, 40]),
-  meanQ("b-a3", [2, 6, 9, 11, 12]),
-  meanQ("b-a4", [10, 14, 16, 12]),
-  meanQ("b-a5", [5, 8, 3, 9, 10]),
-  meanQ("b-a6", [15, 25, 35, 45]),
-  medianQ("b-d1", [4, 10, 6]),
-  medianQ("b-d2", [9, 3, 7, 5, 11]),
-  medianQ("b-d3", [16, 12, 14]),
-  medianQ("b-d4", [8, 2, 10, 4, 6]),
-  medianQ("b-d5", [22, 15, 31, 19, 26]),
-  medianQ("b-d6", [5, 50, 8, 11, 6]),
+  ...generated.b.mean.map((nums, i) => meanQ(`b-a${i + 1}`, nums)),
+  ...generated.b.median.map((nums, i) => medianQ(`b-d${i + 1}`, nums)),
   choiceQ(
     "b-g1",
     "geography",
@@ -192,6 +173,6 @@ export const day20261030: Day = {
   title: "Day 39 — Mean and median: two kinds of average",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Mean and median", "Cities and population", "Workers' rights"],
-  versionA: shuffleChoices(versionA, DATE, { balanced: true }),
-  versionB: shuffleChoices(versionB, DATE, { balanced: true }),
+  versionA: applyOrder(versionA, generated.order),
+  versionB: applyOrder(versionB, generated.order),
 };

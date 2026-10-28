@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  EXTRAS,
-  correctPosition,
-  displayOptions,
-  getExtra,
-} from "@/lib/daily/extras";
+import { EXTRAS, getExtra } from "@/lib/daily/extras";
 
 describe("20-minute extras", () => {
   it("has 30, one per school day, in date order", () => {
@@ -33,19 +28,5 @@ describe("20-minute extras", () => {
       expect(extra.doIt.length, extra.date).toBeGreaterThan(40);
       expect(extra.quiz, extra.date).toHaveLength(4);
     }
-  });
-
-  it("does not always put the right answer in the same place", () => {
-    const positions = new Set<number>();
-    EXTRAS.forEach((extra, i) =>
-      extra.quiz.forEach((question, q) => {
-        const position = correctPosition(i + 1, q, question.options.length);
-        expect(displayOptions(question.options, position)[position]).toBe(
-          question.options[0],
-        );
-        positions.add(position);
-      }),
-    );
-    expect(positions.size).toBe(3);
   });
 });

@@ -49,13 +49,7 @@ small = ParagraphStyle("s", fontName="Body", fontSize=9, textColor=INK, leading=
 cell = ParagraphStyle("c", fontName="Body", fontSize=9.5, textColor=INK, leading=12)
 
 
-def position(number, index, count):
-    return (number + index * 2) % count
-
-
-def shown(options, pos):
-    correct, *wrong = options
-    return wrong[:pos] + [correct] + wrong[pos:]
+SHUFFLE = random.SystemRandom()
 
 
 def box(rows, widths, pad=4, grid=True):
@@ -166,7 +160,8 @@ def back(extra, number):
     out += sheet(extra)
     out += [Spacer(1, 10), Paragraph("CHECK YOURSELF — CIRCLE ONE", head)]
     for i, q in enumerate(extra["quiz"]):
-        opts = shown(q["options"], position(number, i, len(q["options"])))
+        opts = list(q["options"])
+        SHUFFLE.shuffle(opts)
         letters = "ABCD"
         line = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(f"{letters[k]}) {o}" for k, o in enumerate(opts))
         out += [Paragraph(f"{i + 1}. {q['q']}", body), Paragraph(line, small), Spacer(1, 5)]

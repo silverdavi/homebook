@@ -2,7 +2,8 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ, shuffleChoices } from "./banks/choice";
+import { applyOrder, choiceQ } from "./banks/choice";
+import generated from "./generated/2026-10-29.json";
 
 const DATE = "2026-10-29";
 const HELP = `/daily/${DATE}`;
@@ -40,18 +41,15 @@ function findScaleQ(id: string, cm: number, km: number): Question {
 }
 
 const versionA: Question[] = [
-  toRealQ("a-r1", 3, 10),
-  toRealQ("a-r2", 4, 25),
-  toRealQ("a-r3", 7, 10),
-  toRealQ("a-r4", 6, 5),
-  toMapQ("a-m1", 40, 10),
-  toMapQ("a-m2", 75, 25),
-  toMapQ("a-m3", 60, 5),
-  toMapQ("a-m4", 150, 50),
-  findScaleQ("a-s1", 4, 20),
-  findScaleQ("a-s2", 3, 60),
-  findScaleQ("a-s3", 5, 250),
-  findScaleQ("a-s4", 8, 80),
+  ...generated.a.toReal.map(([cm, scale], i) =>
+    toRealQ(`a-r${i + 1}`, cm, scale),
+  ),
+  ...generated.a.toMap.map(([km, scale], i) =>
+    toMapQ(`a-m${i + 1}`, km, scale),
+  ),
+  ...generated.a.findScale.map(([cm, km], i) =>
+    findScaleQ(`a-s${i + 1}`, cm, km),
+  ),
   choiceQ(
     "a-g1",
     "geography",
@@ -129,18 +127,15 @@ const versionA: Question[] = [
 ];
 
 const versionB: Question[] = [
-  toRealQ("b-r1", 5, 10),
-  toRealQ("b-r2", 3, 25),
-  toRealQ("b-r3", 8, 5),
-  toRealQ("b-r4", 6, 50),
-  toMapQ("b-m1", 90, 10),
-  toMapQ("b-m2", 100, 25),
-  toMapQ("b-m3", 35, 5),
-  toMapQ("b-m4", 200, 50),
-  findScaleQ("b-s1", 6, 30),
-  findScaleQ("b-s2", 4, 100),
-  findScaleQ("b-s3", 2, 20),
-  findScaleQ("b-s4", 7, 350),
+  ...generated.b.toReal.map(([cm, scale], i) =>
+    toRealQ(`b-r${i + 1}`, cm, scale),
+  ),
+  ...generated.b.toMap.map(([km, scale], i) =>
+    toMapQ(`b-m${i + 1}`, km, scale),
+  ),
+  ...generated.b.findScale.map(([cm, km], i) =>
+    findScaleQ(`b-s${i + 1}`, cm, km),
+  ),
   choiceQ(
     "b-g1",
     "geography",
@@ -222,6 +217,6 @@ export const day20261029: Day = {
   title: "Day 38 — Map scale: shrinking the world",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Map scale", "Map projections", "Continents and oceans"],
-  versionA: shuffleChoices(versionA, DATE, { balanced: true }),
-  versionB: shuffleChoices(versionB, DATE, { balanced: true }),
+  versionA: applyOrder(versionA, generated.order),
+  versionB: applyOrder(versionB, generated.order),
 };

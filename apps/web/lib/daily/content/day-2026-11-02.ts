@@ -2,7 +2,8 @@ import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
 import { numericQ } from "./banks/numeric";
-import { choiceQ, shuffleChoices } from "./banks/choice";
+import { applyOrder, choiceQ } from "./banks/choice";
+import generated from "./generated/2026-11-02.json";
 
 const DATE = "2026-11-02";
 const HELP = `/daily/${DATE}`;
@@ -40,7 +41,11 @@ function moveQ(
   );
 }
 
-function distanceQ(id: string, a: [number, number], b: [number, number]): Question {
+function distanceQ(
+  id: string,
+  a: [number, number],
+  b: [number, number],
+): Question {
   const answer = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
   return numericQ(
     id,
@@ -53,18 +58,19 @@ function distanceQ(id: string, a: [number, number], b: [number, number]): Questi
 }
 
 const versionA: Question[] = [
-  quadrantQ("a-q1", 3, 4),
-  quadrantQ("a-q2", -2, 5),
-  quadrantQ("a-q3", -4, -1),
-  quadrantQ("a-q4", 5, -3),
-  moveQ("a-m1", 2, 3, 5, "left"),
-  moveQ("a-m2", -1, -2, 6, "up"),
-  moveQ("a-m3", 4, 1, 7, "down"),
-  moveQ("a-m4", -3, 0, 8, "right"),
-  distanceQ("a-d1", [-2, 4], [5, 4]),
-  distanceQ("a-d2", [-6, -1], [-1, -1]),
-  distanceQ("a-d3", [3, -4], [3, 2]),
-  distanceQ("a-d4", [-3, -3], [4, -3]),
+  ...generated.a.quadrant.map(([x, y], i) => quadrantQ(`a-q${i + 1}`, x, y)),
+  ...generated.a.move.map(([x, y, steps, dir], i) =>
+    moveQ(
+      `a-m${i + 1}`,
+      Number(x),
+      Number(y),
+      Number(steps),
+      dir as "left" | "right" | "up" | "down",
+    ),
+  ),
+  ...generated.a.distance.map(([a, b], i) =>
+    distanceQ(`a-d${i + 1}`, a as [number, number], b as [number, number]),
+  ),
   choiceQ(
     "a-g1",
     "geography",
@@ -83,12 +89,7 @@ const versionA: Question[] = [
     "a-g2",
     "geography",
     "The Prime Meridian (0° longitude) passes through which city?",
-    [
-      "London",
-      "Paris",
-      "New York",
-      "Cairo",
-    ],
+    ["London", "Paris", "New York", "Cairo"],
     0,
     "It runs through the Royal Observatory in Greenwich, London.",
     HELP,
@@ -125,12 +126,7 @@ const versionA: Question[] = [
     "a-k1",
     "generalKnowledge",
     "Roughly how many degrees of longitude wide is one time zone?",
-    [
-      "15°",
-      "10°",
-      "24°",
-      "30°",
-    ],
+    ["15°", "10°", "24°", "30°"],
     0,
     "Earth turns 360° in 24 hours: 360 ÷ 24 = 15° each hour.",
     HELP,
@@ -152,18 +148,19 @@ const versionA: Question[] = [
 ];
 
 const versionB: Question[] = [
-  quadrantQ("b-q1", 1, 6),
-  quadrantQ("b-q2", -5, 2),
-  quadrantQ("b-q3", -3, -3),
-  quadrantQ("b-q4", 2, -4),
-  moveQ("b-m1", 3, 2, 6, "left"),
-  moveQ("b-m2", -2, -3, 7, "up"),
-  moveQ("b-m3", 1, 4, 9, "down"),
-  moveQ("b-m4", -4, 1, 6, "right"),
-  distanceQ("b-d1", [-3, 2], [4, 2]),
-  distanceQ("b-d2", [-5, -2], [-1, -2]),
-  distanceQ("b-d3", [2, -5], [2, 3]),
-  distanceQ("b-d4", [-4, -1], [3, -1]),
+  ...generated.b.quadrant.map(([x, y], i) => quadrantQ(`b-q${i + 1}`, x, y)),
+  ...generated.b.move.map(([x, y, steps, dir], i) =>
+    moveQ(
+      `b-m${i + 1}`,
+      Number(x),
+      Number(y),
+      Number(steps),
+      dir as "left" | "right" | "up" | "down",
+    ),
+  ),
+  ...generated.b.distance.map(([a, b], i) =>
+    distanceQ(`b-d${i + 1}`, a as [number, number], b as [number, number]),
+  ),
   choiceQ(
     "b-g1",
     "geography",
@@ -210,12 +207,7 @@ const versionB: Question[] = [
     "b-h2",
     "history",
     "China spans about 5 geographic time zones. How many official time zones does it use?",
-    [
-      "1",
-      "3",
-      "5",
-      "24",
-    ],
+    ["1", "3", "5", "24"],
     0,
     "Since 1949, all of China uses Beijing time, so in the far west the sun can rise around 10 a.m.",
     HELP,
@@ -255,6 +247,6 @@ export const day20261102: Day = {
   title: "Day 40 — Coordinates: find any point",
   brief: loadMarkdown(`day-${DATE}.md`),
   topics: ["Coordinate plane", "Latitude and longitude", "Time zones"],
-  versionA: shuffleChoices(versionA, DATE, { balanced: true }),
-  versionB: shuffleChoices(versionB, DATE, { balanced: true }),
+  versionA: applyOrder(versionA, generated.order),
+  versionB: applyOrder(versionB, generated.order),
 };

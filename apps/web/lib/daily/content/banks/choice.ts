@@ -46,6 +46,25 @@ export function shuffleChoices(
   });
 }
 
+/** Reorder options with a permutation produced by content/daily/generate/random_days.py. */
+export function applyOrder(
+  questions: Question[],
+  order: Record<string, number[]>,
+): Question[] {
+  return questions.map((q) => {
+    if (!("options" in q)) return q;
+    const perm = order[q.id];
+    if (!perm || perm.length !== q.options.length) {
+      throw new Error(`applyOrder: no permutation for ${q.id}`);
+    }
+    return {
+      ...q,
+      options: perm.map((i) => q.options[i]),
+      answerIndex: perm.indexOf(q.answerIndex),
+    };
+  });
+}
+
 export function choiceQ(
   id: string,
   kind: ChoiceQuestion["kind"],

@@ -265,3 +265,23 @@ describe("All 8 days × 2 versions × all questions are valid + gradeable", () =
     }
   });
 });
+
+describe("code-generated days", () => {
+  for (const date of ["2026-10-29", "2026-10-30", "2026-11-02"]) {
+    it(`${date} takes its numbers and answer order from random_days.py`, async () => {
+      const generated = (
+        await import(`@/lib/daily/content/generated/${date}.json`)
+      ).default;
+      expect(generated.generator).toBe("content/daily/generate/random_days.py");
+      const day = WEEK11.find((d) => d.date === date)!;
+      for (const version of [day.versionA, day.versionB]) {
+        for (const q of version) {
+          if (!("options" in q)) continue;
+          const perm = generated.order[q.id];
+          expect([...perm].sort()).toEqual([0, 1, 2, 3]);
+          expect(q.answerIndex).toBe(perm.indexOf(0));
+        }
+      }
+    });
+  }
+});
