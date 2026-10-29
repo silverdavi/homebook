@@ -56,7 +56,7 @@ export default async function DayPage({ params }: PageProps) {
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-paper">
+    <div className="reading-theme rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-paper">
       <MorningBrief day={day} />
     </div>
   );

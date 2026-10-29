@@ -9,6 +9,7 @@ import { MapScaleLesson } from "./MapScaleLesson";
 import { AverageLesson } from "./AverageLesson";
 import { CoordinateLesson } from "./CoordinateLesson";
 import { ExtraTwenty } from "./ExtraTwenty";
+import { ReadingThemeToggle } from "./ReadingThemeToggle";
 import { getDayPlan } from "@/lib/daily/plans";
 import { getExtra } from "@/lib/daily/extras";
 import type { Day } from "@/lib/daily/types";
@@ -23,13 +24,14 @@ export function MorningBrief({ day }: Props) {
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Link
           href="/daily"
           className="text-sm font-medium text-slate-500 hover:text-slate-700"
         >
           ← The week
         </Link>
+        <ReadingThemeToggle />
       </div>
 
       {plan && <DayPlan plan={plan} extraTitle={extra?.extra.title} />}
