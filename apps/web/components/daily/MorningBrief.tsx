@@ -36,12 +36,16 @@ export function MorningBrief({ day }: Props) {
 
       {plan && <DayPlan plan={plan} extraTitle={extra?.extra.title} />}
 
-      {day.date === "2026-10-21" && <GeometryLesson />}
-      {day.date === "2026-10-26" && <UnitsLesson />}
-      {day.date === "2026-10-28" && <NumberLineLesson />}
-      {day.date === "2026-10-29" && <MapScaleLesson />}
-      {day.date === "2026-10-30" && <AverageLesson />}
-      {day.date === "2026-11-02" && <CoordinateLesson />}
+      <div className="native-dark">
+        <div className="native-dark">
+        {day.date === "2026-10-21" && <GeometryLesson />}
+          {day.date === "2026-10-26" && <UnitsLesson />}
+          {day.date === "2026-10-28" && <NumberLineLesson />}
+          {day.date === "2026-10-29" && <MapScaleLesson />}
+          {day.date === "2026-10-30" && <AverageLesson />}
+          {day.date === "2026-11-02" && <CoordinateLesson />}
+      </div>
+      </div>
 
       <Markdown content={day.brief} />
 
