@@ -184,9 +184,9 @@ def ratio_practice(rng):
     (t9, a9, b9), (t10, a10, b10) = v["share"][0], v["share"][1]
     guided = {
         1: f"${t1} ÷ {n1} = $____",
-        5: f"{c5} ÷ {a5} = ____ (times bigger);  {b5} × ____ = ____",
-        9: f"{a9} + {b9} = ____ parts;  {t9} ÷ ____ = ____ per part",
-        10: f"{a10} + {b10} = ____ parts;  {t10} ÷ ____ = ____ per part",
+        5: f"{c5} ÷ {a5} = __ times;  {b5} × __ = __",
+        9: f"{a9} + {b9} = __ parts;  {t9} ÷ __ = __",
+        10: f"{a10} + {b10} = __ parts;  {t10} ÷ __ = __",
     }
     return problems, guided
 
