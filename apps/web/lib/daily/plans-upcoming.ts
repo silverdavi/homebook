@@ -688,4 +688,104 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
+  "2026-11-05": fullDay(
+    {
+      material: "Thursday • Day 42 double-sided percent-change sheet",
+      extraMaterials: ["World • Thursday climate sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: up 10% then down 10%, and a store-sign hunt.",
+      introduction: {
+        newToday:
+          "Percent increase and decrease: find the change, then add it or take it away.",
+        buildsOn: "Day 31's percent anchors: 10%, 25%, and 50%.",
+        whyItMatters:
+          "Sales, raises, price rises, and news about the economy are all percent changes.",
+      },
+      learn: {
+        title: "Change, then add or subtract",
+        read: "Read the lesson below: going up, going down, and finding the percent.",
+        readDone:
+          "You can say: find the change first; for “what percent,” divide by the old price.",
+        example:
+          "Copy the 3 worked examples (bike, jacket, $40 to $50), showing each step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows the change first.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish:
+          "Finish the other 8 problems: increases, then sales, then percents.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss. For “what percent,” check that you divided by the old price.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: climate change and who pays",
+        review:
+          "Read the World block. Find Tuvalu, Pakistan, China, and the United States on a map.",
+        reviewDone: "You can say who emits most each year, and who in total.",
+        task: "Complete Thursday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on why climate change is called a justice issue.",
+        explainDone:
+          "One complete sentence names who causes it and who is hurt.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-06": fullDay(
+    {
+      material: "Friday • Day 43 double-sided probability sheet",
+      extraMaterials: ["World • Friday Native nations sheet", "A coin"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: a coin-flip test and a spinner you design.",
+      introduction: {
+        newToday:
+          "Probability: how likely something is, and how many times to expect it.",
+        buildsOn: "Fractions, percents out of 100, and division.",
+        whyItMatters:
+          "Weather forecasts, games, sports, and medicine all talk in chances.",
+      },
+      learn: {
+        title: "Count all, then compare",
+        read: "Read the lesson below: chance as “out of,” what to expect, and spinners.",
+        readDone:
+          "You can say: chance = wins ÷ total; expected = tries ÷ sides.",
+        example:
+          "Flip a coin 20 times and tally heads. Then copy the 3 worked examples.",
+        exampleDone: "A tally and 3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows the division first.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish: "Finish the other 8 problems: bags, then dice, then spinners.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss. For a bag, check you divided by the total, not by blue.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: Native nations today",
+        review:
+          "Read the World block. Find the Navajo Nation, Standing Rock, and Oklahoma on a US map.",
+        reviewDone: "You can say what sovereign means.",
+        task: "Complete Friday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on why a broken treaty still matters today.",
+        explainDone: "One complete sentence mentions McGirt or Standing Rock.",
+      },
+    },
+    "12:30",
+  ),
 };

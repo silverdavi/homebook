@@ -9,6 +9,7 @@ Never regenerate a day that already has submissions: stored answers are option i
 """
 
 import json
+import math
 import re
 import secrets
 import sys
@@ -191,11 +192,86 @@ def ratio_practice(rng):
     return problems, guided
 
 
+# ---------- percent increase and decrease ----------
+PERCENTS = [10, 20, 25, 50]
+
+
+def change_set(rng):
+    def price(p):
+        step = 100 // math.gcd(100, p)
+        return step * rng.randint(2, 200 // step)
+
+    up = [[price(p), p] for p in rng.sample(PERCENTS, 4)]
+    down = [[price(p), p] for p in rng.sample(PERCENTS, 4)]
+    find = []
+    for p in rng.sample(PERCENTS, 4):
+        old = price(p)
+        new = old + old * p // 100 if rng.random() < 0.5 else old - old * p // 100
+        find.append([old, new])
+    return {"up": up, "down": down, "find": find}
+
+
+def change_practice(rng):
+    v = change_set(rng)
+    problems = (
+        [(f"${old} goes up {p}%. New price?", f"${old + old * p // 100}") for old, p in v["up"]]
+        + [(f"${old}, {p}% off. Sale price?", f"${old - old * p // 100}") for old, p in v["down"]]
+        + [(f"${old} → ${new}. Percent change?", f"{abs(new - old) * 100 // old}% {'up' if new > old else 'down'}")
+           for old, new in v["find"]]
+    )
+    (o1, p1), (o5, p5) = v["up"][0], v["down"][0]
+    (o9, n9), (o10, n10) = v["find"][0], v["find"][1]
+    guided = {
+        1: f"{p1}% of ${o1} = __;  + ${o1} = __",
+        5: f"{p5}% of ${o5} = __;  ${o5} − __ = __",
+        9: f"change ${abs(n9 - o9)};  {abs(n9 - o9)} ÷ {o9} = __%",
+        10: f"change $__;  __ ÷ {o10} = __%",
+    }
+    return problems, guided
+
+
+# ---------- probability ----------
+def probability_set(rng):
+    bag = []
+    for total in rng.sample([4, 5, 10, 20, 25, 50], 4):
+        red = rng.randint(1, total - 1)
+        bag.append([red, total - red])
+    expect = []
+    for sides in rng.sample([2, 4, 5, 6, 8, 10], 4):
+        expect.append([sides, sides * rng.randint(3, 12)])
+    spinner = []
+    for parts in rng.sample([4, 5, 8, 10], 4):
+        red = rng.randint(1, parts - 1)
+        spinner.append([red, parts, parts * rng.randint(2, 10)])
+    return {"bag": bag, "expect": expect, "spinner": spinner}
+
+
+def probability_practice(rng):
+    v = probability_set(rng)
+    problems = (
+        [(f"{r} red, {b} blue. % chance of red?", f"{r * 100 // (r + b)}%") for r, b in v["bag"]]
+        + [(f"{sides}-sided die, {n} rolls. How many 1s?", str(n // sides)) for sides, n in v["expect"]]
+        + [(f"Spinner, {r} of {parts} parts red. {n} spins. Red?", str(n * r // parts))
+           for r, parts, n in v["spinner"]]
+    )
+    (r1, b1), (s5, n5) = v["bag"][0], v["expect"][0]
+    (r9, p9, n9), (r10, p10, n10) = v["spinner"][0], v["spinner"][1]
+    guided = {
+        1: f"{r1} out of {r1 + b1} = __ out of 100",
+        5: f"{n5} ÷ {s5} = __",
+        9: f"{n9} ÷ {p9} = __;  × {r9} = __",
+        10: f"{n10} ÷ {p10} = __;  × {r10} = __",
+    }
+    return problems, guided
+
+
 KINDS = {
     "2026-10-29": (scale_set, scale_practice),
     "2026-10-30": (average_set, average_practice),
     "2026-11-02": (coordinate_set, coordinate_practice),
     "2026-11-04": (ratio_set, ratio_practice),
+    "2026-11-05": (change_set, change_practice),
+    "2026-11-06": (probability_set, probability_practice),
 }
 
 

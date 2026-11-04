@@ -41,6 +41,8 @@ import { day20261029 } from "./content/day-2026-10-29";
 import { day20261030 } from "./content/day-2026-10-30";
 import { day20261102 } from "./content/day-2026-11-02";
 import { day20261104 } from "./content/day-2026-11-04";
+import { day20261105 } from "./content/day-2026-11-05";
+import { day20261106 } from "./content/day-2026-11-06";
 
 export const WEEK1: Day[] = [
   day20260512,
@@ -94,7 +96,7 @@ export const WEEK11: Day[] = [
   day20261030,
   day20261102,
 ];
-export const WEEK12: Day[] = [day20261104];
+export const WEEK12: Day[] = [day20261104, day20261105, day20261106];
 
 export interface WeekSpec {
   id: number;
