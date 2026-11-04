@@ -12,6 +12,7 @@ import {
   WEEK9,
   WEEK10,
   WEEK11,
+  WEEK12,
 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
@@ -43,7 +44,7 @@ function correctRaw(q: Question): RawAnswer {
 }
 
 describe("WEEK structure", () => {
-  it("has 40 days total across eleven weeks", () => {
+  it("has every day across twelve weeks", () => {
     expect(WEEK1).toHaveLength(4);
     expect(WEEK2).toHaveLength(4);
     expect(WEEK3).toHaveLength(4);
@@ -55,7 +56,8 @@ describe("WEEK structure", () => {
     expect(WEEK9).toHaveLength(2);
     expect(WEEK10).toHaveLength(4);
     expect(WEEK11).toHaveLength(5);
-    expect(WEEK).toHaveLength(40);
+    expect(WEEK12.length).toBeGreaterThanOrEqual(1);
+    expect(WEEK).toHaveLength(40 + WEEK12.length);
   });
 
   it("days are in chronological order with unique dates", () => {

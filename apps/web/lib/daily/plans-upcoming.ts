@@ -39,7 +39,57 @@ interface Copy {
   };
 }
 
-function fullDay(copy: Copy): DayPlan {
+/**
+ * "1:00": the original day. "12:30-tv": school ends 12:30, then a TV-only hour.
+ * "12:30": school ends 12:30 and the day is over.
+ */
+type Ending = "1:00" | "12:30-tv" | "12:30";
+
+const TIMES = {
+  "1:00": [
+    "9:30–10:10",
+    "10:10–10:30",
+    "10:30–11:10",
+    "11:10–11:30",
+    "11:30–12:10",
+    "12:10–12:30",
+    "12:30–1:00",
+  ],
+  short: [
+    "9:30–10:10",
+    "10:10–10:20",
+    "10:20–11:00",
+    "11:00–11:10",
+    "11:10–11:50",
+    "11:50–12:00",
+    "12:00–12:30",
+  ],
+};
+
+function fullDay(copy: Copy, ending: Ending = "1:00"): DayPlan {
+  const t = ending === "1:00" ? TIMES["1:00"] : TIMES.short;
+  const plan = fullDayBlocks(copy, t);
+  if (ending === "1:00") return plan;
+  plan.scheduledEndTime = "12:30";
+  if (ending === "12:30") {
+    plan.phoneUntil = "12:30";
+    plan.deviceRule =
+      "Phone away. Computer only for teacher.ninja and the lesson links on this page. School ends at 12:30, and then the day is over.";
+    return plan;
+  }
+  plan.phoneUntil = "1:30";
+  plan.deviceRule =
+    "Phone away. Computer only for teacher.ninja and the lesson links on this page. School ends at 12:30. From 12:30 to 1:30: TV only. No phone, no computer.";
+  plan.blocks.push({
+    kind: "break",
+    time: "12:30–1:30",
+    title:
+      "School is over. TV only: no phone, no computer. Phone and computer at 1:30.",
+  });
+  return plan;
+}
+
+function fullDayBlocks(copy: Copy, t: string[]): DayPlan {
   return {
     startTime: "9:30",
     scheduledEndTime: "1:00",
@@ -62,7 +112,7 @@ function fullDay(copy: Copy): DayPlan {
     blocks: [
       {
         kind: "work",
-        time: "9:30–10:10",
+        time: t[0],
         title: copy.learn.title,
         steps: [
           { minutes: 8, task: copy.learn.read, doneWhen: copy.learn.readDone },
@@ -83,10 +133,10 @@ function fullDay(copy: Copy): DayPlan {
           },
         ],
       },
-      { kind: "break", time: "10:10–10:30", title: "Break. No phone." },
+      { kind: "break", time: t[1], title: "Break. No phone." },
       {
         kind: "work",
-        time: "10:30–11:10",
+        time: t[2],
         title: copy.practice.title,
         steps: [
           {
@@ -106,10 +156,10 @@ function fullDay(copy: Copy): DayPlan {
           },
         ],
       },
-      { kind: "break", time: "11:10–11:30", title: "Break. No phone." },
+      { kind: "break", time: t[3], title: "Break. No phone." },
       {
         kind: "work",
-        time: "11:30–12:10",
+        time: t[4],
         title: copy.apply.title,
         steps: [
           {
@@ -125,10 +175,10 @@ function fullDay(copy: Copy): DayPlan {
           },
         ],
       },
-      { kind: "break", time: "12:10–12:30", title: "Break. No phone." },
+      { kind: "break", time: t[5], title: "Break. No phone." },
       {
         kind: "exam",
-        time: "12:30–1:00",
+        time: t[6],
         title: "Exam A or B",
         expectedMinutes: 15,
         maxMinutes: 30,
@@ -584,4 +634,55 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       explainDone: "One complete sentence mentions power or empire.",
     },
   }),
+  "2026-11-04": fullDay(
+    {
+      material: "Wednesday • Day 41 double-sided ratios sheet",
+      extraMaterials: ["World • Wednesday elections sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: a best-buy hunt in the kitchen and scaling your own recipe.",
+      introduction: {
+        newToday:
+          "Ratios and unit rates: comparing two amounts, and finding the amount for one.",
+        buildsOn:
+          "Multiplying and dividing, and the “per” in Monday's units lesson.",
+        whyItMatters:
+          "Recipes, prices, maps, and splitting money fairly all use ratios.",
+      },
+      learn: {
+        title: "Ratios, step by step",
+        read: "Read the lesson below: ratios, equivalent ratios, unit rates, and sharing.",
+        readDone:
+          "You can say: cost of 1 = total ÷ how many; to share, add the parts first.",
+        example:
+          "Copy the 3 worked examples (flour and water, notebooks, $40 in 3 : 5), showing each step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows the division first.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish:
+          "Finish the other 8 problems: unit rates, then recipes, then sharing.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss. For sharing, check that the two shares add up to the total.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: elections and the right to vote",
+        review:
+          "Read the World block. Find a swing state, Wyoming, and California on a US map.",
+        reviewDone: "You can say why Wyoming matters more in the Senate.",
+        task: "Complete Wednesday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on a rule that makes voting easier or harder, and for whom.",
+        explainDone: "One complete sentence names the rule and who it affects.",
+      },
+    },
+    "12:30-tv",
+  ),
 };

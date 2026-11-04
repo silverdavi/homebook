@@ -40,6 +40,7 @@ import { day20261028 } from "./content/day-2026-10-28";
 import { day20261029 } from "./content/day-2026-10-29";
 import { day20261030 } from "./content/day-2026-10-30";
 import { day20261102 } from "./content/day-2026-11-02";
+import { day20261104 } from "./content/day-2026-11-04";
 
 export const WEEK1: Day[] = [
   day20260512,
@@ -93,6 +94,7 @@ export const WEEK11: Day[] = [
   day20261030,
   day20261102,
 ];
+export const WEEK12: Day[] = [day20261104];
 
 export interface WeekSpec {
   id: number;
@@ -233,6 +235,25 @@ export const WEEKS: WeekSpec[] = [
       WEEK10.length +
       1,
   },
+  {
+    id: 12,
+    label: "Week 12 — Nov 4–6",
+    introFile: "WEEK-2026-11-04.md",
+    days: WEEK12,
+    startDayNumber:
+      WEEK1.length +
+      WEEK2.length +
+      WEEK3.length +
+      WEEK4.length +
+      WEEK5.length +
+      WEEK6.length +
+      WEEK7.length +
+      WEEK8.length +
+      WEEK9.length +
+      WEEK10.length +
+      WEEK11.length +
+      1,
+  },
 ];
 
 /** Backward-compat: the full flat list of days across all weeks. */
@@ -248,6 +269,7 @@ export const WEEK: Day[] = [
   ...WEEK9,
   ...WEEK10,
   ...WEEK11,
+  ...WEEK12,
 ];
 
 export const WEEK_RANGE = {

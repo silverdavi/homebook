@@ -157,10 +157,45 @@ def coordinate_practice(rng):
     return problems, guided
 
 
+# ---------- ratios and unit rates ----------
+def ratio_set(rng):
+    unit = []
+    for count in rng.sample(range(2, 10), 4):
+        unit.append([count * rng.randint(2, 12), count])
+    equivalent = []
+    for _ in range(4):
+        a, b = rng.sample(range(1, 10), 2)
+        equivalent.append([a, b, a * rng.randint(2, 9)])
+    share = []
+    for _ in range(4):
+        a, b = rng.sample(range(1, 8), 2)
+        share.append([(a + b) * rng.randint(2, 12), a, b])
+    return {"unit": unit, "equivalent": equivalent, "share": share}
+
+
+def ratio_practice(rng):
+    v = ratio_set(rng)
+    problems = (
+        [(f"${total} for {count}. Cost of 1?", f"${total // count}") for total, count in v["unit"]]
+        + [(f"{a} : {b} = {c} : ?", str(b * c // a)) for a, b, c in v["equivalent"]]
+        + [(f"Split {t} in the ratio {a} : {b}. Bigger part?", str(t // (a + b) * max(a, b))) for t, a, b in v["share"]]
+    )
+    (t1, n1), (a5, b5, c5) = v["unit"][0], v["equivalent"][0]
+    (t9, a9, b9), (t10, a10, b10) = v["share"][0], v["share"][1]
+    guided = {
+        1: f"${t1} ÷ {n1} = $____",
+        5: f"{c5} ÷ {a5} = ____ (times bigger);  {b5} × ____ = ____",
+        9: f"{a9} + {b9} = ____ parts;  {t9} ÷ ____ = ____ per part",
+        10: f"{a10} + {b10} = ____ parts;  {t10} ÷ ____ = ____ per part",
+    }
+    return problems, guided
+
+
 KINDS = {
     "2026-10-29": (scale_set, scale_practice),
     "2026-10-30": (average_set, average_practice),
     "2026-11-02": (coordinate_set, coordinate_practice),
+    "2026-11-04": (ratio_set, ratio_practice),
 }
 
 

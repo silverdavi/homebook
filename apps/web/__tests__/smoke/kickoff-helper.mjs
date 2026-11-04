@@ -33,7 +33,11 @@ export async function runKickoff({
   topic,
   material,
   note,
+  endRule,
 }) {
+  const phoneLine =
+    endRule ??
+    "Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.";
   const url = `https://teacher.ninja/daily/${date}`;
   const noteText = note ? `${note}\n\n` : "";
   const text = `Yerachmiel —
@@ -44,7 +48,7 @@ ${topic}
 
 ${noteText}${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.
 
-Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.
+${phoneLine}
 
 ${url}
 
@@ -62,7 +66,7 @@ ${url}
 <p style="margin:0 0 14px 0;">${topic}</p>
 ${note ? `<p style="margin:0 0 14px 0;">${note}</p>` : ""}
 <p style="margin:0 0 14px 0;">${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.</p>
-<p style="margin:0 0 14px 0;">Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.</p>
+${endRule ? `<p style="margin:0 0 14px 0;padding:12px 14px;background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;font-weight:600;">${endRule}</p>` : `<p style="margin:0 0 14px 0;">${phoneLine}</p>`}
 <p style="margin:18px 0;"><a href="${url}" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">${url.replace("https://", "")} →</a></p>
 <p style="margin:0 0 6px 0;">— Dad</p>
 <p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom</p>
