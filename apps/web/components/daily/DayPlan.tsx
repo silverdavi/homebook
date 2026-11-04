@@ -53,6 +53,11 @@ export function DayPlan({ plan, extraTitle }: Props) {
             </span>
           )}
         </div>
+        {plan.endRule && (
+          <p className="mt-4 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 text-base font-bold text-amber-900">
+            {plan.endRule}
+          </p>
+        )}
       </div>
 
       {plan.fromDad && (

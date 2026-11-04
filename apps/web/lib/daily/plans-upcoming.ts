@@ -73,11 +73,14 @@ function fullDay(copy: Copy, ending: Ending = "1:00"): DayPlan {
   plan.scheduledEndTime = "12:30";
   if (ending === "12:30") {
     plan.phoneUntil = "12:30";
+    plan.endRule = "School ends at 12:30. Then the day is over.";
     plan.deviceRule =
       "Phone away. Computer only for teacher.ninja and the lesson links on this page. School ends at 12:30, and then the day is over.";
     return plan;
   }
   plan.phoneUntil = "1:30";
+  plan.endRule =
+    "School ends at 12:30. From 12:30 to 1:30: TV only. No phone, no computer. Phone and computer at 1:30.";
   plan.deviceRule =
     "Phone away. Computer only for teacher.ninja and the lesson links on this page. School ends at 12:30. From 12:30 to 1:30: TV only. No phone, no computer.";
   plan.blocks.push({

@@ -197,6 +197,8 @@ export interface DayPlan {
   scheduledEndTime: string;
   phoneUntil: string;
   deviceRule: string;
+  /** Shown big at the top of the schedule when the end of the day is different. */
+  endRule?: string;
   materials: string[];
   /** Same words as the morning email, so the page is complete on its own. */
   fromDad?: string;
