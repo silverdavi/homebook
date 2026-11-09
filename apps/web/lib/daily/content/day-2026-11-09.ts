@@ -8,7 +8,7 @@ import generated from "./generated/2026-11-09.json";
 const DATE = "2026-11-09";
 const HELP = `/daily/${DATE}`;
 
-function boxQ(id: string, l: number, w: number, h: number): Question {
+export function boxQ(id: string, l: number, w: number, h: number): Question {
   const answer = l * w * h;
   return numericQ(
     id,
@@ -20,7 +20,12 @@ function boxQ(id: string, l: number, w: number, h: number): Question {
   );
 }
 
-function missingQ(id: string, vol: number, l: number, w: number): Question {
+export function missingQ(
+  id: string,
+  vol: number,
+  l: number,
+  w: number,
+): Question {
   const base = l * w;
   const answer = vol / base;
   return numericQ(

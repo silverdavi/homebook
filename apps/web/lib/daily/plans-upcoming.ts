@@ -837,4 +837,190 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
+  "2026-11-10": fullDay(
+    {
+      material: "Tuesday • Day 45 double-sided equations sheet",
+      extraMaterials: ["World • Tuesday fair-wages sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: a two-step equation and equations for your age.",
+      introduction: {
+        newToday: "One-step equations: undo what was done to x.",
+        buildsOn:
+          "Adding, subtracting, multiplying, dividing, and Day 37's negative numbers.",
+        whyItMatters:
+          "Every formula, budget, and science problem is an equation you solve.",
+      },
+      learn: {
+        title: "Undo it",
+        read: "Read the lesson below: what x means, the undo table, and 4 examples.",
+        readDone: "You can say the opposite of +, −, ×, and ÷.",
+        example:
+          "Copy the 4 examples and the ticket problem, then check each by putting x back in.",
+        exampleDone: "5 complete examples, each checked.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish:
+          "Finish the other 8 problems: + and −, then × and ÷, then tickets.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss, then put your x back into the equation to check it.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: fair wages",
+        review:
+          "Read the World block. Find Bangladesh and Washington state on a map.",
+        reviewDone: "You can say what a union is.",
+        task: "Complete Tuesday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on whether $7.25 an hour is fair, and why.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-11": fullDay(
+    {
+      material: "Wednesday • Day 46 double-sided order-of-operations sheet",
+      extraMaterials: ["World • Wednesday World War I sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: the make-24 puzzle and a calculator test.",
+      introduction: {
+        newToday: "Order of operations: brackets, then × and ÷, then + and −.",
+        buildsOn: "Multiplication facts and yesterday's equations.",
+        whyItMatters:
+          "Calculators, spreadsheets, and code all follow this order.",
+      },
+      learn: {
+        title: "Same answer for everyone",
+        read: "Read the lesson below: why there's an order, the 3 steps, and examples.",
+        readDone: "You can say why 5 + 2 × 3 is 11, not 21.",
+        example: "Copy the 3 examples, underlining the × and ÷ parts first.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish:
+          "Finish the other 8 problems: plain, then brackets, then mixed.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss: underline × and ÷, work them out, then + and −.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: Veterans Day and World War I",
+        review:
+          "Read the World block. Find Sarajevo, Belgium, and France on a map of Europe.",
+        reviewDone: "You can say why Veterans Day is November 11.",
+        task: "Complete Wednesday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on why soldiers from India fought in World War I.",
+        explainDone: "One complete sentence mentions empire.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-12": fullDay(
+    {
+      material: "Thursday • Day 47 double-sided speed sheet",
+      extraMaterials: ["World • Thursday refugees sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: your walking speed and a New York to London flight.",
+      introduction: {
+        newToday: "Speed, distance, and time: one triangle, three rules.",
+        buildsOn: "Day 36's units lesson: km per hour is a rate.",
+        whyItMatters:
+          "Trips, flights, running, and arrival times all use this.",
+      },
+      learn: {
+        title: "Cover the one you want",
+        read: "Read the lesson below and draw the D-S-T triangle.",
+        readDone: "You can say all 3 rules from your triangle.",
+        example:
+          "Copy the 3 examples (bus, train, car), writing which rule you used.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish: "Finish the other 8 problems: distance, then speed, then time.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct: "Redo each miss using the triangle, and check the units.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: refugees, why people flee",
+        review:
+          "Read the World block. Find Syria, Turkey, Ukraine, and Sudan on a map.",
+        reviewDone: "You can say what makes someone a refugee.",
+        task: "Complete Thursday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on why most refugees live in countries next door.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-13": fullDay(
+    {
+      material: "Friday • Day 48 double-sided review sheet",
+      extraMaterials: ["World • Friday review sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: a box equation and an average-speed problem.",
+      introduction: {
+        newToday: "Nothing new: one lap through the week's 4 rules.",
+        buildsOn: "This week's 4 lessons, Monday to Thursday.",
+        whyItMatters: "Mixing rules is how real problems look.",
+      },
+      learn: {
+        title: "Four rules, one table",
+        read: "Read the review table and the usual mistakes below.",
+        readDone: "You can say all 4 rules without looking.",
+        example:
+          "Write one example of your own for each rule, with its answer.",
+        exampleDone: "4 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 4, 7, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish: "Finish the other 8 problems in order.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct: "Redo each miss and name which day's rule it used.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: the week in review",
+        review: "Skim Monday to Thursday's World blocks on their pages.",
+        reviewDone: "You can say one sentence about each day.",
+        task: "Complete Friday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on which World topic surprised you most, and why.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30",
+  ),
 };

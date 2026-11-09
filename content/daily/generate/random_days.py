@@ -294,6 +294,163 @@ def volume_practice(rng):
     return problems, guided
 
 
+# ---------- one-step equations ----------
+def equation_set(rng):
+    """Each item is [form, a, b] with a whole-number answer: x + a = b, x − a = b, ax = b, x ÷ a = b."""
+
+    def item(form):
+        x, a = rng.randint(2, 15), rng.randint(2, 12)
+        return [form, a, {"add": x + a, "sub": x - a, "mul": a * x, "div": x}[form]]
+
+    return {
+        "addsub": [item(f) for f in rng.sample(["add", "add", "sub", "sub"], 4)],
+        "muldiv": [item(f) for f in rng.sample(["mul", "mul", "div", "div"], 4)],
+        "word": [[rng.randint(3, 9), rng.randint(4, 15)] for _ in range(4)],
+    }
+
+
+def solve(form, a, b):
+    return {"add": b - a, "sub": b + a, "mul": b // a, "div": b * a}[form]
+
+
+def equation_text(form, a, b):
+    return {"add": f"x + {a} = {signed(b)}", "sub": f"x − {a} = {signed(b)}", "mul": f"{a}x = {b}", "div": f"x ÷ {a} = {b}"}[form]
+
+
+UNDO = {"add": "−", "sub": "+", "mul": "÷", "div": "×"}
+
+
+def equation_practice(rng):
+    v = equation_set(rng)
+    rows = v["addsub"] + v["muldiv"]
+    problems = [(f"Solve {equation_text(*r)}", f"x = {signed(solve(*r))}") for r in rows]
+    problems += [(f"Tickets ${price} each. x tickets cost ${price * count}. x?", str(count)) for price, count in v["word"]]
+    f1, a1, _ = rows[0]
+    f5, a5, _ = rows[4]
+    (p9, c9), (p10, c10) = v["word"][0], v["word"][1]
+    guided = {
+        1: f"undo: {UNDO[f1]} {a1} on both sides → x = __",
+        5: f"undo: {UNDO[f5]} {a5} on both sides → x = __",
+        9: f"{p9}x = {p9 * c9};  x = {p9 * c9} ÷ {p9} = __",
+        10: f"{p10}x = __;  x = __ ÷ {p10} = __",
+    }
+    return problems, guided
+
+
+# ---------- order of operations ----------
+def order_set(rng):
+    def r():
+        return rng.randint(2, 9)
+
+    plain = [[r(), r(), r()] for _ in range(4)]  # a + b × c
+    brackets = [[r(), r(), r()] for _ in range(4)]  # (a + b) × c
+    mixed = []
+    for _ in range(4):
+        d = r()
+        mixed.append([r(), r(), d * r(), d])  # a × b − c ÷ d
+    return {"plain": plain, "brackets": brackets, "mixed": mixed}
+
+
+def order_value(kind, n):
+    if kind == "plain":
+        return n[0] + n[1] * n[2]
+    if kind == "brackets":
+        return (n[0] + n[1]) * n[2]
+    return n[0] * n[1] - n[2] // n[3]
+
+
+def order_text(kind, n):
+    if kind == "plain":
+        return f"{n[0]} + {n[1]} × {n[2]}"
+    if kind == "brackets":
+        return f"({n[0]} + {n[1]}) × {n[2]}"
+    return f"{n[0]} × {n[1]} − {n[2]} ÷ {n[3]}"
+
+
+def order_practice(rng):
+    v = order_set(rng)
+    problems = [(order_text(k, n), signed(order_value(k, n))) for k in ("plain", "brackets", "mixed") for n in v[k]]
+    p1, b5 = v["plain"][0], v["brackets"][0]
+    m9, m10 = v["mixed"][0], v["mixed"][1]
+    guided = {
+        1: f"× first: {p1[1]} × {p1[2]} = __;  {p1[0]} + __ = __",
+        5: f"( ) first: {b5[0]} + {b5[1]} = __;  __ × {b5[2]} = __",
+        9: f"{m9[0]} × {m9[1]} = __;  {m9[2]} ÷ {m9[3]} = __;  subtract",
+        10: f"{m10[0]} × {m10[1]} = __;  {m10[2]} ÷ {m10[3]} = __;  subtract",
+    }
+    return problems, guided
+
+
+# ---------- speed, distance, time ----------
+def speed_set(rng):
+    distance = [[rng.randint(3, 12) * 5, rng.randint(2, 6)] for _ in range(4)]  # speed, hours
+    speed = []
+    for _ in range(4):
+        s, t = rng.randint(3, 12) * 5, rng.randint(2, 6)
+        speed.append([s * t, t])  # km, hours
+    time = []
+    for _ in range(4):
+        s, t = rng.randint(3, 12) * 5, rng.randint(2, 8)
+        time.append([s * t, s])  # km, km/h
+    return {"distance": distance, "speed": speed, "time": time}
+
+
+def speed_practice(rng):
+    v = speed_set(rng)
+    problems = (
+        [(f"{s} km/h for {t} h. Distance?", f"{s * t} km") for s, t in v["distance"]]
+        + [(f"{d} km in {t} h. Speed?", f"{d // t} km/h") for d, t in v["speed"]]
+        + [(f"{d} km at {s} km/h. Time?", f"{d // s} h") for d, s in v["time"]]
+    )
+    (s1, t1), (d5, t5) = v["distance"][0], v["speed"][0]
+    (d9, s9), (d10, s10) = v["time"][0], v["time"][1]
+    guided = {
+        1: f"{s1} × {t1} = __ km",
+        5: f"{d5} ÷ {t5} = __ km/h",
+        9: f"{d9} ÷ {s9} = __ h",
+        10: f"{d10} ÷ {s10} = __ h",
+    }
+    return problems, guided
+
+
+# ---------- Friday review: one of each kind from the week ----------
+def review_set(rng):
+    vol = volume_set(rng)
+    eq = equation_set(rng)
+    order = order_set(rng)
+    speed = speed_set(rng)
+    return {
+        "box": vol["box"][:2], "missing": vol["missing"][:1],
+        "addsub": eq["addsub"][:2], "muldiv": eq["muldiv"][:1],
+        "plain": order["plain"][:1], "brackets": order["brackets"][:1], "mixed": order["mixed"][:1],
+        "distance": speed["distance"][:1], "speed": speed["speed"][:1], "time": speed["time"][:1],
+    }
+
+
+def review_practice(rng):
+    v = review_set(rng)
+    problems = (
+        [(f"Box {l} × {w} × {h} cm. Volume?", f"{l * w * h} cm³") for l, w, h in v["box"]]
+        + [(f"Volume {vol} cm³, base {l} × {w}. Height?", f"{vol // (l * w)} cm") for vol, l, w in v["missing"]]
+        + [(f"Solve {equation_text(*r)}", f"x = {signed(solve(*r))}") for r in v["addsub"] + v["muldiv"]]
+        + [(order_text(k, v[k][0]), signed(order_value(k, v[k][0]))) for k in ("plain", "brackets", "mixed")]
+        + [(f"{s} km/h for {t} h. Distance?", f"{s * t} km") for s, t in v["distance"]]
+        + [(f"{d} km in {t} h. Speed?", f"{d // t} km/h") for d, t in v["speed"]]
+        + [(f"{d} km at {s} km/h. Time?", f"{d // s} h") for d, s in v["time"]]
+    )
+    l1, w1, h1 = v["box"][0]
+    f4, a4, _ = v["addsub"][0]
+    p7 = v["plain"][0]
+    s10, t10 = v["distance"][0]
+    guided = {
+        1: f"{l1} × {w1} = __;  × {h1} = __",
+        4: f"undo: {UNDO[f4]} {a4} on both sides → x = __",
+        7: f"× first: {p7[1]} × {p7[2]} = __;  {p7[0]} + __ = __",
+        10: f"{s10} × {t10} = __ km",
+    }
+    return problems, guided
+
+
 KINDS = {
     "2026-10-29": (scale_set, scale_practice),
     "2026-10-30": (average_set, average_practice),
@@ -302,6 +459,10 @@ KINDS = {
     "2026-11-05": (change_set, change_practice),
     "2026-11-06": (probability_set, probability_practice),
     "2026-11-09": (volume_set, volume_practice),
+    "2026-11-10": (equation_set, equation_practice),
+    "2026-11-11": (order_set, order_practice),
+    "2026-11-12": (speed_set, speed_practice),
+    "2026-11-13": (review_set, review_practice),
 }
 
 
