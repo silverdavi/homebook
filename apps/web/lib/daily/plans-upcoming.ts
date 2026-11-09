@@ -788,4 +788,53 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30",
   ),
+  "2026-11-09": fullDay(
+    {
+      material: "Monday • Day 44 double-sided volume sheet",
+      extraMaterials: ["World • Monday Berlin Wall sheet", "A ruler"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: measure a real box and turn its volume into liters.",
+      introduction: {
+        newToday: "Volume: how much space is inside a box.",
+        buildsOn: "Day 34's area: length × width.",
+        whyItMatters:
+          "Packing, shipping, fish tanks, recipes, and fuel tanks all use volume.",
+      },
+      learn: {
+        title: "Layers of cubes",
+        read: "Read the lesson below: base, layers, cubes, and a missing side.",
+        readDone:
+          "You can say: volume = length × width × height; missing height = volume ÷ base.",
+        example:
+          "Copy the 3 worked examples (4 × 3 × 2 box, 5 cm cube, 60 cm³ box), showing each step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows the base first.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish:
+          "Finish the other 8 problems: boxes, then missing heights, then cubes.",
+        finishDone: "All 12 answers are written with cm³ or cm.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct:
+          "Redo each miss. For a missing height, multiply back to check you get the volume.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: the Berlin Wall",
+        review:
+          "Read the World block. Find Berlin, Germany, Poland, and Russia on a map of Europe.",
+        reviewDone: "You can say who built the Wall and why.",
+        task: "Complete Monday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on how ordinary people brought the Wall down.",
+        explainDone: "One complete sentence mentions the protests.",
+      },
+    },
+    "12:30-tv",
+  ),
 };

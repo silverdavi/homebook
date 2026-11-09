@@ -265,6 +265,35 @@ def probability_practice(rng):
     return problems, guided
 
 
+# ---------- volume of boxes ----------
+def volume_set(rng):
+    boxes = [sorted(rng.sample(range(2, 13), 3)) for _ in range(4)]
+    missing = []
+    for _ in range(4):
+        l, w, h = rng.sample(range(2, 11), 3)
+        missing.append([l * w * h, l, w])
+    cubes = rng.sample(range(2, 11), 4)
+    return {"box": boxes, "missing": missing, "cube": cubes}
+
+
+def volume_practice(rng):
+    v = volume_set(rng)
+    problems = (
+        [(f"Box {l} × {w} × {h} cm. Volume?", f"{l * w * h} cm³") for l, w, h in v["box"]]
+        + [(f"Volume {vol} cm³, base {l} × {w}. Height?", f"{vol // (l * w)} cm") for vol, l, w in v["missing"]]
+        + [(f"Cube with {s} cm sides. Volume?", f"{s ** 3} cm³") for s in v["cube"]]
+    )
+    (l1, w1, h1), (vol5, l5, w5) = v["box"][0], v["missing"][0]
+    s9, s10 = v["cube"][0], v["cube"][1]
+    guided = {
+        1: f"{l1} × {w1} = __;  × {h1} = __",
+        5: f"base {l5} × {w5} = __;  {vol5} ÷ __ = __",
+        9: f"{s9} × {s9} × {s9} = __",
+        10: f"{s10} × {s10} × {s10} = __",
+    }
+    return problems, guided
+
+
 KINDS = {
     "2026-10-29": (scale_set, scale_practice),
     "2026-10-30": (average_set, average_practice),
@@ -272,6 +301,7 @@ KINDS = {
     "2026-11-04": (ratio_set, ratio_practice),
     "2026-11-05": (change_set, change_practice),
     "2026-11-06": (probability_set, probability_practice),
+    "2026-11-09": (volume_set, volume_practice),
 }
 
 

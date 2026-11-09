@@ -13,6 +13,7 @@ import {
   WEEK10,
   WEEK11,
   WEEK12,
+  WEEK13,
 } from "@/lib/daily/week";
 import { gradeOne } from "@/lib/daily/grading";
 import type { Question, RawAnswer } from "@/lib/daily/types";
@@ -56,8 +57,9 @@ describe("WEEK structure", () => {
     expect(WEEK9).toHaveLength(2);
     expect(WEEK10).toHaveLength(4);
     expect(WEEK11).toHaveLength(5);
-    expect(WEEK12.length).toBeGreaterThanOrEqual(1);
-    expect(WEEK).toHaveLength(40 + WEEK12.length);
+    expect(WEEK12).toHaveLength(3);
+    expect(WEEK13.length).toBeGreaterThanOrEqual(1);
+    expect(WEEK).toHaveLength(43 + WEEK13.length);
   });
 
   it("days are in chronological order with unique dates", () => {
