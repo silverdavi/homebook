@@ -939,10 +939,10 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
-  "2026-11-13": fullDay(
+  "2026-11-16": fullDay(
     {
-      material: "Friday • Day 47 double-sided speed sheet",
-      extraMaterials: ["World • Friday refugees sheet"],
+      material: "Monday • Day 47 double-sided speed sheet",
+      extraMaterials: ["World • Monday refugees sheet"],
       deeper:
         "Read “Extra” at the bottom of the lesson: your walking speed and a New York to London flight.",
       introduction: {
@@ -983,17 +983,17 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         explainDone: "One complete sentence gives a reason.",
       },
     },
-    "12:30",
+    "12:30-tv",
   ),
-  "2026-11-16": fullDay(
+  "2026-11-17": fullDay(
     {
-      material: "Monday • Day 48 double-sided review sheet",
-      extraMaterials: ["World • Monday review sheet"],
+      material: "Tuesday • Day 48 double-sided review sheet",
+      extraMaterials: ["World • Tuesday review sheet"],
       deeper:
         "Read “Extra” at the bottom of the lesson: a box equation and an average-speed problem.",
       introduction: {
         newToday: "Nothing new: one lap through the week's 4 rules.",
-        buildsOn: "Last week's 4 lessons, Monday to Friday.",
+        buildsOn: "The last 4 lessons, Days 44 to 47.",
         whyItMatters: "Mixing rules is how real problems look.",
       },
       learn: {
@@ -1018,9 +1018,9 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       },
       apply: {
         title: "World: the week in review",
-        review: "Skim last week's World blocks on their pages.",
+        review: "Skim the World blocks from Days 44 to 47 on their pages.",
         reviewDone: "You can say one sentence about each day.",
-        task: "Complete Monday's World sheet.",
+        task: "Complete Tuesday's World sheet.",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on which World topic surprised you most, and why.",

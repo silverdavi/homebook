@@ -85,7 +85,9 @@ ${endRule ? `<p style="margin:0 0 14px 0;padding:12px 14px;background:#fef3c7;bo
   const send = new Set(process.argv.slice(2)).has("--send");
   if (!send) {
     console.log("Dry run.\n");
-    console.log(JSON.stringify({ ...body, html: `[${html.length} chars]` }, null, 2));
+    console.log(
+      JSON.stringify({ ...body, html: `[${html.length} chars]` }, null, 2),
+    );
     return;
   }
 
@@ -110,4 +112,49 @@ ${endRule ? `<p style="margin:0 0 14px 0;padding:12px 14px;background:#fef3c7;bo
     throw new Error(`Resend rejected ${response.status}: ${responseText}`);
   }
   console.log("Sent.", json?.id, subject);
+}
+
+/** A short note for a day with no school page (a day off). Same sender, recipients, and --send flag. */
+export async function runNote({ subject, paragraphs }) {
+  const plain = paragraphs.map((p) =>
+    p.replace(/<br>/g, "\n").replace(/<[^>]+>/g, ""),
+  );
+  const text = `Yerachmiel —\n\n${plain.join("\n\n")}\n\n— Dad\n\n(CC: Mom)\n`;
+  const html = `<!doctype html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /></head>
+<body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.6;">
+<div style="max-width:580px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:24px 28px;">
+<p style="margin:0 0 14px 0;">Yerachmiel —</p>
+${paragraphs.map((p) => `<p style="margin:0 0 14px 0;">${p}</p>`).join("\n")}
+<p style="margin:0 0 6px 0;">— Dad</p>
+<p style="margin:0;color:#94a3b8;font-size:12px;">CC: Mom</p>
+</div></body></html>`;
+  const body = {
+    from: "Dad <dad@dichotomies.me>",
+    to: ["yersilver@gmail.com"],
+    cc: ["silverdavi@gmail.com", "enny412@gmail.com"],
+    reply_to: "silverdavi@gmail.com",
+    subject,
+    html,
+    text,
+  };
+  if (!new Set(process.argv.slice(2)).has("--send")) {
+    console.log("Dry run.\n");
+    console.log(text);
+    return;
+  }
+  const key = getEnv("RESEND_API_KEY");
+  if (!key) throw new Error("no RESEND_API_KEY");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const responseText = await response.text();
+  if (!response.ok)
+    throw new Error(`Resend rejected ${response.status}: ${responseText}`);
+  console.log("Sent.", subject);
 }

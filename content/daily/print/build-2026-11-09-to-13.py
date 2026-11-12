@@ -67,8 +67,8 @@ MATH = {
                  "Tip: underline every × and ÷ part first."),
         495,
     ),
-    "2026-11-13": (
-        sheets.Sheet("2026-11-13", 47, "Speed, distance, and time", "speed",
+    "2026-11-16": (
+        sheets.Sheet("2026-11-16", 47, "Speed, distance, and time", "speed",
                      "Distance = speed × time.   Speed = distance ÷ time.   Time = distance ÷ speed.", []),
         examples("Bus: 50 km/h for 3 h  →  50 × 3 = 150 km",
                  "Train: 240 km in 4 h  →  240 ÷ 4 = 60 km/h",
@@ -76,8 +76,8 @@ MATH = {
                  "Triangle: D on top, S and T below. Cover the one you want."),
         495,
     ),
-    "2026-11-16": (
-        sheets.Sheet("2026-11-16", 48, "Review — the whole week", "review",
+    "2026-11-17": (
+        sheets.Sheet("2026-11-17", 48, "Review — the whole week", "review",
                      "Volume: l × w × h.  Equations: undo.  Order: ( ) × ÷ + −.  Speed: D = S × T.", []),
         examples("Volume: 4 × 3 × 2 = 24 cm³     Missing height: 60 ÷ (5 × 3) = 4 cm",
                  "Equation: x − 3 = 8  →  add 3 to both sides  →  x = 11",
@@ -127,8 +127,8 @@ WORLD = {
          ("Time the fighting stopped", "11 a.m., Nov 11, 1918"), ("Veterans Day honors", "Everyone who served"),
          ("Flower worn to remember", "Poppy"), ("Group formed to prevent war", "League of Nations")],
     ),
-    "2026-11-13": (
-        "2026-11-13-world-refugees.pdf", "FRIDAY  •  WORLD  •  REFUGEES", "Why people flee",
+    "2026-11-16": (
+        "2026-11-16-world-refugees.pdf", "MONDAY  •  WORLD  •  REFUGEES", "Why people flee",
         [("Syria", "since 2011", "civil war; Turkey hosts the most Syrians"),
          ("Ukraine", "2022", "invaded; millions fled to Poland and Germany"),
          ("Sudan", "since 2023", "the world's largest displacement crisis"),
@@ -140,14 +140,14 @@ WORLD = {
          ("Country hosting the most Syrians", "Turkey"), ("Where most refugees live", "Countries next door"),
          ("Famous scientist who was a refugee", "Albert Einstein"), ("People forced from home, 2024", "About 123 million")],
     ),
-    "2026-11-16": (
-        "2026-11-16-world-review.pdf", "MONDAY  •  WORLD  •  REVIEW", "The week in one page",
+    "2026-11-17": (
+        "2026-11-17-world-review.pdf", "TUESDAY  •  WORLD  •  REVIEW", "The week in one page",
         [("Berlin Wall", "1961–1989", "fell to peaceful protests, Nov 9, 1989"),
          ("Fair wages", "$7.25 since 2009", "unions; Fight for $15; Rana Plaza"),
          ("World War I", "1914–1918", "ended 11 a.m., Nov 11, 1918"),
          ("Refugees", "1951 Convention", "no sending people back to danger")],
         "One sentence a day",
-        ["Monday: Cold War  •  Tuesday: workers  •  Thursday: Veterans Day  •  Friday: refugees",
+        ["Day 44: Cold War  •  Day 45: workers  •  Day 46: Veterans Day  •  Day 47: refugees",
          "Say each one out loud before you start the questions"],
         [("Year the Wall fell", "1989"), ("Workers bargaining together", "A union"),
          ("City where WWI started", "Sarajevo"), ("Veterans Day date", "November 11"),
