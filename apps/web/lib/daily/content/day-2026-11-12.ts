@@ -8,202 +8,218 @@ import generated from "./generated/2026-11-12.json";
 const DATE = "2026-11-12";
 const HELP = `/daily/${DATE}`;
 
-export function distanceQ(id: string, speed: number, hours: number): Question {
-  const answer = speed * hours;
+export function plainQ(id: string, a: number, b: number, c: number): Question {
+  const answer = a + b * c;
   return numericQ(
     id,
-    `A bus goes ${speed} km/h for ${hours} hours. How many km does it travel?`,
+    `Work out ${a} + ${b} × ${c}.`,
     answer,
-    `Distance = speed × time: ${speed} × ${hours} = ${answer} km.`,
+    `Multiply first: ${b} × ${c} = ${b * c}. Then ${a} + ${b * c} = ${answer}.`,
     HELP,
-    { unit: "km" },
   );
 }
 
-export function speedQ(id: string, km: number, hours: number): Question {
-  const answer = km / hours;
+export function bracketsQ(
+  id: string,
+  a: number,
+  b: number,
+  c: number,
+): Question {
+  const answer = (a + b) * c;
   return numericQ(
     id,
-    `A train travels ${km} km in ${hours} hours. What is its speed in km/h?`,
+    `Work out (${a} + ${b}) × ${c}.`,
     answer,
-    `Speed = distance ÷ time: ${km} ÷ ${hours} = ${answer} km/h.`,
+    `Brackets first: ${a} + ${b} = ${a + b}. Then ${a + b} × ${c} = ${answer}.`,
     HELP,
-    { unit: "km/h" },
   );
 }
 
-export function timeQ(id: string, km: number, speed: number): Question {
-  const answer = km / speed;
+export function mixedQ(
+  id: string,
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+): Question {
+  const answer = a * b - c / d;
   return numericQ(
     id,
-    `A car drives ${km} km at ${speed} km/h. How many hours does it take?`,
+    `Work out ${a} × ${b} − ${c} ÷ ${d}.`,
     answer,
-    `Time = distance ÷ speed: ${km} ÷ ${speed} = ${answer} hours.`,
+    `${a} × ${b} = ${a * b} and ${c} ÷ ${d} = ${c / d}. Then ${a * b} − ${c / d} = ${answer}.`,
     HELP,
-    { unit: "hours" },
   );
 }
 
 const versionA: Question[] = [
-  ...generated.a.distance.map(([s, t], i) => distanceQ(`a-d${i + 1}`, s, t)),
-  ...generated.a.speed.map(([d, t], i) => speedQ(`a-s${i + 1}`, d, t)),
-  ...generated.a.time.map(([d, s], i) => timeQ(`a-t${i + 1}`, d, s)),
+  ...generated.a.plain.map(([a, b, c], i) => plainQ(`a-p${i + 1}`, a, b, c)),
+  ...generated.a.brackets.map(([a, b, c], i) =>
+    bracketsQ(`a-b${i + 1}`, a, b, c),
+  ),
+  ...generated.a.mixed.map(([a, b, c, d], i) =>
+    mixedQ(`a-m${i + 1}`, a, b, c, d),
+  ),
   choiceQ(
     "a-g1",
     "geography",
-    "Which country hosts the most refugees from Syria?",
-    ["Turkey", "Canada", "Japan", "Brazil"],
+    "World War I began after an archduke was shot in which city?",
+    ["Sarajevo", "Paris", "London", "Madrid"],
     0,
-    "Turkey hosted over 3 million Syrians, more than any other country.",
+    "Archduke Franz Ferdinand of Austria-Hungary was shot there in June 1914.",
     HELP,
   ),
   choiceQ(
     "a-g2",
     "geography",
-    "Most of the world's refugees live in…",
+    "Most of the fighting on the Western Front was in…",
     [
-      "Poorer countries next door to the one they fled",
-      "The richest countries in Europe and North America",
-      "Camps that are set up on islands far out at sea",
-      "Big cities that are on the other side of the world",
+      "Trenches across Belgium and France",
+      "Jungles across Brazil and Peru",
+      "Deserts across Egypt and Libya",
+      "Mountains across Nepal and Tibet",
     ],
     0,
-    "About 70% stay in neighboring countries, and most of those are low- or middle-income.",
+    "The lines barely moved for years; a few kilometers could cost hundreds of thousands of lives.",
     HELP,
   ),
   choiceQ(
     "a-h1",
     "history",
-    "The 1951 Refugee Convention says a refugee is someone who…",
+    "Why is Veterans Day on November 11?",
     [
-      "Fled their country because of danger or persecution and can't go back",
-      "Moved to a new country only to find a better job and higher pay",
-      "Travels between countries every year for holidays with family",
-      "Lives in a different city from the one where they were born",
+      "World War I fighting stopped at 11 a.m. on November 11, 1918",
+      "George Washington was born on November 11 in Virginia",
+      "World War II began on November 11 with an attack on Poland",
+      "The US Army was founded on November 11 by Abraham Lincoln",
     ],
     0,
-    "Countries that signed it promised not to send refugees back to danger.",
+    "“The eleventh hour of the eleventh day of the eleventh month.” It was renamed Veterans Day in 1954.",
     HELP,
   ),
   choiceQ(
     "a-h2",
     "history",
-    "Which famous scientist was a refugee from Nazi Germany?",
-    ["Albert Einstein", "Isaac Newton", "Marie Curie", "Charles Darwin"],
+    "Which empires collapsed because of World War I?",
+    [
+      "The Ottoman, Austro-Hungarian, Russian, and German",
+      "The British, French, Italian, and Japanese",
+      "The Spanish, Dutch, Portuguese, and Danish",
+      "The Mongol, Mughal, Ming, and Mali",
+    ],
     0,
-    "He fled in 1933. Many refugees have gone on to change the countries that took them in.",
+    "New countries appeared across Europe and the Middle East, many with borders drawn by Britain and France.",
     HELP,
   ),
   choiceQ(
     "a-k1",
     "generalKnowledge",
-    "What does “asylum” mean?",
+    "Why do people wear red poppies in November?",
     [
-      "Protection that a country gives to someone fleeing danger",
-      "A visa that lets a tourist stay for one month or less",
-      "A tax that every new arrival has to pay at the border",
-      "A test that people take to drive in another country",
+      "To remember soldiers who died, after the poem “In Flanders Fields”",
+      "To celebrate the start of the winter holiday season with friends",
+      "To show which sports team they support in the November finals",
+      "To mark the end of the harvest season on farms in the fall",
     ],
     0,
-    "Asking for asylum is a legal right under international law.",
+    "Poppies grew on the battlefields of Flanders, in Belgium.",
     HELP,
   ),
   choiceQ(
     "a-k2",
     "generalKnowledge",
-    "Speed = ?",
-    [
-      "Distance ÷ time",
-      "Distance × time",
-      "Time ÷ distance",
-      "Distance + time",
-    ],
+    "In 5 + 2 × 3, what do you do first?",
+    ["Multiply", "Add", "Work left to right", "Either way, it's the same"],
     0,
-    "60 km in 2 hours is 60 ÷ 2 = 30 km/h.",
+    "2 × 3 = 6, then 5 + 6 = 11. Left to right would give 21, which is wrong.",
     HELP,
   ),
 ];
 
 const versionB: Question[] = [
-  ...generated.b.distance.map(([s, t], i) => distanceQ(`b-d${i + 1}`, s, t)),
-  ...generated.b.speed.map(([d, t], i) => speedQ(`b-s${i + 1}`, d, t)),
-  ...generated.b.time.map(([d, s], i) => timeQ(`b-t${i + 1}`, d, s)),
+  ...generated.b.plain.map(([a, b, c], i) => plainQ(`b-p${i + 1}`, a, b, c)),
+  ...generated.b.brackets.map(([a, b, c], i) =>
+    bracketsQ(`b-b${i + 1}`, a, b, c),
+  ),
+  ...generated.b.mixed.map(([a, b, c, d], i) =>
+    mixedQ(`b-m${i + 1}`, a, b, c, d),
+  ),
   choiceQ(
     "b-g1",
     "geography",
-    "In 2022, millions of refugees fled which country after it was invaded?",
-    ["Ukraine", "Spain", "Finland", "Portugal"],
+    "In World War I, over a million soldiers came from which British colony?",
+    ["India", "Iceland", "Japan", "Argentina"],
     0,
-    "Russia invaded in February 2022; Poland and Germany took in millions of Ukrainians.",
+    "Soldiers from India, Africa, and the Caribbean fought for empires that ruled them.",
     HELP,
   ),
   choiceQ(
     "b-g2",
     "geography",
-    "Since 2023, the world's largest displacement crisis has been in…",
-    ["Sudan", "Norway", "Chile", "New Zealand"],
+    "Where are the poppy fields of “In Flanders Fields”?",
+    ["Belgium", "Mexico", "Japan", "Australia"],
     0,
-    "Over 12 million Sudanese were forced from their homes by the war that began in April 2023.",
+    "A Canadian doctor, John McCrae, wrote the poem there in 1915.",
     HELP,
   ),
   choiceQ(
     "b-h1",
     "history",
-    "About how many people in the world are forced from their homes?",
-    ["Over 100 million", "About 1 million", "About 10,000", "Under 1,000"],
+    "When did World War I take place?",
+    ["1914–1918", "1861–1865", "1939–1945", "1950–1953"],
     0,
-    "The UN refugee agency (UNHCR) counted about 123 million in 2024.",
+    "About 20 million people died, soldiers and civilians.",
     HELP,
   ),
   choiceQ(
     "b-h2",
     "history",
-    "Why was the Refugee Convention written in 1951?",
+    "What was the League of Nations?",
     [
-      "After World War II, millions in Europe had no safe home",
-      "A new ocean route made it faster to travel to America",
-      "The first airplanes made it easier to visit other lands",
-      "A world census found that most people had moved cities",
+      "A group of countries formed after WWI to try to prevent another war",
+      "A sports league in which national teams played for a world cup",
+      "An army that the winners of WWI sent to rule over Germany",
+      "A company that rebuilt the cities that were destroyed in WWI",
     ],
     0,
-    "In 1939, the ship St. Louis was turned away with over 900 Jewish refugees, and many later died in the Holocaust.",
+    "It failed to stop World War II, but the United Nations was built on its idea in 1945.",
     HELP,
   ),
   choiceQ(
     "b-k1",
     "generalKnowledge",
-    "What is the difference between a refugee and a migrant?",
+    "Who is honored on Veterans Day?",
     [
-      "A refugee fled danger; a migrant may move for work or family",
-      "A refugee always travels by boat; a migrant always flies",
-      "A refugee is a child; a migrant is always an adult",
-      "There is no difference; they mean exactly the same",
+      "Everyone who has served in the military",
+      "Only soldiers who died in World War I",
+      "Only generals and admirals",
+      "Only presidents of the US",
     ],
     0,
-    "Refugees have special legal protection because going home isn't safe.",
+    "Memorial Day, in May, honors those who died; Veterans Day honors all who served.",
     HELP,
   ),
   choiceQ(
     "b-k2",
     "generalKnowledge",
-    "Time = ?",
+    "In (5 + 2) × 3, what do you do first?",
     [
-      "Distance ÷ speed",
-      "Distance × speed",
-      "Speed ÷ distance",
-      "Speed − distance",
+      "Add, inside the brackets",
+      "Multiply",
+      "Work right to left",
+      "Either way, it's the same",
     ],
     0,
-    "120 km at 40 km/h is 120 ÷ 40 = 3 hours.",
+    "Brackets first: 5 + 2 = 7, then 7 × 3 = 21.",
     HELP,
   ),
 ];
 
 export const day20261112: Day = {
   date: DATE,
-  title: "Day 47 — Speed, distance, and time",
+  title: "Day 46 — Order of operations",
   brief: loadMarkdown(`day-${DATE}.md`),
-  topics: ["Speed", "Distance and time", "Refugees"],
+  topics: ["Order of operations", "World War I", "Veterans Day"],
   versionA: applyOrder(versionA, generated.order),
   versionB: applyOrder(versionB, generated.order),
 };

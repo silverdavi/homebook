@@ -58,8 +58,8 @@ MATH = {
                  "Check: 6 + 4 = 10 ✓   Put your answer back in every time."),
         495,
     ),
-    "2026-11-11": (
-        sheets.Sheet("2026-11-11", 46, "Order of operations", "order-of-operations",
+    "2026-11-12": (
+        sheets.Sheet("2026-11-12", 46, "Order of operations", "order-of-operations",
                      "1. Brackets   2. × and ÷, left to right   3. + and −, left to right", []),
         examples("5 + 2 × 3  →  2 × 3 = 6 first  →  5 + 6 = 11   (not 21)",
                  "(5 + 2) × 3  →  brackets first: 7  →  7 × 3 = 21",
@@ -67,8 +67,8 @@ MATH = {
                  "Tip: underline every × and ÷ part first."),
         495,
     ),
-    "2026-11-12": (
-        sheets.Sheet("2026-11-12", 47, "Speed, distance, and time", "speed",
+    "2026-11-13": (
+        sheets.Sheet("2026-11-13", 47, "Speed, distance, and time", "speed",
                      "Distance = speed × time.   Speed = distance ÷ time.   Time = distance ÷ speed.", []),
         examples("Bus: 50 km/h for 3 h  →  50 × 3 = 150 km",
                  "Train: 240 km in 4 h  →  240 ÷ 4 = 60 km/h",
@@ -76,8 +76,8 @@ MATH = {
                  "Triangle: D on top, S and T below. Cover the one you want."),
         495,
     ),
-    "2026-11-13": (
-        sheets.Sheet("2026-11-13", 48, "Review — the whole week", "review",
+    "2026-11-16": (
+        sheets.Sheet("2026-11-16", 48, "Review — the whole week", "review",
                      "Volume: l × w × h.  Equations: undo.  Order: ( ) × ÷ + −.  Speed: D = S × T.", []),
         examples("Volume: 4 × 3 × 2 = 24 cm³     Missing height: 60 ÷ (5 × 3) = 4 cm",
                  "Equation: x − 3 = 8  →  add 3 to both sides  →  x = 11",
@@ -114,8 +114,8 @@ WORLD = {
          ("Where Rana Plaza collapsed", "Bangladesh"), ("Workers bargaining together", "A union"),
          ("Fight for $15 began in (city)", "New York"), ("Why a fixed wage loses value", "Prices rise (inflation)")],
     ),
-    "2026-11-11": (
-        "2026-11-11-world-wwi.pdf", "WEDNESDAY  •  WORLD  •  WORLD WAR I", "The eleventh hour",
+    "2026-11-12": (
+        "2026-11-12-world-wwi.pdf", "THURSDAY  •  WORLD  •  WORLD WAR I", "The eleventh hour",
         [("Sarajevo", "1914", "the shooting that started the war"),
          ("Western Front", "Belgium, France", "trench warfare for years"),
          ("India", "British colony", "over a million soldiers fought"),
@@ -127,8 +127,8 @@ WORLD = {
          ("Time the fighting stopped", "11 a.m., Nov 11, 1918"), ("Veterans Day honors", "Everyone who served"),
          ("Flower worn to remember", "Poppy"), ("Group formed to prevent war", "League of Nations")],
     ),
-    "2026-11-12": (
-        "2026-11-12-world-refugees.pdf", "THURSDAY  •  WORLD  •  REFUGEES", "Why people flee",
+    "2026-11-13": (
+        "2026-11-13-world-refugees.pdf", "FRIDAY  •  WORLD  •  REFUGEES", "Why people flee",
         [("Syria", "since 2011", "civil war; Turkey hosts the most Syrians"),
          ("Ukraine", "2022", "invaded; millions fled to Poland and Germany"),
          ("Sudan", "since 2023", "the world's largest displacement crisis"),
@@ -140,14 +140,14 @@ WORLD = {
          ("Country hosting the most Syrians", "Turkey"), ("Where most refugees live", "Countries next door"),
          ("Famous scientist who was a refugee", "Albert Einstein"), ("People forced from home, 2024", "About 123 million")],
     ),
-    "2026-11-13": (
-        "2026-11-13-world-review.pdf", "FRIDAY  •  WORLD  •  REVIEW", "The week in one page",
+    "2026-11-16": (
+        "2026-11-16-world-review.pdf", "MONDAY  •  WORLD  •  REVIEW", "The week in one page",
         [("Berlin Wall", "1961–1989", "fell to peaceful protests, Nov 9, 1989"),
          ("Fair wages", "$7.25 since 2009", "unions; Fight for $15; Rana Plaza"),
          ("World War I", "1914–1918", "ended 11 a.m., Nov 11, 1918"),
          ("Refugees", "1951 Convention", "no sending people back to danger")],
         "One sentence a day",
-        ["Monday: Cold War  •  Tuesday: workers  •  Wednesday: Veterans Day  •  Thursday: refugees",
+        ["Monday: Cold War  •  Tuesday: workers  •  Thursday: Veterans Day  •  Friday: refugees",
          "Say each one out loud before you start the questions"],
         [("Year the Wall fell", "1989"), ("Workers bargaining together", "A union"),
          ("City where WWI started", "Sarajevo"), ("Veterans Day date", "November 11"),

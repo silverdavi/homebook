@@ -45,9 +45,9 @@ import { day20261105 } from "./content/day-2026-11-05";
 import { day20261106 } from "./content/day-2026-11-06";
 import { day20261109 } from "./content/day-2026-11-09";
 import { day20261110 } from "./content/day-2026-11-10";
-import { day20261111 } from "./content/day-2026-11-11";
 import { day20261112 } from "./content/day-2026-11-12";
 import { day20261113 } from "./content/day-2026-11-13";
+import { day20261116 } from "./content/day-2026-11-16";
 
 export const WEEK1: Day[] = [
   day20260512,
@@ -105,9 +105,9 @@ export const WEEK12: Day[] = [day20261104, day20261105, day20261106];
 export const WEEK13: Day[] = [
   day20261109,
   day20261110,
-  day20261111,
   day20261112,
   day20261113,
+  day20261116,
 ];
 
 export interface WeekSpec {
@@ -270,7 +270,7 @@ export const WEEKS: WeekSpec[] = [
   },
   {
     id: 13,
-    label: "Week 13 — Nov 9–13",
+    label: "Week 13 — Nov 9–16",
     introFile: "WEEK-2026-11-09.md",
     days: WEEK13,
     startDayNumber:

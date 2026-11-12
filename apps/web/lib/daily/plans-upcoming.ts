@@ -494,7 +494,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block and find the Nile, the Amazon, the Mekong, and the Aral Sea on a map.",
       reviewDone: "You can name the region of each without looking.",
-      task: "Complete Wednesday's World sheet.",
+      task: "Complete the printed World War I sheet (it says Wednesday at the top).",
       taskDone: "Every World question has an answer.",
       explain:
         "Write one sentence on why being upstream gives a country power.",
@@ -541,7 +541,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block. On any world map, find Greenland and Africa and compare how big they look.",
       reviewDone: "You can explain why Greenland looks too big.",
-      task: "Complete Thursday's World sheet.",
+      task: "Complete Monday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain: "Write one sentence on why a map is never neutral.",
       explainDone: "One complete sentence mentions a choice a mapmaker made.",
@@ -586,7 +586,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       review:
         "Read the World block and find India, China, Nigeria, and the Democratic Republic of the Congo on a map.",
       reviewDone: "You can name one big city in each.",
-      task: "Complete Friday's World sheet.",
+      task: "Complete Monday's World sheet.",
       taskDone: "Every World question has an answer.",
       explain:
         "Write one sentence on something unions won that you benefit from.",
@@ -679,7 +679,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         review:
           "Read the World block. Find a swing state, Wyoming, and California on a US map.",
         reviewDone: "You can say why Wyoming matters more in the Senate.",
-        task: "Complete Wednesday's World sheet.",
+        task: "Complete the printed World War I sheet (it says Wednesday at the top).",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on a rule that makes voting easier or harder, and for whom.",
@@ -729,7 +729,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         review:
           "Read the World block. Find Tuvalu, Pakistan, China, and the United States on a map.",
         reviewDone: "You can say who emits most each year, and who in total.",
-        task: "Complete Thursday's World sheet.",
+        task: "Complete Monday's World sheet.",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on why climate change is called a justice issue.",
@@ -779,7 +779,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         review:
           "Read the World block. Find the Navajo Nation, Standing Rock, and Oklahoma on a US map.",
         reviewDone: "You can say what sovereign means.",
-        task: "Complete Friday's World sheet.",
+        task: "Complete Monday's World sheet.",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on why a broken treaty still matters today.",
@@ -886,10 +886,16 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
-  "2026-11-11": fullDay(
+  "2026-11-12": fullDay(
     {
-      material: "Wednesday • Day 46 double-sided order-of-operations sheet",
-      extraMaterials: ["World • Wednesday World War I sheet"],
+      material:
+        "Day 46 order-of-operations sheet, already printed (labeled Day 46)",
+      fromDad:
+        "Wednesday was a day off for Veterans Day, so today is Day 46. Take yesterday's PRINTED SHEETS out of the printer and use them: the Day 46 order-of-operations sheet, the World War I sheet (it says Wednesday at the top), and the paintings extra. Nothing new prints today.",
+      extraMaterials: [
+        "World • World War I sheet, already printed (labeled Wednesday)",
+        "Extra • 16 famous paintings sheet, already printed",
+      ],
       deeper:
         "Read “Extra” at the bottom of the lesson: the make-24 puzzle and a calculator test.",
       introduction: {
@@ -924,7 +930,7 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         review:
           "Read the World block. Find Sarajevo, Belgium, and France on a map of Europe.",
         reviewDone: "You can say why Veterans Day is November 11.",
-        task: "Complete Wednesday's World sheet.",
+        task: "Complete the printed World War I sheet (it says Wednesday at the top).",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on why soldiers from India fought in World War I.",
@@ -933,10 +939,10 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
-  "2026-11-12": fullDay(
+  "2026-11-13": fullDay(
     {
-      material: "Thursday • Day 47 double-sided speed sheet",
-      extraMaterials: ["World • Thursday refugees sheet"],
+      material: "Friday • Day 47 double-sided speed sheet",
+      extraMaterials: ["World • Friday refugees sheet"],
       deeper:
         "Read “Extra” at the bottom of the lesson: your walking speed and a New York to London flight.",
       introduction: {
@@ -970,24 +976,24 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
         review:
           "Read the World block. Find Syria, Turkey, Ukraine, and Sudan on a map.",
         reviewDone: "You can say what makes someone a refugee.",
-        task: "Complete Thursday's World sheet.",
+        task: "Complete Monday's World sheet.",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on why most refugees live in countries next door.",
         explainDone: "One complete sentence gives a reason.",
       },
     },
-    "12:30-tv",
+    "12:30",
   ),
-  "2026-11-13": fullDay(
+  "2026-11-16": fullDay(
     {
-      material: "Friday • Day 48 double-sided review sheet",
-      extraMaterials: ["World • Friday review sheet"],
+      material: "Monday • Day 48 double-sided review sheet",
+      extraMaterials: ["World • Monday review sheet"],
       deeper:
         "Read “Extra” at the bottom of the lesson: a box equation and an average-speed problem.",
       introduction: {
         newToday: "Nothing new: one lap through the week's 4 rules.",
-        buildsOn: "This week's 4 lessons, Monday to Thursday.",
+        buildsOn: "Last week's 4 lessons, Monday to Friday.",
         whyItMatters: "Mixing rules is how real problems look.",
       },
       learn: {
@@ -1012,15 +1018,15 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
       },
       apply: {
         title: "World: the week in review",
-        review: "Skim Monday to Thursday's World blocks on their pages.",
+        review: "Skim last week's World blocks on their pages.",
         reviewDone: "You can say one sentence about each day.",
-        task: "Complete Friday's World sheet.",
+        task: "Complete Monday's World sheet.",
         taskDone: "Every World question has an answer.",
         explain:
           "Write one sentence on which World topic surprised you most, and why.",
         explainDone: "One complete sentence gives a reason.",
       },
     },
-    "12:30",
+    "12:30-tv",
   ),
 };

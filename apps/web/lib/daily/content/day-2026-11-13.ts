@@ -1,205 +1,209 @@
 import "server-only";
 import type { Day, Question } from "../types";
 import { loadMarkdown } from "./loader";
+import { numericQ } from "./banks/numeric";
 import { applyOrder, choiceQ } from "./banks/choice";
-import { boxQ, missingQ } from "./day-2026-11-09";
-import { equationQ } from "./day-2026-11-10";
-import { bracketsQ, mixedQ, plainQ } from "./day-2026-11-11";
-import { distanceQ, speedQ, timeQ } from "./day-2026-11-12";
 import generated from "./generated/2026-11-13.json";
 
 const DATE = "2026-11-13";
 const HELP = `/daily/${DATE}`;
 
-type Form = "add" | "sub" | "mul" | "div";
-type Set = (typeof generated)["a"];
+export function distanceQ(id: string, speed: number, hours: number): Question {
+  const answer = speed * hours;
+  return numericQ(
+    id,
+    `A bus goes ${speed} km/h for ${hours} hours. How many km does it travel?`,
+    answer,
+    `Distance = speed × time: ${speed} × ${hours} = ${answer} km.`,
+    HELP,
+    { unit: "km" },
+  );
+}
 
-function numeric(v: Set, p: "a" | "b"): Question[] {
-  const [plain] = v.plain;
-  const [brackets] = v.brackets;
-  const [mixed] = v.mixed;
-  return [
-    ...v.box.map(([l, w, h], i) => boxQ(`${p}-v${i + 1}`, l, w, h)),
-    ...v.missing.map(([vol, l, w], i) => missingQ(`${p}-m${i + 1}`, vol, l, w)),
-    ...[...v.addsub, ...v.muldiv].map(([f, a, b], i) =>
-      equationQ(`${p}-x${i + 1}`, f as Form, Number(a), Number(b)),
-    ),
-    plainQ(`${p}-o1`, plain[0], plain[1], plain[2]),
-    bracketsQ(`${p}-o2`, brackets[0], brackets[1], brackets[2]),
-    mixedQ(`${p}-o3`, mixed[0], mixed[1], mixed[2], mixed[3]),
-    ...v.distance.map(([s, t]) => distanceQ(`${p}-d1`, s, t)),
-    ...v.speed.map(([d, t]) => speedQ(`${p}-s1`, d, t)),
-    ...v.time.map(([d, s]) => timeQ(`${p}-t1`, d, s)),
-  ];
+export function speedQ(id: string, km: number, hours: number): Question {
+  const answer = km / hours;
+  return numericQ(
+    id,
+    `A train travels ${km} km in ${hours} hours. What is its speed in km/h?`,
+    answer,
+    `Speed = distance ÷ time: ${km} ÷ ${hours} = ${answer} km/h.`,
+    HELP,
+    { unit: "km/h" },
+  );
+}
+
+export function timeQ(id: string, km: number, speed: number): Question {
+  const answer = km / speed;
+  return numericQ(
+    id,
+    `A car drives ${km} km at ${speed} km/h. How many hours does it take?`,
+    answer,
+    `Time = distance ÷ speed: ${km} ÷ ${speed} = ${answer} hours.`,
+    HELP,
+    { unit: "hours" },
+  );
 }
 
 const versionA: Question[] = [
-  ...numeric(generated.a, "a"),
+  ...generated.a.distance.map(([s, t], i) => distanceQ(`a-d${i + 1}`, s, t)),
+  ...generated.a.speed.map(([d, t], i) => speedQ(`a-s${i + 1}`, d, t)),
+  ...generated.a.time.map(([d, s], i) => timeQ(`a-t${i + 1}`, d, s)),
   choiceQ(
     "a-g1",
     "geography",
-    "Which city was split by a wall from 1961 to 1989?",
-    ["Berlin", "Paris", "Rome", "Madrid"],
+    "Which country hosts the most refugees from Syria?",
+    ["Turkey", "Canada", "Japan", "Brazil"],
     0,
-    "East Germany built it to stop its own people from leaving.",
+    "Turkey hosted over 3 million Syrians, more than any other country.",
     HELP,
   ),
   choiceQ(
     "a-g2",
     "geography",
-    "Where do most of the world's refugees live?",
+    "Most of the world's refugees live in…",
     [
-      "In poorer countries next door to the one they fled",
-      "In the richest countries of Europe and North America",
-      "In camps set up on islands far out in the ocean",
-      "In big cities on the other side of the world",
+      "Poorer countries next door to the one they fled",
+      "The richest countries in Europe and North America",
+      "Camps that are set up on islands far out at sea",
+      "Big cities that are on the other side of the world",
     ],
     0,
-    "About 70% stay in neighboring countries.",
+    "About 70% stay in neighboring countries, and most of those are low- or middle-income.",
     HELP,
   ),
   choiceQ(
     "a-h1",
     "history",
-    "What happened at 11 a.m. on November 11, 1918?",
+    "The 1951 Refugee Convention says a refugee is someone who…",
     [
-      "World War I fighting stopped",
-      "The Berlin Wall went up",
-      "World War II began in Europe",
-      "The League of Nations closed",
+      "Fled their country because of danger or persecution and can't go back",
+      "Moved to a new country only to find a better job and higher pay",
+      "Travels between countries every year for holidays with family",
+      "Lives in a different city from the one where they were born",
     ],
     0,
-    "That's why Veterans Day is November 11.",
+    "Countries that signed it promised not to send refugees back to danger.",
     HELP,
   ),
   choiceQ(
     "a-h2",
     "history",
-    "What did fast-food workers start in New York in 2012?",
-    [
-      "The Fight for $15, for higher pay and a union",
-      "A plan to close every restaurant on Sundays",
-      "A contest to invent the cheapest new burger",
-      "A law that let teenagers work longer hours",
-    ],
+    "Which famous scientist was a refugee from Nazi Germany?",
+    ["Albert Einstein", "Isaac Newton", "Marie Curie", "Charles Darwin"],
     0,
-    "Many states and cities have since raised wages to $15 or more.",
+    "He fled in 1933. Many refugees have gone on to change the countries that took them in.",
     HELP,
   ),
   choiceQ(
     "a-k1",
     "generalKnowledge",
-    "What is a labor union?",
+    "What does “asylum” mean?",
     [
-      "Workers who join together to bargain with their employer",
-      "A company that owns many shops in different cities",
-      "A government office that collects workers' taxes",
-      "A bank that lends money to workers who need it",
+      "Protection that a country gives to someone fleeing danger",
+      "A visa that lets a tourist stay for one month or less",
+      "A tax that every new arrival has to pay at the border",
+      "A test that people take to drive in another country",
     ],
     0,
-    "Together, workers can win more than one person alone.",
+    "Asking for asylum is a legal right under international law.",
     HELP,
   ),
   choiceQ(
     "a-k2",
     "generalKnowledge",
-    "What was the Cold War?",
+    "Speed = ?",
     [
-      "A US–Soviet rivalry with no direct war between them",
-      "A war fought only near the North and South Poles",
-      "A winter battle in World War I in the Alps",
-      "A war between Canada and Russia over ice",
+      "Distance ÷ time",
+      "Distance × time",
+      "Time ÷ distance",
+      "Distance + time",
     ],
     0,
-    "About 1947 to 1991: arms race, space race, and wars fought by other countries.",
+    "60 km in 2 hours is 60 ÷ 2 = 30 km/h.",
     HELP,
   ),
 ];
 
 const versionB: Question[] = [
-  ...numeric(generated.b, "b"),
+  ...generated.b.distance.map(([s, t], i) => distanceQ(`b-d${i + 1}`, s, t)),
+  ...generated.b.speed.map(([d, t], i) => speedQ(`b-s${i + 1}`, d, t)),
+  ...generated.b.time.map(([d, s], i) => timeQ(`b-t${i + 1}`, d, s)),
   choiceQ(
     "b-g1",
     "geography",
-    "World War I began after a shooting in which city?",
-    ["Sarajevo", "Berlin", "Leipzig", "Dhaka"],
+    "In 2022, millions of refugees fled which country after it was invaded?",
+    ["Ukraine", "Spain", "Finland", "Portugal"],
     0,
-    "Archduke Franz Ferdinand was shot there in June 1914.",
+    "Russia invaded in February 2022; Poland and Germany took in millions of Ukrainians.",
     HELP,
   ),
   choiceQ(
     "b-g2",
     "geography",
-    "The Rana Plaza garment factory collapsed in 2013 in…",
-    ["Bangladesh", "Germany", "Turkey", "Ukraine"],
+    "Since 2023, the world's largest displacement crisis has been in…",
+    ["Sudan", "Norway", "Chile", "New Zealand"],
     0,
-    "1,134 workers died, which led to the Bangladesh Accord on factory safety.",
+    "Over 12 million Sudanese were forced from their homes by the war that began in April 2023.",
     HELP,
   ),
   choiceQ(
     "b-h1",
     "history",
-    "What brought the Berlin Wall down in 1989?",
-    [
-      "Peaceful protests, and a border opened by mistake",
-      "An army that drove its tanks through in the night",
-      "An earthquake that knocked down the whole wall",
-      "A vote of the United Nations to tear it down",
-    ],
+    "About how many people in the world are forced from their homes?",
+    ["Over 100 million", "About 1 million", "About 10,000", "Under 1,000"],
     0,
-    "Ordinary people, protesting together, did what armies couldn't.",
+    "The UN refugee agency (UNHCR) counted about 123 million in 2024.",
     HELP,
   ),
   choiceQ(
     "b-h2",
     "history",
-    "The 1951 Refugee Convention promised…",
+    "Why was the Refugee Convention written in 1951?",
     [
-      "Not to send refugees back to danger",
-      "To give every refugee a free house",
-      "To close all borders to new arrivals",
-      "To let refugees vote in every country",
+      "After World War II, millions in Europe had no safe home",
+      "A new ocean route made it faster to travel to America",
+      "The first airplanes made it easier to visit other lands",
+      "A world census found that most people had moved cities",
     ],
     0,
-    "It was written after World War II left millions without a safe home.",
+    "In 1939, the ship St. Louis was turned away with over 900 Jewish refugees, and many later died in the Holocaust.",
     HELP,
   ),
   choiceQ(
     "b-k1",
     "generalKnowledge",
-    "What is the US federal minimum wage per hour?",
-    ["$7.25", "$15.00", "$2.50", "$20.00"],
+    "What is the difference between a refugee and a migrant?",
+    [
+      "A refugee fled danger; a migrant may move for work or family",
+      "A refugee always travels by boat; a migrant always flies",
+      "A refugee is a child; a migrant is always an adult",
+      "There is no difference; they mean exactly the same",
+    ],
     0,
-    "Unchanged since 2009.",
+    "Refugees have special legal protection because going home isn't safe.",
     HELP,
   ),
   choiceQ(
     "b-k2",
     "generalKnowledge",
-    "Who is honored on Veterans Day?",
+    "Time = ?",
     [
-      "Everyone who has served in the military",
-      "Only soldiers who died in World War I",
-      "Only generals and admirals",
-      "Only presidents of the US",
+      "Distance ÷ speed",
+      "Distance × speed",
+      "Speed ÷ distance",
+      "Speed − distance",
     ],
     0,
-    "Memorial Day, in May, honors those who died.",
+    "120 km at 40 km/h is 120 ÷ 40 = 3 hours.",
     HELP,
   ),
 ];
 
 export const day20261113: Day = {
   date: DATE,
-  title: "Day 48 — Review: the whole week",
+  title: "Day 47 — Speed, distance, and time",
   brief: loadMarkdown(`day-${DATE}.md`),
-  topics: [
-    "Volume",
-    "Equations",
-    "Order of operations",
-    "Speed",
-    "World review",
-  ],
+  topics: ["Speed", "Distance and time", "Refugees"],
   versionA: applyOrder(versionA, generated.order),
   versionB: applyOrder(versionB, generated.order),
 };
