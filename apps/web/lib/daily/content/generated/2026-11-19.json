@@ -1,0 +1,177 @@
+{
+  "date": "2026-11-19",
+  "generator": "content/daily/generate/random_days.py",
+  "seed": 4339467393713680919,
+  "a": {
+    "circ": [
+      20,
+      6,
+      14,
+      15
+    ],
+    "area": [
+      6,
+      5,
+      2,
+      9
+    ],
+    "diam": [
+      12,
+      19,
+      23,
+      9
+    ]
+  },
+  "b": {
+    "circ": [
+      7,
+      10,
+      13,
+      3
+    ],
+    "area": [
+      7,
+      8,
+      5,
+      2
+    ],
+    "diam": [
+      16,
+      25,
+      14,
+      18
+    ]
+  },
+  "order": {
+    "a-g1": [
+      3,
+      0,
+      1,
+      2
+    ],
+    "a-g2": [
+      2,
+      0,
+      1,
+      3
+    ],
+    "a-h1": [
+      2,
+      1,
+      3,
+      0
+    ],
+    "a-h2": [
+      0,
+      2,
+      3,
+      1
+    ],
+    "a-k1": [
+      1,
+      2,
+      3,
+      0
+    ],
+    "a-k2": [
+      1,
+      2,
+      3,
+      0
+    ],
+    "b-g1": [
+      0,
+      3,
+      2,
+      1
+    ],
+    "b-g2": [
+      2,
+      0,
+      1,
+      3
+    ],
+    "b-h1": [
+      0,
+      2,
+      3,
+      1
+    ],
+    "b-h2": [
+      2,
+      1,
+      0,
+      3
+    ],
+    "b-k1": [
+      3,
+      1,
+      0,
+      2
+    ],
+    "b-k2": [
+      1,
+      3,
+      2,
+      0
+    ]
+  },
+  "practice": {
+    "problems": [
+      [
+        "Radius 6 cm. Circumference?",
+        "37.68 cm"
+      ],
+      [
+        "Radius 1 cm. Circumference?",
+        "6.28 cm"
+      ],
+      [
+        "Radius 12 cm. Circumference?",
+        "75.36 cm"
+      ],
+      [
+        "Radius 13 cm. Circumference?",
+        "81.64 cm"
+      ],
+      [
+        "Radius 9 cm. Area?",
+        "254.34 cm²"
+      ],
+      [
+        "Radius 1 cm. Area?",
+        "3.14 cm²"
+      ],
+      [
+        "Radius 4 cm. Area?",
+        "50.24 cm²"
+      ],
+      [
+        "Radius 3 cm. Area?",
+        "28.26 cm²"
+      ],
+      [
+        "Diameter 3 cm. Circumference?",
+        "9.42 cm"
+      ],
+      [
+        "Diameter 20 cm. Circumference?",
+        "62.8 cm"
+      ],
+      [
+        "Diameter 16 cm. Circumference?",
+        "50.24 cm"
+      ],
+      [
+        "Diameter 22 cm. Circumference?",
+        "69.08 cm"
+      ]
+    ],
+    "guided": {
+      "1": "2 × 3.14 × 6 = __",
+      "5": "9 × 9 = __;  × 3.14 = __",
+      "9": "3.14 × 3 = __",
+      "10": "3.14 × 20 = __"
+    }
+  }
+}

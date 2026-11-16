@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Nov 9–13 duplex letter sheets: math practice and World.
+"""Build Nov 9–20 duplex letter sheets: math practice and World.
 
 Usage: build-2026-11-09-to-13.py [date ...]   (default: every date below)
 Practice problems come from the generated JSON (random_days.py), never by hand.
@@ -85,6 +85,33 @@ MATH = {
                  "Problems 1–3 volume, 4–6 equations, 7–9 order, 10–12 speed."),
         495,
     ),
+    "2026-11-18": (
+        sheets.Sheet("2026-11-18", 49, "Area of a triangle", "triangles",
+                     "Area = base × height ÷ 2.   Missing height = area × 2 ÷ base.", []),
+        examples("Base 10, height 7  →  10 × 7 = 70  →  70 ÷ 2 = 35 cm²",
+                 "8 × 5 rectangle cut corner to corner  →  40 ÷ 2 = 20 cm² each",
+                 "Area 30, base 12  →  30 × 2 = 60  →  60 ÷ 12 = 5 cm tall",
+                 "Height goes straight up at a right angle. NOT the slanted side."),
+        495,
+    ),
+    "2026-11-19": (
+        sheets.Sheet("2026-11-19", 50, "Circles and π", "circles",
+                     "π ≈ 3.14.   Circumference = 3.14 × diameter = 2 × 3.14 × radius.   Area = 3.14 × r × r.", []),
+        examples("Diameter 10  →  3.14 × 10 = 31.4 cm around",
+                 "Radius 5  →  2 × 3.14 × 5 = 31.4 cm around (same circle!)",
+                 "Radius 3  →  3 × 3 = 9  →  9 × 3.14 = 28.26 cm² inside",
+                 "Area uses the RADIUS. Given a diameter? Halve it first."),
+        495,
+    ),
+    "2026-11-20": (
+        sheets.Sheet("2026-11-20", 51, "Multiplying and dividing negatives", "negatives",
+                     "Numbers first, then the sign:  same signs → +   different signs → −", []),
+        examples("(−3) × 4  →  12, different signs  →  −12",
+                 "(−3) × (−4)  →  12, same signs  →  12        (−20) ÷ 5 = −4",
+                 "(−2) × (−3) × (−4)  →  24, three minus signs (odd)  →  −24",
+                 "Three numbers: count the minus signs. Even → +.  Odd → −."),
+        495,
+    ),
 }
 
 WORLD = {
@@ -152,6 +179,45 @@ WORLD = {
         [("Year the Wall fell", "1989"), ("Workers bargaining together", "A union"),
          ("City where WWI started", "Sarajevo"), ("Veterans Day date", "November 11"),
          ("Refugee Convention year", "1951"), ("Where most refugees live", "Countries next door")],
+    ),
+    "2026-11-18": (
+        "2026-11-18-world-apartheid.pdf", "WEDNESDAY  •  WORLD  •  APARTHEID", "Mandela and a free South Africa",
+        [("South Africa", "1948–early 1990s", "apartheid: laws splitting people by race"),
+         ("Robben Island", "off Cape Town", "Mandela held 18 of his 27 years"),
+         ("Soweto", "near Johannesburg", "1976 student protest over Afrikaans"),
+         ("The world", "1980s", "boycotts of goods, teams, and money")],
+        "1994: everyone votes, Mandela becomes president",
+        ["Mandela left prison in 1990 without seeking revenge",
+         "Truth and Reconciliation Commission (Desmond Tutu): victims told their stories"],
+        [("Country of apartheid", "South Africa"), ("Years Mandela was in prison", "27"),
+         ("Island prison", "Robben Island"), ("Year Mandela became president", "1994"),
+         ("1976 student protest (place)", "Soweto"), ("Refusing to buy or play", "A boycott")],
+    ),
+    "2026-11-19": (
+        "2026-11-19-world-gettysburg.pdf", "THURSDAY  •  WORLD  •  GETTYSBURG", "Of the people, by the people",
+        [("Gettysburg", "Pennsylvania", "July 1863: about 50,000 casualties"),
+         ("Richmond", "Virginia", "capital of the Confederacy"),
+         ("The South", "11 states", "broke away to keep slavery"),
+         ("Washington", "D.C.", "capital of the Union; Lincoln")],
+        "November 19, 1863: about 270 words, 2 minutes",
+        ["Four score and seven = 4 × 20 + 7 = 87 years, back to 1776",
+         "Emancipation Proclamation 1863  •  13th Amendment ended slavery 1865"],
+        [("Main cause of the Civil War", "Slavery"), ("Four score and seven years", "87"),
+         ("State of Gettysburg", "Pennsylvania"), ("Date of the speech", "Nov 19, 1863"),
+         ("Confederate capital", "Richmond"), ("Amendment that ended slavery", "13th")],
+    ),
+    "2026-11-20": (
+        "2026-11-20-world-childrens-rights.pdf", "FRIDAY  •  WORLD  •  CHILDREN'S RIGHTS", "Every child, everywhere",
+        [("UN", "Nov 20, 1989", "Convention on the Rights of the Child"),
+         ("Pakistan", "Malala, 2012", "shot for girls' schooling; Nobel at 17"),
+         ("Pakistan", "Iqbal Masih", "escaped carpet-factory labor at 10"),
+         ("United States", "signed 1995", "the only UN member not to ratify")],
+        "A child = anyone under 18",
+        ["Rights: school, being heard, health care, safety, play, a name",
+         "About 250 million children are not in school  •  March for Our Lives, 2018"],
+        [("Date of the Convention", "Nov 20, 1989"), ("A child is anyone under", "18"),
+         ("Malala's country", "Pakistan"), ("Age Malala won the Nobel", "17"),
+         ("Only UN member not to ratify", "United States"), ("Children not in school", "About 250 million")],
     ),
 }
 

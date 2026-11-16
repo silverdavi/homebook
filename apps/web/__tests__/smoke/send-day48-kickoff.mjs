@@ -7,6 +7,7 @@ await runKickoff({
   topic: "Review day: one lap through the whole week. Nothing new.",
   material: "The Tuesday Day 48 review sheet and Tuesday World review sheet, from the printer",
   note: "Review day: one lap through Days 44 to 47, nothing new. The World block reviews them too. If you finish early, the blue “Finished before 12:30?” box at the end of the schedule has optional extras.",
+  reminder: "to solve an equation, undo it: do the opposite to both sides (Day 45).",
   endRule:
     "School ends at 12:30. From 12:30 to 1:30 it's TV only: no phone and no computer. Phone and computer at 1:30.",
 });

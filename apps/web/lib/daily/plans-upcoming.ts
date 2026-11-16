@@ -1029,4 +1029,142 @@ export const UPCOMING_PLANS: Record<string, DayPlan> = {
     },
     "12:30-tv",
   ),
+  "2026-11-18": fullDay(
+    {
+      material: "Wednesday • Day 49 double-sided triangle sheet",
+      extraMaterials: ["World • Wednesday apartheid sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: measure a triangle you draw yourself.",
+      introduction: {
+        newToday: "Area of a triangle: base × height ÷ 2.",
+        buildsOn: "Day 34's area of a rectangle: a triangle is half of one.",
+        whyItMatters:
+          "Roofs, sails, ramps, and garden beds are all triangles.",
+      },
+      learn: {
+        title: "Half a rectangle",
+        read: "Read the lesson below and draw a rectangle cut corner to corner.",
+        readDone: "You can say why a triangle is half a rectangle.",
+        example:
+          "Copy the 3 examples (area, rectangle, missing height), writing each step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One step at a time",
+        finish: "Finish the other 8 problems: area, then rectangles, then missing heights.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct: "Redo each miss, and check you used the height, not the slanted side.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: apartheid and Nelson Mandela",
+        review:
+          "Read the World block. Find South Africa, Cape Town, and Johannesburg on a map.",
+        reviewDone: "You can say what apartheid was.",
+        task: "Complete Wednesday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on why boycotts helped end apartheid.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-19": fullDay(
+    {
+      material: "Thursday • Day 50 double-sided circle sheet",
+      extraMaterials: ["World • Thursday Gettysburg sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: find π with a string and a can.",
+      introduction: {
+        newToday: "Circles: circumference is π × diameter, area is π × radius × radius.",
+        buildsOn: "Yesterday's triangles and Day 33's around vs. inside.",
+        whyItMatters:
+          "Wheels, pizzas, clocks, and round tables all use π.",
+      },
+      learn: {
+        title: "Around and inside",
+        read: "Read the lesson below and label a radius, a diameter, and the circumference.",
+        readDone: "You can say both circle rules without looking.",
+        example:
+          "Copy the 3 examples (diameter, radius, area), writing each step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One rule at a time",
+        finish: "Finish the other 8 problems: circumference, then area, then diameter.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct: "Redo each miss, and check radius vs. diameter.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: the Gettysburg Address",
+        review:
+          "Read the World block. Find Pennsylvania and Richmond, Virginia on a map.",
+        reviewDone: "You can say what caused the Civil War.",
+        task: "Complete Thursday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on what “government of the people” means to you.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30-tv",
+  ),
+  "2026-11-20": fullDay(
+    {
+      material: "Friday • Day 51 double-sided negatives sheet",
+      extraMaterials: ["World • Friday children's rights sheet"],
+      deeper:
+        "Read “Extra” at the bottom of the lesson: the pattern that proves − × − = +.",
+      introduction: {
+        newToday: "Multiplying and dividing negatives: same signs +, different signs −.",
+        buildsOn: "Day 37's integers: adding and subtracting through zero.",
+        whyItMatters:
+          "Debts, temperatures, and losses are negative numbers that get multiplied.",
+      },
+      learn: {
+        title: "Fix the sign last",
+        read: "Read the lesson below and copy the sign table.",
+        readDone: "You can say the sign rule without looking.",
+        example:
+          "Copy the 3 examples (times, divide, three numbers), writing the sign step.",
+        exampleDone: "3 complete examples are written.",
+        practice:
+          "Do only the 4 problems marked GUIDED on the sheet (1, 5, 9, 10).",
+        practiceDone: "Each GUIDED answer shows its first step.",
+      },
+      practice: {
+        title: "One step at a time",
+        finish: "Finish the other 8 problems: multiply, then divide, then three numbers.",
+        finishDone: "All 12 answers are written with their work.",
+        check: "Check with the answer side.",
+        checkDone: "Every answer is marked right or circled without copying.",
+        correct: "Redo each miss: numbers first, then count the minus signs.",
+        correctDone: "Every miss has a corrected answer with work.",
+      },
+      apply: {
+        title: "World: children's rights",
+        review:
+          "Read the World block. Find Pakistan on a map.",
+        reviewDone: "You can name 2 rights every child has.",
+        task: "Complete Friday's World sheet.",
+        taskDone: "Every World question has an answer.",
+        explain:
+          "Write one sentence on which right matters most to you, and why.",
+        explainDone: "One complete sentence gives a reason.",
+      },
+    },
+    "12:30",
+  ),
 };

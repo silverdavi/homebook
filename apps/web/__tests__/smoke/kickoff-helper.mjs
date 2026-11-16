@@ -34,19 +34,21 @@ export async function runKickoff({
   material,
   note,
   endRule,
+  reminder,
 }) {
   const phoneLine =
     endRule ??
     "Phone away. Computer only for this page and its lesson links. Phone stays away until 1:30.";
   const url = `https://teacher.ninja/daily/${date}`;
   const noteText = note ? `${note}\n\n` : "";
+  const reminderText = reminder ? `Quick reminder: ${reminder}\n\n` : "";
   const text = `Yerachmiel —
 
 Today's complete plan is on the website. Start at 9:30.
 
 ${topic}
 
-${noteText}${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.
+${noteText}${reminderText}${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.
 
 ${phoneLine}
 
@@ -65,6 +67,7 @@ ${url}
 <p style="margin:0 0 14px 0;">Today&apos;s complete plan is on the website. <strong>Start at 9:30.</strong></p>
 <p style="margin:0 0 14px 0;">${topic}</p>
 ${note ? `<p style="margin:0 0 14px 0;">${note}</p>` : ""}
+${reminder ? `<p style="margin:0 0 14px 0;padding:10px 14px;background:#eef2ff;border-left:4px solid #6366f1;border-radius:6px;"><strong>Quick reminder:</strong> ${reminder}</p>` : ""}
 <p style="margin:0 0 14px 0;">${material} should be on the desk. Three specific work blocks. The exam usually takes 15 minutes; submit when finished.</p>
 ${endRule ? `<p style="margin:0 0 14px 0;padding:12px 14px;background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;font-weight:600;">${endRule}</p>` : `<p style="margin:0 0 14px 0;">${phoneLine}</p>`}
 <p style="margin:18px 0;"><a href="${url}" style="color:#4f46e5;font-weight:600;font-size:16px;text-decoration:none;">${url.replace("https://", "")} →</a></p>

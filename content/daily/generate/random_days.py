@@ -451,6 +451,113 @@ def review_practice(rng):
     return problems, guided
 
 
+# ---------- area of triangles ----------
+def triangle_set(rng):
+    def even_pair():
+        b, h = rng.randint(2, 16), rng.randint(2, 16)
+        return [b, h] if (b * h) % 2 == 0 else [b + 1, h]
+
+    area = [even_pair() for _ in range(4)]
+    compare = [even_pair() for _ in range(4)]  # rectangle b × h, then half
+    missing = []
+    for _ in range(4):
+        b, h = even_pair()
+        missing.append([b * h // 2, b])  # area, base → height
+    return {"area": area, "rect": compare, "missing": missing}
+
+
+def triangle_practice(rng):
+    v = triangle_set(rng)
+    problems = (
+        [(f"Triangle: base {b}, height {h}. Area?", f"{b * h // 2} cm²") for b, h in v["area"]]
+        + [(f"Rectangle {b} × {h} cut in 2. One triangle?", f"{b * h // 2} cm²") for b, h in v["rect"]]
+        + [(f"Triangle area {a}, base {b}. Height?", f"{2 * a // b} cm") for a, b in v["missing"]]
+    )
+    (b1, h1), (b5, h5) = v["area"][0], v["rect"][0]
+    (a9, b9), (a10, b10) = v["missing"][0], v["missing"][1]
+    guided = {
+        1: f"{b1} × {h1} = __;  ÷ 2 = __",
+        5: f"rectangle {b5} × {h5} = __;  half = __",
+        9: f"{a9} × 2 = __;  ÷ {b9} = __",
+        10: f"{a10} × 2 = __;  ÷ {b10} = __",
+    }
+    return problems, guided
+
+
+# ---------- circles (π ≈ 3.14) ----------
+def circle_set(rng):
+    return {
+        "circ": rng.sample(range(1, 21), 4),  # radius → circumference
+        "area": rng.sample(range(1, 13), 4),  # radius → area
+        "diam": rng.sample(range(2, 31), 4),  # diameter → circumference
+    }
+
+
+def money(x):
+    return f"{x:.2f}".rstrip("0").rstrip(".")
+
+
+def circle_practice(rng):
+    v = circle_set(rng)
+    problems = (
+        [(f"Radius {r} cm. Circumference?", f"{money(2 * 3.14 * r)} cm") for r in v["circ"]]
+        + [(f"Radius {r} cm. Area?", f"{money(3.14 * r * r)} cm²") for r in v["area"]]
+        + [(f"Diameter {d} cm. Circumference?", f"{money(3.14 * d)} cm") for d in v["diam"]]
+    )
+    r1, r5 = v["circ"][0], v["area"][0]
+    d9, d10 = v["diam"][0], v["diam"][1]
+    guided = {
+        1: f"2 × 3.14 × {r1} = __",
+        5: f"{r5} × {r5} = __;  × 3.14 = __",
+        9: f"3.14 × {d9} = __",
+        10: f"3.14 × {d10} = __",
+    }
+    return problems, guided
+
+
+# ---------- multiplying and dividing negatives ----------
+def negative_set(rng):
+    def n():
+        return rng.choice([i for i in range(-12, 13) if abs(i) >= 2])
+
+    mul = []
+    for _ in range(4):
+        a, b = n(), n()
+        if a > 0 and b > 0:
+            a = -a
+        mul.append([a, b])
+    div = []
+    for _ in range(4):
+        a, b = n(), n()
+        if a > 0 and b > 0:
+            b = -b
+        div.append([a * b, b])  # dividend, divisor → a
+    mixed = [[n(), n(), n()] for _ in range(4)]  # a × b × c
+    return {"mul": mul, "div": div, "triple": mixed}
+
+
+def bracket(n):
+    return f"(−{abs(n)})" if n < 0 else str(n)
+
+
+def negative_practice(rng):
+    v = negative_set(rng)
+    problems = (
+        [(f"{bracket(a)} × {bracket(b)}", signed(a * b)) for a, b in v["mul"]]
+        + [(f"{bracket(a)} ÷ {bracket(b)}", signed(a // b)) for a, b in v["div"]]
+        + [(f"{bracket(a)} × {bracket(b)} × {bracket(c)}", signed(a * b * c)) for a, b, c in v["triple"]]
+    )
+    (a1, b1), (d5, s5) = v["mul"][0], v["div"][0]
+    t9, t10 = v["triple"][0], v["triple"][1]
+    guided = {
+        1: f"{abs(a1)} × {abs(b1)} = __;  {'same → +' if (a1 > 0) == (b1 > 0) else 'different → −'}",
+        5: f"{abs(d5)} ÷ {abs(s5)} = __;  {'same → +' if (d5 > 0) == (s5 > 0) else 'different → −'}",
+        9: f"{bracket(t9[0])} × {bracket(t9[1])} = __;  × {bracket(t9[2])}",
+        10: f"minus signs: {sum(x < 0 for x in t10)}, even or odd?",
+    }
+    return problems, guided
+
+
 KINDS = {
     "2026-10-29": (scale_set, scale_practice),
     "2026-10-30": (average_set, average_practice),
@@ -463,6 +570,9 @@ KINDS = {
     "2026-11-11": (order_set, order_practice),
     "2026-11-12": (speed_set, speed_practice),
     "2026-11-13": (review_set, review_practice),
+    "2026-11-18": (triangle_set, triangle_practice),
+    "2026-11-19": (circle_set, circle_practice),
+    "2026-11-20": (negative_set, negative_practice),
 }
 
 
