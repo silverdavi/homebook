@@ -7,6 +7,7 @@ await runKickoff({
   topic: "Speed, distance, and time: one triangle, three rules.",
   material: "The Monday Day 47 speed sheet and Monday World sheet, from the printer",
   note: "The World block is about refugees: who they are, why they flee, and where they go. If you finish early, the blue “Finished before 12:30?” box at the end of the schedule has optional extras.",
+  reminder: "per 1 means divide: 120 km in 2 hours is 60 km per hour (Day 32).",
   endRule:
     "School ends at 12:30. From 12:30 to 1:30 it's TV only: no phone and no computer. Phone and computer at 1:30.",
 });
